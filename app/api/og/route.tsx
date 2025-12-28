@@ -122,9 +122,31 @@ export async function GET(request: NextRequest) {
   const date = searchParams.get('date') || '';
   const reading = searchParams.get('reading') || '';
   const theme = searchParams.get('theme') || 'dark';
-  const image = searchParams.get('image') || '';
+  let image = searchParams.get('image') || '';
   const icon = searchParams.get('icon') || '';
   const avatar = searchParams.get('avatar') || '';
+
+  // Fix truncated Unsplash URLs - Ghost's encode doesn't encode & in URLs
+  // So &cs=tinysrgb becomes a separate parameter instead of part of the image URL
+  // Reconstruct the full Unsplash URL from scattered parameters
+  if (image.includes('images.unsplash.com') && !image.includes('&')) {
+    // Unsplash URLs always have multiple parameters, if we only see the base, it was truncated
+    const unsplashParams: string[] = [];
+    const knownUnsplashParams = ['crop', 'cs', 'fit', 'fm', 'ixid', 'ixlib', 'q', 'w', 'h'];
+
+    for (const param of knownUnsplashParams) {
+      const value = searchParams.get(param);
+      if (value) {
+        unsplashParams.push(`${param}=${value}`);
+      }
+    }
+
+    if (unsplashParams.length > 0) {
+      // Reconstruct the URL
+      const separator = image.includes('?') ? '&' : '?';
+      image = image + separator + unsplashParams.join('&');
+    }
+  }
 
   // Validate image URLs - check if they look valid and are supported formats
   const isValidUrl = (url: string) => {
