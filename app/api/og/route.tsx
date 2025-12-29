@@ -219,7 +219,7 @@ export async function GET(request: NextRequest) {
 
   // Truncate text for display
   const displayTitle = title.length > 50 ? title.slice(0, 47) + '...' : title;
-  const displayExcerpt = excerpt.length > 100 ? excerpt.slice(0, 97) + '...' : excerpt;
+  const displayExcerpt = excerpt.length > 60 ? excerpt.slice(0, 57) + '...' : excerpt;
 
   // Load fonts
   const [fontRegular, fontBold] = await Promise.all([
