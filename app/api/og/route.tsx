@@ -146,8 +146,8 @@ export async function GET(request: NextRequest) {
     loadNotoSansBold(),
   ]);
 
-  // Calculate font size based on title length
-  const titleFontSize = displayTitle.length > 35 ? 56 : displayTitle.length > 20 ? 68 : 80;
+  // Calculate font size based on title length (larger for better readability)
+  const titleFontSize = displayTitle.length > 35 ? 64 : displayTitle.length > 20 ? 76 : 88;
 
   // Build fonts array
   const fonts: { name: string; data: ArrayBuffer; style: 'normal'; weight: 400 | 700 }[] = [];
@@ -274,7 +274,7 @@ export async function GET(request: NextRequest) {
           )}
           <span
             style={{
-              fontSize: '24px',
+              fontSize: '28px',
               fontWeight: 600,
               color: '#fff',
               textShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
@@ -292,12 +292,12 @@ export async function GET(request: NextRequest) {
               top: '48px',
               right: '48px',
               display: 'flex',
-              padding: '10px 20px',
+              padding: '12px 24px',
               borderRadius: '24px',
               background: 'rgba(255, 255, 255, 0.15)',
               boxShadow: 'inset 0 0.5px 0 rgba(255, 255, 255, 0.4)',
               color: '#fff',
-              fontSize: '16px',
+              fontSize: '22px',
               fontWeight: 500,
               zIndex: 10,
             }}
@@ -348,7 +348,7 @@ export async function GET(request: NextRequest) {
             {displayExcerpt && (
               <p
                 style={{
-                  fontSize: '22px',
+                  fontSize: '28px',
                   color: 'rgba(255, 255, 255, 0.85)',
                   lineHeight: 1.5,
                   margin: 0,
@@ -384,8 +384,8 @@ export async function GET(request: NextRequest) {
                 {avatarSrc ? (
                   <img
                     src={avatarSrc}
-                    width={40}
-                    height={40}
+                    width={48}
+                    height={48}
                     style={{
                       borderRadius: '50%',
                       objectFit: 'cover',
@@ -395,14 +395,14 @@ export async function GET(request: NextRequest) {
                 ) : (
                   <div
                     style={{
-                      width: '40px',
-                      height: '40px',
+                      width: '48px',
+                      height: '48px',
                       borderRadius: '50%',
                       background: 'rgba(255, 255, 255, 0.2)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '16px',
+                      fontSize: '20px',
                       fontWeight: 600,
                       color: '#fff',
                     }}
@@ -412,7 +412,7 @@ export async function GET(request: NextRequest) {
                 )}
                 <span
                   style={{
-                    fontSize: '18px',
+                    fontSize: '24px',
                     fontWeight: 500,
                     color: '#fff',
                   }}
@@ -435,8 +435,8 @@ export async function GET(request: NextRequest) {
               {date && (
                 <span
                   style={{
-                    fontSize: '16px',
-                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: '22px',
+                    color: 'rgba(255, 255, 255, 0.8)',
                     fontWeight: 400,
                   }}
                 >
@@ -448,18 +448,18 @@ export async function GET(request: NextRequest) {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '16px',
-                    color: 'rgba(255, 255, 255, 0.7)',
+                    gap: '8px',
+                    fontSize: '22px',
+                    color: 'rgba(255, 255, 255, 0.8)',
                     fontWeight: 400,
                   }}
                 >
                   <svg
-                    width="18"
-                    height="18"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="rgba(255, 255, 255, 0.7)"
+                    stroke="rgba(255, 255, 255, 0.8)"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
