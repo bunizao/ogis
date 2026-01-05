@@ -11,9 +11,17 @@ export default function Home() {
   const [image, setImage] = useState('');
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Check if mobile on mount
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const generateUrl = () => {
@@ -41,6 +49,11 @@ export default function Home() {
 
         * {
           box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          padding: 0;
         }
 
         ::selection {
@@ -71,6 +84,19 @@ export default function Home() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
         }
+
+        /* Mobile responsive utilities */
+        @media (max-width: 768px) {
+          .desktop-only {
+            display: none !important;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .mobile-only {
+            display: none !important;
+          }
+        }
       `}</style>
 
       <div style={{
@@ -95,7 +121,7 @@ export default function Home() {
           <div style={{
             maxWidth: '1400px',
             margin: '0 auto',
-            padding: '20px 48px',
+            padding: '16px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -106,20 +132,21 @@ export default function Home() {
               fontWeight: 500,
               letterSpacing: '0.05em',
             }}>
-              OG/
+              OGIS/
             </div>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '32px',
+              gap: '20px',
               fontFamily: '"JetBrains Mono", monospace',
               fontSize: '12px',
             }}>
-              <a href="#preview" style={{ color: '#666', textDecoration: 'none', transition: 'color 0.2s' }}>Preview</a>
-              <a href="#api" style={{ color: '#666', textDecoration: 'none', transition: 'color 0.2s' }}>API</a>
+              <a href="#preview" className="desktop-only" style={{ color: '#666', textDecoration: 'none', transition: 'color 0.2s' }}>Preview</a>
+              <a href="#api" className="desktop-only" style={{ color: '#666', textDecoration: 'none', transition: 'color 0.2s' }}>API</a>
               <a
-                href="https://github.com"
+                href="https://github.com/bunizao/ogis"
                 target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   color: '#000',
                   textDecoration: 'none',
@@ -136,10 +163,10 @@ export default function Home() {
 
         {/* Hero Section */}
         <header style={{
-          paddingTop: '180px',
-          paddingBottom: '120px',
-          paddingLeft: '48px',
-          paddingRight: '48px',
+          paddingTop: '120px',
+          paddingBottom: '80px',
+          paddingLeft: '24px',
+          paddingRight: '24px',
           maxWidth: '1400px',
           margin: '0 auto',
           opacity: mounted ? 1 : 0,
@@ -148,24 +175,24 @@ export default function Home() {
         }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '80px',
+            gridTemplateColumns: !isMobile ? '1fr 1fr' : '1fr',
+            gap: !isMobile ? '80px' : '40px',
             alignItems: 'end',
           }}>
             <div>
               <p style={{
                 fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '12px',
+                fontSize: '11px',
                 letterSpacing: '0.1em',
                 color: '#999',
                 marginBottom: '24px',
                 textTransform: 'uppercase',
               }}>
-                Open Graph Image Service
+                OGIS - Open Graph Image Service
               </p>
               <h1 style={{
                 fontFamily: '"Instrument Serif", serif',
-                fontSize: 'clamp(48px, 8vw, 96px)',
+                fontSize: 'clamp(40px, 10vw, 96px)',
                 fontWeight: 400,
                 lineHeight: 0.95,
                 margin: 0,
@@ -177,32 +204,37 @@ export default function Home() {
               </h1>
             </div>
             <div style={{
-              borderLeft: '1px solid #eee',
-              paddingLeft: '40px',
+              borderLeft: !isMobile ? '1px solid #eee' : 'none',
+              paddingLeft: !isMobile ? '40px' : '0',
+              paddingTop: !isMobile ? '0' : '20px',
+              borderTop: !isMobile ? 'none' : '1px solid #eee',
             }}>
               <p style={{
-                fontSize: '18px',
+                fontSize: '16px',
                 color: '#666',
                 lineHeight: 1.7,
                 margin: 0,
                 maxWidth: '400px',
               }}>
-                Generate beautiful Open Graph images with pixel-style typography.
-                Built on Edge Runtime for global performance.
+                A dynamic Open Graph image generation service with Zpix pixel font and frosted glass effects.
+                Built on Next.js 14 and Vercel Edge Runtime for fast, globally distributed generation.
               </p>
               <div style={{
-                marginTop: '32px',
+                marginTop: '24px',
                 display: 'flex',
-                gap: '16px',
+                gap: '12px',
                 fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '11px',
+                fontSize: '10px',
                 color: '#999',
+                flexWrap: 'wrap',
               }}>
                 <span>1200×630px</span>
                 <span>·</span>
-                <span>PNG</span>
+                <span>Zpix Font</span>
                 <span>·</span>
                 <span>Edge Runtime</span>
+                <span>·</span>
+                <span>MIT License</span>
               </div>
             </div>
           </div>
@@ -212,7 +244,7 @@ export default function Home() {
         <div style={{
           maxWidth: '1400px',
           margin: '0 auto',
-          padding: '0 48px',
+          padding: '0 24px',
         }}>
           <div style={{ height: '1px', background: '#000' }} />
         </div>
@@ -221,12 +253,12 @@ export default function Home() {
         <main id="preview" style={{
           maxWidth: '1400px',
           margin: '0 auto',
-          padding: '80px 48px',
+          padding: !isMobile ? '80px 24px' : '40px 24px',
         }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '400px 1fr',
-            gap: '80px',
+            gridTemplateColumns: !isMobile ? '400px 1fr' : '1fr',
+            gap: !isMobile ? '80px' : '40px',
             opacity: mounted ? 1 : 0,
             transform: mounted ? 'translateY(0)' : 'translateY(20px)',
             transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s',
@@ -234,7 +266,7 @@ export default function Home() {
             {/* Form Panel */}
             <div>
               <div style={{
-                position: 'sticky',
+                position: !isMobile ? 'sticky' : 'relative',
                 top: '100px',
               }}>
                 <h2 style={{
@@ -389,7 +421,7 @@ export default function Home() {
         <section id="api" style={{
           background: '#000',
           color: '#fff',
-          padding: '120px 48px',
+          padding: !isMobile ? '120px 24px' : '60px 24px',
         }}>
           <div style={{
             maxWidth: '1400px',
@@ -397,13 +429,13 @@ export default function Home() {
           }}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 2fr',
-              gap: '80px',
+              gridTemplateColumns: !isMobile ? '1fr 2fr' : '1fr',
+              gap: !isMobile ? '80px' : '40px',
             }}>
               <div>
                 <h2 style={{
                   fontFamily: '"Instrument Serif", serif',
-                  fontSize: '48px',
+                  fontSize: !isMobile ? '48px' : '36px',
                   fontWeight: 400,
                   lineHeight: 1.1,
                   margin: 0,
@@ -418,15 +450,16 @@ export default function Home() {
                   lineHeight: 1.7,
                 }}>
                   Simple GET request with URL parameters.
-                  Returns a PNG image optimized for social sharing.
+                  Returns a PNG image (1200×630px) with Zpix pixel font, frosted glass effects, and full CJK character support.
                 </p>
                 <div style={{
                   marginTop: '32px',
                   padding: '16px',
                   border: '1px solid #333',
                   fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '12px',
+                  fontSize: !isMobile ? '12px' : '10px',
                   color: '#999',
+                  wordBreak: 'break-all',
                 }}>
                   GET /api/og?title=...&site=...
                 </div>
@@ -434,7 +467,7 @@ export default function Home() {
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: !isMobile ? 'repeat(2, 1fr)' : '1fr',
                 gap: '1px',
                 background: '#333',
               }}>
@@ -447,39 +480,85 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Note */}
+            {/* Notes */}
             <div style={{
               marginTop: '80px',
-              padding: '24px 32px',
-              border: '1px solid #333',
-              display: 'flex',
-              alignItems: 'flex-start',
+              display: 'grid',
               gap: '16px',
             }}>
-              <span style={{
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '11px',
-                color: '#666',
-                flexShrink: 0,
+              {/* Demo Notice */}
+              <div style={{
+                padding: '24px 32px',
+                border: '1px solid #333',
+                background: 'rgba(102, 126, 234, 0.05)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '16px',
               }}>
-                NOTE
-              </span>
-              <p style={{
-                margin: 0,
-                fontSize: '14px',
-                color: '#999',
-                lineHeight: 1.7,
+                <span style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: '11px',
+                  color: '#667eea',
+                  flexShrink: 0,
+                  fontWeight: 500,
+                }}>
+                  DEMO
+                </span>
+                <p style={{
+                  margin: 0,
+                  fontSize: '14px',
+                  color: '#999',
+                  lineHeight: 1.7,
+                }}>
+                  This is a demo site for demonstration purposes only. For production use, please{' '}
+                  <a
+                    href="https://github.com/bunizao/ogis#deployment"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#667eea',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    deploy your own instance
+                  </a>
+                  .
+                </p>
+              </div>
+
+              {/* Technical Note */}
+              <div style={{
+                padding: '24px 32px',
+                border: '1px solid #333',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '16px',
               }}>
-                WebP, AVIF, and SVG formats are not supported due to Edge Runtime constraints.
-                Use PNG, JPG, JPEG, or GIF for background images.
-              </p>
+                <span style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: '11px',
+                  color: '#666',
+                  flexShrink: 0,
+                }}>
+                  NOTE
+                </span>
+                <p style={{
+                  margin: 0,
+                  fontSize: '14px',
+                  color: '#999',
+                  lineHeight: 1.7,
+                }}>
+                  WebP, AVIF, and SVG formats are not supported due to Edge Runtime constraints.
+                  Use PNG, JPG, JPEG, or GIF for background images.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Footer */}
         <footer style={{
-          padding: '48px',
+          padding: '32px 24px',
           borderTop: '1px solid #eee',
         }}>
           <div style={{
@@ -488,20 +567,54 @@ export default function Home() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
           }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              flexWrap: 'wrap',
+            }}>
+              <span style={{
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: '11px',
+                color: '#999',
+              }}>
+                Built with Next.js 14 · @vercel/og
+              </span>
+              <span style={{ color: '#ddd' }}>·</span>
+              <a
+                href="https://github.com/bunizao/ogis"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: '11px',
+                  color: '#666',
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#000'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#666'}
+              >
+                GitHub
+              </a>
+              <span style={{ color: '#ddd' }}>·</span>
+              <span style={{
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: '11px',
+                color: '#999',
+              }}>
+                MIT License
+              </span>
+            </div>
             <span style={{
               fontFamily: '"JetBrains Mono", monospace',
-              fontSize: '12px',
+              fontSize: '11px',
               color: '#999',
             }}>
-              Built with Next.js Edge Runtime
-            </span>
-            <span style={{
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: '12px',
-              color: '#999',
-            }}>
-              @vercel/og
+              © 2026 bunizao
             </span>
           </div>
         </footer>
