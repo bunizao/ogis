@@ -159,17 +159,17 @@ export async function GET(request: NextRequest) {
           }}
         />
 
-        {/* Subtle frosted glass overlay - covers lower portion */}
+        {/* Enhanced frosted glass overlay - covers lower portion */}
         <div
           style={{
             position: 'absolute',
             left: 0,
             right: 0,
             bottom: 0,
-            height: '380px',
+            height: '420px',
             display: 'flex',
-            background: 'linear-gradient(to top, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 50%, transparent 100%)',
-            backdropFilter: 'blur(6px)',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.15) 70%, transparent 100%)',
+            backdropFilter: 'blur(16px)',
           }}
         />
 
