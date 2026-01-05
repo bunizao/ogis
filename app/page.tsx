@@ -7,8 +7,8 @@ export default function Home() {
   const [site, setSite] = useState('buxx.me');
   const [excerpt, setExcerpt] = useState('从東京的早樱到南洋的暴雨，2025 见证了一场接一场的重构。');
   const [author, setAuthor] = useState('Murray');
-  const [date, setDate] = useState('2026-12-31');
-  const [image, setImage] = useState('https://images.unsplash.com/photo-1542887800-faca0261c9e1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=960');
+  const [date, setDate] = useState('2025-12-31');
+  const [image, setImage] = useState('');
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
 

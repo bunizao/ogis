@@ -31,6 +31,9 @@ function sanitizeText(text: string): string {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
+  // Get the base URL for fetching default background
+  const baseUrl = new URL(request.url).origin;
+
   // Required parameters
   const rawTitle = searchParams.get('title') || 'Untitled';
   const rawSite = searchParams.get('site') || 'Blog';
@@ -103,8 +106,9 @@ export async function GET(request: NextRequest) {
     return '';
   }
 
-  // Pre-fetch background image
-  const backgroundImageSrc = await fetchImageAsBase64(validImage);
+  // Pre-fetch background image (user-provided or default starry sky)
+  const imageToFetch = validImage || `${baseUrl}/default-bg.jpg`;
+  const backgroundImageSrc = await fetchImageAsBase64(imageToFetch);
 
   // Sanitize text inputs
   const title = sanitizeText(rawTitle);
@@ -129,9 +133,6 @@ export async function GET(request: NextRequest) {
     fonts.push({ name: 'Zpix', data: zpixFont, style: 'normal', weight: 400 });
   }
 
-  // Elegant gradient background when no image
-  const defaultBg = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
-
   return new ImageResponse(
     (
       <div
@@ -144,33 +145,19 @@ export async function GET(request: NextRequest) {
           background: '#0a0a0a',
         }}
       >
-        {/* Background image - full cover */}
-        {backgroundImageSrc ? (
-          <img
-            src={backgroundImageSrc}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              background: defaultBg,
-            }}
-          />
-        )}
+        {/* Background image - full cover (always present: user image or default starry sky) */}
+        <img
+          src={backgroundImageSrc}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+          }}
+        />
 
         {/* Subtle frosted glass overlay - covers lower portion */}
         <div
@@ -195,7 +182,7 @@ export async function GET(request: NextRequest) {
             right: '64px',
             display: 'flex',
             flexDirection: 'column',
-            zIndex: 10,
+            zIndex: 2,
           }}
         >
           {/* Site name - top of content block */}
