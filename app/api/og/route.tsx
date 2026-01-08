@@ -32,7 +32,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
   // Get the base URL for fetching default background
-  const baseUrl = new URL(request.url).origin;
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const forwardedHost =
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+
+  const origin =
+    forwardedHost
+      ? `${forwardedProto ?? 'https'}://${forwardedHost}`
+      : new URL(request.url).origin;
 
   // Required parameters
   const rawTitle = searchParams.get('title') || 'Untitled';
@@ -107,7 +114,8 @@ export async function GET(request: NextRequest) {
   }
 
   // Pre-fetch background image (user-provided or default starry sky)
-  const imageToFetch = validImage || `${baseUrl}/default-bg.jpg`;
+  const imageToFetch = validImage || `${origin}/default-bg.jpg`;
+  
   const backgroundImageSrc = await fetchImageAsBase64(imageToFetch);
 
   // Sanitize text inputs
