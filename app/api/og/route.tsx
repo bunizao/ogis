@@ -33,6 +33,23 @@ export async function GET(request: NextRequest) {
 
   // Get the base URL for fetching default background
   const baseUrl = new URL(request.url).origin;
+  const baseHost = new URL(baseUrl).hostname.toLowerCase();
+  const allowedImageHosts = new Set<string>([baseHost, 'images.unsplash.com']);
+  const extraAllowedHosts = (process.env.OG_ALLOWED_IMAGE_HOSTS ?? '')
+    .split(',')
+    .map(host => host.trim().toLowerCase())
+    .filter(Boolean);
+  for (const host of extraAllowedHosts) {
+    if (host.includes('://')) {
+      try {
+        allowedImageHosts.add(new URL(host).hostname.toLowerCase());
+      } catch {
+        continue;
+      }
+    } else {
+      allowedImageHosts.add(host);
+    }
+  }
 
   // Required parameters
   const rawTitle = searchParams.get('title') || 'Untitled';
@@ -69,16 +86,17 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Validate image URLs
-  const isValidUrl = (url: string) => {
-    if (!url) return false;
+  // Validate and restrict image URLs to known hosts
+  const parseAllowedImageUrl = (url: string) => {
+    if (!url) return null;
+    if (url.endsWith('…') || url.endsWith('...') || url.length < 20) return null;
     try {
       const parsed = new URL(url);
-      if (!['http:', 'https:'].includes(parsed.protocol)) return false;
-      if (url.endsWith('…') || url.endsWith('...') || url.length < 20) return false;
-      return true;
+      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      if (!allowedImageHosts.has(parsed.hostname.toLowerCase())) return null;
+      return parsed;
     } catch {
-      return false;
+      return null;
     }
   };
 
@@ -95,13 +113,18 @@ export async function GET(request: NextRequest) {
     return hasExtension || !lowerUrl.match(/\.(webp|avif|svg|bmp|tiff?)(\?|$)/i);
   };
 
-  const validImage = isValidUrl(image) && isSupportedImageFormat(image) ? image : '';
+  const allowedImageUrl = parseAllowedImageUrl(image);
+  const validImage =
+    allowedImageUrl && isSupportedImageFormat(allowedImageUrl.toString()) ? allowedImageUrl.toString() : '';
 
   // Helper function to fetch image and convert to base64
   async function fetchImageAsBase64(url: string): Promise<string> {
-    if (!url) return '';
+    const parsedUrl = parseAllowedImageUrl(url);
+    if (!parsedUrl) return '';
+    const safeUrl = parsedUrl.toString();
+    if (!isSupportedImageFormat(safeUrl)) return '';
     try {
-      const response = await fetch(url, {
+      const response = await fetch(safeUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OGImageBot/1.0)' },
       });
       if (response.ok) {
