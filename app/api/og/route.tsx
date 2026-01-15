@@ -44,8 +44,18 @@ export async function GET(request: NextRequest) {
   const rawExcerpt = searchParams.get('excerpt') || '';
   let image = searchParams.get('image') || '';
 
+  const isUnsplashImage = (url: string) => {
+    if (!url) return false;
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname === 'images.unsplash.com';
+    } catch {
+      return false;
+    }
+  };
+
   // Fix truncated Unsplash URLs
-  if (image.includes('images.unsplash.com')) {
+  if (isUnsplashImage(image)) {
     const unsplashParams: string[] = [];
     const knownUnsplashParams = ['crop', 'cs', 'fit', 'fm', 'ixid', 'ixlib', 'q', 'w', 'h'];
     for (const param of knownUnsplashParams) {
