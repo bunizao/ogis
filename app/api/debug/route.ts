@@ -7,8 +7,18 @@ export async function GET(request: NextRequest) {
 
   let image = searchParams.get('image') || '';
 
+  const isUnsplashImage = (url: string) => {
+    if (!url) return false;
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname === 'images.unsplash.com';
+    } catch {
+      return false;
+    }
+  };
+
   // Reconstruct Unsplash URL
-  if (image.includes('images.unsplash.com')) {
+  if (isUnsplashImage(image)) {
     const unsplashParams: string[] = [];
     const knownUnsplashParams = ['crop', 'cs', 'fit', 'fm', 'ixid', 'ixlib', 'q', 'w', 'h'];
 
