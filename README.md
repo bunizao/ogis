@@ -148,7 +148,7 @@ For other frameworks and platforms, set `og:image` meta tags to the generated UR
 
 - **Supported Image Formats**: PNG, JPG, JPEG, GIF
 - **Unsupported Formats**: WebP, AVIF, SVG (limitation of @vercel/og)
-- **Image Pre-fetching**: All images converted to base64 for reliable rendering
+- **Image Loading**: Remote images are fetched by @vercel/og at render time
 
 ## Customization
 

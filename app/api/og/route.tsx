@@ -266,47 +266,8 @@ export async function GET(request: NextRequest) {
   const validImageUrl =
     allowedImageUrl && isSupportedImageFormat(allowedImageUrl.toString()) ? allowedImageUrl : null;
 
-  // Helper function to fetch image and convert to base64
-  async function fetchImageAsBase64(url: URL | null): Promise<string> {
-    if (!url) return '';
-    if (!isSupportedImageFormat(url.toString())) return '';
-    let currentUrl = url;
-
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        const response = await fetch(currentUrl.toString(), {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OGImageBot/1.0)' },
-          redirect: 'manual',
-        });
-        if (response.status >= 300 && response.status < 400) {
-          const location = response.headers.get('location');
-          if (!location) return '';
-          const nextUrl = await parsePublicImageUrl(new URL(location, currentUrl).toString());
-          if (!nextUrl || !isSupportedImageFormat(nextUrl.toString())) return '';
-          currentUrl = nextUrl;
-          continue;
-        }
-        if (response.ok) {
-          const contentType = response.headers.get('content-type') || 'image/jpeg';
-          const arrayBuffer = await response.arrayBuffer();
-          const base64 = Buffer.from(arrayBuffer).toString('base64');
-          return `data:${contentType};base64,${base64}`;
-        }
-        return '';
-      } catch (e) {
-        console.error('Failed to fetch image:', currentUrl.toString(), e);
-        return '';
-      }
-    }
-    return '';
-  }
-
-  // Pre-fetch background image (user-provided or default starry sky)
-  const defaultBackgroundUrl = validImageUrl
-    ? null
-    : await parsePublicImageUrl(new URL('/default-bg.jpg', baseUrl).toString());
-  const imageToFetch = validImageUrl ?? defaultBackgroundUrl;
-  const backgroundImageSrc = await fetchImageAsBase64(imageToFetch);
+  // Background image (user-provided or default starry sky)
+  const backgroundImageSrc = validImageUrl?.toString() ?? new URL('/default-bg.jpg', baseUrl).toString();
 
   // Sanitize text inputs
   const title = sanitizeText(rawTitle);
