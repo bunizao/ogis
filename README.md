@@ -15,7 +15,7 @@ Dynamic Open Graph (OG) image generation service for blogs and websites. Built w
 
 - **Beautiful Default Background** - Stunning starry sky image when no background is provided
 - **Custom Background Support** - Use your own images (PNG, JPG, JPEG, GIF)
-- **Pixel Font Aesthetic** - Zpix pixel font for retro, distinctive look
+- **Switchable Pixel Fonts** - Zpix + Geist Pixel variants (all localized in `public/fonts`)
 - **Frosted Glass Effect** - Enhanced readability with backdrop blur overlay
 - **Responsive Typography** - Dynamic font sizing based on title length
 - **Edge Runtime** - Fast generation with global CDN caching
@@ -60,6 +60,8 @@ GET /api/og
 | `author` | string | No | Author name | `John Doe` |
 | `date` | string | No | Publication date | `2025-01-05` |
 | `image` | string | No | Background image URL | `https://...` |
+| `theme` | string | No | Visual theme: `pixel` (default) or `modern` | `modern` |
+| `pixelFont` | string | No | Pixel font (only for `theme=pixel`) | `geist-square` |
 
 ### Example Request
 
@@ -71,6 +73,12 @@ https://og.tutuis.me/api/og?title=Getting%20Started&site=Tech%20Blog&author=Jane
 
 ```
 https://og.tutuis.me/api/og?title=My%20Article&site=Blog&image=https://images.unsplash.com/photo-123456
+```
+
+### With Geist Pixel Font
+
+```
+https://og.tutuis.me/api/og?title=Pixel%20Type&site=Blog&theme=pixel&pixelFont=geist-square
 ```
 
 ## Integration Guide
@@ -134,7 +142,7 @@ For other frameworks and platforms, set `og:image` meta tags to the generated UR
 ## Design Details
 
 - **Image Size**: 1200×630px
-- **Font**: Zpix pixel font
+- **Font**: Zpix + Geist Pixel (`geist-square`, `geist-circle`, `geist-line`, `geist-triangle`, `geist-grid`)
 
 ## Technical Stack
 
@@ -167,7 +175,7 @@ backdropFilter: 'blur(16px)',
 
 ### Change Font
 
-Replace the Zpix font URL in `loadZpixFont()` function with your preferred TTF/OTF font.
+Edit `app/lib/pixel-fonts.ts` to add/remove local font options, then place corresponding TTF files under `public/fonts`.
 
 ## License
 
@@ -177,3 +185,4 @@ MIT
 
 - Default background: [Cluster of Stars](https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c) by [Paul Lichtblau](https://unsplash.com/@paullichtblau) on Unsplash
 - Zpix pixel font by [SolidZORO](https://github.com/SolidZORO/zpix-pixel-font)
+- Geist Pixel by [Vercel](https://vercel.com/font)
