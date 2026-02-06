@@ -1,21 +1,43 @@
-import type { ThemeProps, ThemeFont, ThemeDefinition } from './types';
+import { getPixelFontOption } from '@/app/lib/pixel-fonts';
+import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
-async function loadFonts(): Promise<ThemeFont[]> {
-  try {
-    const fontUrl = 'https://cdn.jsdelivr.net/gh/SolidZORO/zpix-pixel-font@v3.1.10/dist/zpix.ttf';
-    const response = await fetch(fontUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    if (!response.ok) return [];
-    const data = await response.arrayBuffer();
-    return [{ name: 'Zpix', data, style: 'normal', weight: 400 }];
-  } catch {
-    return [];
+const fontDataCache = new Map<string, Promise<ArrayBuffer | null>>();
+
+async function fetchFontData(url: string): Promise<ArrayBuffer | null> {
+  let pending = fontDataCache.get(url);
+  if (!pending) {
+    pending = (async () => {
+      try {
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+        });
+        if (!response.ok) return null;
+        return await response.arrayBuffer();
+      } catch {
+        return null;
+      }
+    })();
+    fontDataCache.set(url, pending);
   }
+
+  const data = await pending;
+  if (!data) {
+    fontDataCache.delete(url);
+  }
+  return data;
 }
 
-function render(props: ThemeProps): React.ReactElement {
+async function loadFonts(context: ThemeContext): Promise<ThemeFont[]> {
+  const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
+  const fontUrl = new URL(selectedFont.filePath, context.baseUrl).toString();
+  const data = await fetchFontData(fontUrl);
+  if (!data) return [];
+  return [{ name: selectedFont.fontName, data, style: 'normal', weight: 400 }];
+}
+
+function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
   const { title, site, excerpt, author, date, backgroundImageSrc } = props;
+  const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
 
   const displayTitle = title.length > 60 ? title.slice(0, 57) + '...' : title;
   const displayExcerpt = excerpt.length > 80 ? excerpt.slice(0, 77) + '...' : excerpt;
@@ -28,7 +50,7 @@ function render(props: ThemeProps): React.ReactElement {
         height: '100%',
         display: 'flex',
         position: 'relative',
-        fontFamily: '"Zpix", sans-serif',
+        fontFamily: `"${selectedFont.fontName}", "Noto Sans", sans-serif`,
         background: '#0a0a0a',
       }}
     >

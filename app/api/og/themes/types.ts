@@ -7,6 +7,11 @@ export interface ThemeProps {
   backgroundImageSrc: string;
 }
 
+export interface ThemeContext {
+  baseUrl: string;
+  searchParams: URLSearchParams;
+}
+
 export interface ThemeFont {
   name: string;
   data: ArrayBuffer;
@@ -15,7 +20,7 @@ export interface ThemeFont {
 }
 
 export interface ThemeDefinition {
-  loadFonts: () => Promise<ThemeFont[]>;
-  render: (props: ThemeProps) => React.ReactElement;
+  loadFonts: (context: ThemeContext) => Promise<ThemeFont[]>;
+  render: (props: ThemeProps, context: ThemeContext) => React.ReactElement;
   fontFamily: string;
 }
