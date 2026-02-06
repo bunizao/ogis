@@ -9,6 +9,7 @@ export default function Home() {
   const [author, setAuthor] = useState('bunizao');
   const [date, setDate] = useState('2026-01-05');
   const [image, setImage] = useState('');
+  const [theme, setTheme] = useState<'pixel' | 'modern'>('pixel');
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -34,6 +35,7 @@ export default function Home() {
     if (author) params.set('author', author);
     if (date) params.set('date', date);
     if (image) params.set('image', image);
+    if (theme !== 'pixel') params.set('theme', theme);
     return `/api/og?${params.toString()}`;
   };
 
@@ -45,6 +47,7 @@ export default function Home() {
     if (author) params.set('author', author);
     if (date) params.set('date', date);
     if (image) params.set('image', image);
+    if (theme !== 'pixel') params.set('theme', theme);
     params.set('t', Date.now().toString());
     return `/api/og?${params.toString()}`;
   };
@@ -293,8 +296,8 @@ export default function Home() {
                 margin: 0,
                 maxWidth: '400px',
               }}>
-                A dynamic Open Graph image generation service with Zpix pixel font and frosted glass effects.
-                Built on Next.js 14 and Vercel Edge Runtime for fast, globally distributed generation.
+                A dynamic Open Graph image generation service with multiple visual themes.
+                Built on Next.js and Vercel Edge Runtime for fast, globally distributed generation.
               </p>
               <div style={{
                 marginTop: '24px',
@@ -357,6 +360,38 @@ export default function Home() {
                 }}>
                   Parameters
                 </h2>
+
+                {/* Theme toggle */}
+                <div style={{
+                  display: 'flex',
+                  gap: '0',
+                  marginBottom: '32px',
+                  border: '1px solid var(--border-tertiary)',
+                }}>
+                  {(['pixel', 'modern'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTheme(t)}
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        color: theme === t ? 'var(--bg-primary)' : 'var(--text-muted)',
+                        background: theme === t ? 'var(--text-primary)' : 'transparent',
+                        border: 'none',
+                        borderRight: t === 'pixel' ? '1px solid var(--border-tertiary)' : 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                   <InputField label="Title" value={title} onChange={setTitle} required onKeyPress={handleKeyPress} />
@@ -430,8 +465,20 @@ export default function Home() {
                 textTransform: 'uppercase',
                 color: 'var(--text-muted)',
                 marginBottom: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
               }}>
                 Preview
+                <span style={{
+                  fontSize: '10px',
+                  color: 'var(--text-muted)',
+                  padding: '3px 8px',
+                  border: '1px solid var(--border-tertiary)',
+                  fontWeight: 400,
+                }}>
+                  {theme}
+                </span>
               </h2>
 
               <div style={{
@@ -572,7 +619,7 @@ export default function Home() {
                   lineHeight: 1.7,
                 }}>
                   Simple GET request with URL parameters.
-                  Returns a PNG image (1200×630px) with Zpix pixel font, frosted glass effects, and full CJK character support.
+                  Returns a PNG image (1200x630px) with customizable visual themes and full CJK character support.
                 </p>
                 <div style={{
                   marginTop: '32px',
@@ -599,6 +646,7 @@ export default function Home() {
                 <ParamCard name="author" type="string" description="Author name" />
                 <ParamCard name="date" type="string" description="Publication date" />
                 <ParamCard name="image" type="url" description="Background image (PNG/JPG/GIF)" />
+                <ParamCard name="theme" type="string" description="Visual theme: pixel (default) or modern" />
               </div>
             </div>
 
