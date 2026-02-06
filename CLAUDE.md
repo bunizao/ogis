@@ -10,16 +10,16 @@ This is a Next.js-based Open Graph (OG) image generation service designed for th
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Start development server (http://localhost:3000)
-npm run dev
+bun run dev
 
 # Build for production
-npm run build
+bun run build
 
 # Start production server
-npm start
+bun run start
 ```
 
 ## Architecture

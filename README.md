@@ -1,11 +1,11 @@
 # OGIS - OG Image Service
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black)](https://vercel.com)
 
-Dynamic Open Graph (OG) image generation service for blogs and websites. Built with Next.js 14 and deployed on Vercel Edge Runtime for fast, globally distributed image generation.
+Dynamic Open Graph (OG) image generation service for blogs and websites. Built with Next.js 16 and deployed on Vercel Edge Runtime for fast, globally distributed image generation.
 
 **Demo**: https://og.tutuis.me
 
@@ -23,7 +23,7 @@ Dynamic Open Graph (OG) image generation service for blogs and websites. Built w
 
 ## Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bunizao/og-service)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bunizao/ogis)
 
 
 
@@ -31,13 +31,13 @@ Dynamic Open Graph (OG) image generation service for blogs and websites. Built w
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Start development server
-npm run dev
+bun run dev
 
 # Build for production
-npm run build
+bun run build
 ```
 
 Visit http://localhost:3000/api/og?title=Hello&site=Blog to test.
@@ -138,7 +138,7 @@ For other frameworks and platforms, set `og:image` meta tags to the generated UR
 
 ## Technical Stack
 
-- **Framework**: Next.js 14 with App Router
+- **Framework**: Next.js 16 with App Router
 - **Runtime**: Vercel Edge Runtime
 - **Image Generation**: @vercel/og (Satori)
 - **Language**: TypeScript

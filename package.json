@@ -1,7 +1,8 @@
 {
-  "name": "attegi-og-image",
+  "name": "ogis",
   "version": "1.0.0",
-  "description": "Dynamic OG image generation service for Attegi Ghost theme",
+  "description": "A dynamic Open Graph image generation service with custom themes.",
+  "packageManager": "bun@1.3.6",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
