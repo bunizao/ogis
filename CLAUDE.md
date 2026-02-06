@@ -4,113 +4,60 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js-based Open Graph (OG) image generation service designed for the Attegi Ghost theme. It dynamically generates social media preview images (1200x630px) with customizable backgrounds, themes, and metadata.
+Next.js-based Open Graph image generation service for the Attegi Ghost theme. Generates 1200x630px social media preview images with Zpix pixel font, frosted glass effects, and customizable backgrounds. Deployed on Vercel Edge Runtime.
 
 ## Development Commands
 
 ```bash
-# Install dependencies
-bun install
-
-# Start development server (http://localhost:3000)
-bun run dev
-
-# Build for production
-bun run build
-
-# Start production server
-bun run start
+bun install          # Install dependencies (bun is the configured package manager)
+bun run dev          # Start dev server at http://localhost:3000
+bun run build        # Production build
+bun run start        # Start production server
 ```
+
+No test suite or linter is configured.
+
+**Test URL**: `http://localhost:3000/api/og?title=Hello&site=Blog`
 
 ## Architecture
 
-### Core Technology Stack
-- **Next.js 14** with App Router
-- **Edge Runtime** for fast, globally distributed image generation
-- **@vercel/og** (Satori) for React-based image rendering
-- **TypeScript** with strict mode enabled
+**Runtime**: Next.js 16, App Router, Edge Runtime (`export const runtime = 'edge'`), @vercel/og (Satori), TypeScript strict mode.
 
 ### Key Files
-- `app/api/og/route.tsx` - Main OG image generation endpoint (Edge function)
-- `app/api/debug/route.ts` - Debug endpoint for testing
-- `next.config.js` - Next.js configuration (minimal)
-- `tsconfig.json` - TypeScript configuration with path aliases (`@/*`)
+
+- `app/api/og/route.tsx` — Main OG image endpoint (Edge function, ~420 lines). Contains SSRF protection, URL validation, text sanitization, and Satori JSX rendering.
+- `app/api/debug/route.ts` — Debug endpoint returning JSON diagnostics for URL reconstruction/validation.
+- `app/page.tsx` — Interactive landing page with live preview form, dark/light mode support, and API reference section.
+- `app/layout.tsx` — Root layout with metadata and OpenGraph tags.
+- `public/default-bg.jpg` — Default starry sky background when no image URL is provided.
 
 ### Image Generation Flow
 
-1. **Request Handling**: GET request to `/api/og` with URL parameters
-2. **Font Loading**: Fetch Zpix pixel font (TTF format) from jsdelivr CDN
-3. **Image Pre-fetching**: Background and icon images are fetched and converted to base64 data URIs to ensure reliable rendering
-4. **Text Sanitization**: Special characters (em dashes, smart quotes, etc.) are normalized
-5. **Dynamic Rendering**: React JSX is rendered to PNG using Satori with responsive font sizing
-6. **Caching**: CDN-friendly cache headers (24h s-maxage, 7d stale-while-revalidate)
+1. **GET `/api/og`** receives URL parameters (`title`, `site`, `excerpt`, `author`, `date`, `image`)
+2. **SSRF validation** — Image URLs go through `parsePublicImageUrl()`: protocol check, hostname blocking, DNS resolution via Google DNS (`dns.google/resolve`), IPv4/IPv6 public IP validation
+3. **Unsplash URL reconstruction** — Truncated Unsplash query params are recovered from the top-level search params
+4. **Format filtering** — Only PNG/JPG/JPEG/GIF allowed; WebP/AVIF/SVG rejected (Satori limitation)
+5. **Font loading** — Zpix TTF fetched from jsdelivr CDN (must be TTF/OTF, not woff2)
+6. **Text sanitization** — Em dashes, smart quotes, Unicode whitespace normalized
+7. **Satori rendering** — React JSX rendered to PNG with responsive font sizing (88px short titles, 72px medium, 56px long 40+ chars)
+8. **Caching** — `s-maxage=86400, stale-while-revalidate=604800`
 
-### API Parameters
+### SSRF Protection Layer
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `title` | string | Yes | Article title (truncated at 60 chars) |
-| `site` | string | Yes | Site name for branding |
-| `excerpt` | string | No | Article excerpt/subtitle (truncated at 80 chars) |
-| `author` | string | No | Author name |
-| `date` | string | No | Publication date |
-| `image` | string | No | Background image URL (must be PNG/JPG/JPEG/GIF) |
+The largest portion of `route.tsx` (~lines 31–208) implements defense against Server-Side Request Forgery:
 
-**Note**: WebP, AVIF, and SVG formats are NOT supported by @vercel/og and will be filtered out.
-
-### Font System
-
-The service uses **Zpix** pixel font for a retro pixel aesthetic:
-- **Zpix** - A pixel-style font supporting Latin, Chinese, Japanese, and Korean characters
-- Font is loaded from jsdelivr CDN (`cdn.jsdelivr.net/gh/SolidZORO/zpix-pixel-font`)
-
-**Important**: @vercel/og only supports TTF/OTF formats, NOT woff2. The font family stack is: `"Zpix", sans-serif`
-
-### Image Handling
-
-**Critical Implementation Detail**: All external images (background and icon) MUST be pre-fetched and converted to base64 data URIs before rendering. Direct URL references in the JSX will fail in production due to Edge runtime restrictions.
-
-The `fetchImageAsBase64()` function:
-- Fetches images with a custom User-Agent
-- Converts to base64 data URIs
-- Handles errors gracefully (returns empty string)
-- Runs in parallel with font loading for performance
-
-### URL Validation
-
-The service includes special handling for:
-- **Unsplash URLs**: Reconstructs truncated query parameters from URL search params
-- **Format validation**: Checks for supported image formats (PNG, JPG, JPEG, GIF)
-- **Protocol validation**: Only allows http/https protocols
-- **Truncation detection**: Rejects URLs ending with `…` or `...`
+- **DNS resolution** via `dns.google/resolve` API with 2s timeout and 10-minute cache (`dnsCache` Map)
+- **IPv4 validation** — Blocks RFC 1918, loopback, link-local, and all non-routable ranges
+- **IPv6 validation** — Blocks `::1`, ULA (`fc00::/7`), link-local (`fe80::/10`), multicast, documentation ranges, and IPv4-mapped addresses (delegates to IPv4 check)
+- **Hostname blocking** — Rejects `localhost`, `.localhost`, `.local`
+- **URL sanitization** — Rejects non-http(s) protocols, URLs with credentials, non-standard ports, truncated URLs (`…`/`...`), and URLs shorter than 20 chars
 
 ### Design System
 
-The OG card uses a minimalist "subtle frosted glass" aesthetic inspired by modern design:
-- **Background**: Full-cover image without heavy overlays
-- **Frosted glass**: Very subtle `backdrop-filter: blur(8px)` with near-transparent white gradient at bottom
-- **Typography**: Pixel-style font (Zpix) for retro aesthetic, sizes 48-64px based on title length
-- **Layout**: Bottom-aligned content with site branding (small square icon + name), large title, and optional metadata
-- **Responsive sizing**: Title font size adjusts based on character count (48px for long, 64px for short)
+- **Frosted glass**: Bottom gradient overlay with `backdrop-filter: blur(16px)`
+- **Layout**: Bottom-aligned content — site name, title (responsive sizing), optional excerpt, author/date metadata
+- **Font**: Zpix pixel font (single font covers Latin + CJK characters)
 
 ### Edge Runtime Constraints
 
-This service runs on Vercel's Edge Runtime, which has limitations:
-- No Node.js APIs (fs, path, etc.)
-- No native modules
-- Limited to Web APIs and Edge-compatible packages
-- All external resources must be fetched at runtime
-
-## Deployment
-
-Designed for Vercel deployment with automatic Edge function detection. The `export const runtime = 'edge'` declaration in `route.tsx` enables Edge Runtime.
-
-## Cache Strategy
-
-```
-Cache-Control: public, max-age=0, s-maxage=86400, stale-while-revalidate=604800
-```
-
-- Browser: No cache (max-age=0)
-- CDN: 24 hours (s-maxage=86400)
-- Stale content: Serve for 7 days while revalidating (stale-while-revalidate=604800)
+No Node.js APIs (fs, path, etc.), no native modules. All external resources (fonts, images) must be fetched at runtime via `fetch()`. Images are passed as URLs directly to `<img src>` in the JSX — Satori/`@vercel/og` handles fetching them during rendering.
