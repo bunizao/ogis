@@ -205,11 +205,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
   const baseUrl = new URL(request.url).origin;
+  const themeContext = { searchParams, baseUrl };
 
   // Theme selection
   const themeName = searchParams.get('theme') || 'pixel';
   const themeDefinition = themes[themeName] ?? themes.pixel;
-  const fontPromise = themeDefinition.loadFonts();
+  const fontPromise = themeDefinition.loadFonts(themeContext);
 
   // Required parameters
   const rawTitle = searchParams.get('title') || 'Untitled';
@@ -274,7 +275,7 @@ export async function GET(request: NextRequest) {
   const fonts = await fontPromise;
 
   return new ImageResponse(
-    themeDefinition.render({ title, site, excerpt, author, date, backgroundImageSrc }),
+    themeDefinition.render({ title, site, excerpt, author, date, backgroundImageSrc }, themeContext),
     {
       width: 1200,
       height: 630,

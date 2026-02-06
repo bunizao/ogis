@@ -1,33 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  DEFAULT_PIXEL_FONT,
+  PIXEL_FONT_OPTIONS,
+  type PixelFontKey,
+} from '@/app/lib/pixel-fonts';
 
 export default function Home() {
   const [title, setTitle] = useState('Interstellar');
   const [site, setSite] = useState('buxx.me');
-  const [excerpt, setExcerpt] = useState('Do not go gentle into that good night.');
+  const [excerpt, setExcerpt] = useState(
+    'Do not go gentle into that good night.',
+  );
   const [author, setAuthor] = useState('bunizao');
   const [date, setDate] = useState('2026-01-05');
   const [image, setImage] = useState('');
   const [theme, setTheme] = useState<'pixel' | 'modern'>('pixel');
-  const [mounted, setMounted] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState('/preview.png'); // Use static preview by default
+  const [pixelFont, setPixelFont] = useState<PixelFontKey>(DEFAULT_PIXEL_FONT);
+  const [previewUrl, setPreviewUrl] = useState('/preview.png');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [isMac, setIsMac] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    // Check if mobile on mount
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const titleRef = useRef<HTMLInputElement>(null);
 
-  const generateUrl = () => {
+  const buildParams = (withTimestamp = false) => {
     const params = new URLSearchParams();
     if (title) params.set('title', title);
     if (site) params.set('site', site);
@@ -36,20 +35,18 @@ export default function Home() {
     if (date) params.set('date', date);
     if (image) params.set('image', image);
     if (theme !== 'pixel') params.set('theme', theme);
-    return `/api/og?${params.toString()}`;
+    if (theme === 'pixel' && pixelFont !== DEFAULT_PIXEL_FONT)
+      params.set('pixelFont', pixelFont);
+    if (withTimestamp) params.set('t', Date.now().toString());
+    return params;
   };
 
-  const generateUrlWithTimestamp = () => {
-    const params = new URLSearchParams();
-    if (title) params.set('title', title);
-    if (site) params.set('site', site);
-    if (excerpt) params.set('excerpt', excerpt);
-    if (author) params.set('author', author);
-    if (date) params.set('date', date);
-    if (image) params.set('image', image);
-    if (theme !== 'pixel') params.set('theme', theme);
-    params.set('t', Date.now().toString());
-    return `/api/og?${params.toString()}`;
+  const generateUrl = () => `/api/og?${buildParams().toString()}`;
+
+  const handleGenerate = () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    setPreviewUrl(`/api/og?${buildParams(true).toString()}`);
   };
 
   const copyUrl = async () => {
@@ -59,794 +56,454 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    setPreviewUrl(generateUrlWithTimestamp());
-    setTimeout(() => setIsGenerating(false), 1000);
-  };
+  // Stable refs for keyboard handler (avoids stale closures)
+  const handleGenerateRef = useRef(handleGenerate);
+  handleGenerateRef.current = handleGenerate;
+  const copyUrlRef = useRef(copyUrl);
+  copyUrlRef.current = copyUrl;
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isGenerating) {
-      handleGenerate();
-    }
-  };
+  const selectedPixelFont =
+    PIXEL_FONT_OPTIONS.find((o) => o.key === pixelFont) ??
+    PIXEL_FONT_OPTIONS[0];
+
+  // Detect platform
+  useEffect(() => {
+    setIsMac(navigator.platform?.toLowerCase().includes('mac') ?? false);
+  }, []);
+
+  // Keyboard shortcuts (stable — no deps needed)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      const inInput =
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.tagName === 'SELECT';
+
+      // Global: works even in inputs
+      if (mod && e.key === 'Enter') {
+        e.preventDefault();
+        handleGenerateRef.current();
+        return;
+      }
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copyUrlRef.current();
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowShortcuts(false);
+        (document.activeElement as HTMLElement)?.blur();
+        return;
+      }
+
+      // Only when not in an input
+      if (inInput) return;
+
+      switch (e.key) {
+        case '/':
+          e.preventDefault();
+          titleRef.current?.focus();
+          break;
+        case '?':
+          e.preventDefault();
+          setShowShortcuts((s) => !s);
+          break;
+        case '1':
+          setTheme('pixel');
+          break;
+        case '2':
+          setTheme('modern');
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const mod = isMac ? '⌘' : 'Ctrl+';
 
   return (
     <>
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&display=swap');
+      <div className="grain" aria-hidden="true" />
+      <div className="scan-line" aria-hidden="true" />
 
-        :root {
-          /* Light mode colors */
-          --bg-primary: #fff;
-          --bg-secondary: #fafafa;
-          --bg-nav: rgba(255, 255, 255, 0.9);
-          --bg-api: #000;
-          --text-primary: #000;
-          --text-secondary: #666;
-          --text-muted: #999;
-          --border-primary: #000;
-          --border-secondary: #eee;
-          --border-tertiary: #ddd;
-          --accent-color: #667eea;
-          --selection-bg: #000;
-          --selection-text: #fff;
-          --api-text-primary: #fff;
-          --api-text-secondary: #999;
-          --api-text-muted: #666;
-          --api-border: #333;
-          --api-card-bg: #000;
-        }
+      {copied && <Toast />}
+      {showShortcuts && (
+        <ShortcutsOverlay
+          isMac={isMac}
+          onClose={() => setShowShortcuts(false)}
+        />
+      )}
 
-        @media (prefers-color-scheme: dark) {
-          :root {
-            /* Dark mode colors */
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #141414;
-            --bg-nav: rgba(10, 10, 10, 0.9);
-            --bg-api: #141414;
-            --text-primary: #f5f5f5;
-            --text-secondary: #a0a0a0;
-            --text-muted: #707070;
-            --border-primary: #f5f5f5;
-            --border-secondary: #2a2a2a;
-            --border-tertiary: #3a3a3a;
-            --accent-color: #8b9cf4;
-            --selection-bg: #f5f5f5;
-            --selection-text: #0a0a0a;
-            --api-text-primary: #f5f5f5;
-            --api-text-secondary: #a0a0a0;
-            --api-text-muted: #707070;
-            --api-border: #3a3a3a;
-            --api-card-bg: #1a1a1a;
-          }
-        }
-
-        * {
-          box-sizing: border-box;
-        }
-
-        body {
-          margin: 0;
-          padding: 0;
-          background: var(--bg-primary);
-          color: var(--text-primary);
-          transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        ::selection {
-          background: var(--selection-bg);
-          color: var(--selection-text);
-        }
-
-        input::placeholder {
-          color: var(--text-muted);
-        }
-
-        input:focus {
-          outline: none;
-          border-color: var(--text-primary) !important;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-
-        /* Mobile responsive utilities */
-        @media (max-width: 768px) {
-          .desktop-only {
-            display: none !important;
-          }
-        }
-
-        @media (min-width: 769px) {
-          .mobile-only {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--bg-primary)',
-        color: 'var(--text-primary)',
-        fontFamily: '"Inter", -apple-system, sans-serif',
-        fontSize: '15px',
-        lineHeight: 1.6,
-        transition: 'background-color 0.3s ease, color 0.3s ease',
-      }}>
-        {/* Navigation */}
-        <nav style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          background: 'var(--bg-nav)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid var(--border-secondary)',
-          transition: 'background-color 0.3s ease, border-color 0.3s ease',
-        }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-            padding: '16px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-            <div style={{
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: '13px',
-              fontWeight: 500,
-              letterSpacing: '0.05em',
-            }}>
-              OGIS/
-            </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '20px',
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: '12px',
-            }}>
-              <a href="#preview" className="desktop-only" style={{ color: 'var(--text-secondary)', textDecoration: 'none', transition: 'color 0.2s' }}>Preview</a>
-              <a href="#api" className="desktop-only" style={{ color: 'var(--text-secondary)', textDecoration: 'none', transition: 'color 0.2s' }}>API</a>
-              <a
-                href="https://github.com/bunizao/ogis"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  color: 'var(--text-primary)',
-                  textDecoration: 'none',
-                  padding: '8px 16px',
-                  border: '1px solid var(--border-primary)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                GitHub →
-              </a>
-            </div>
+      {/* ── Navigation ── */}
+      <nav className="nav">
+        <div className="nav-inner">
+          <span className="nav-logo">OGIS/</span>
+          <div className="nav-links">
+            <a href="#preview" className="nav-link desktop-only">
+              Preview
+            </a>
+            <a href="#api" className="nav-link desktop-only">
+              API
+            </a>
+            <button
+              className="nav-shortcut-btn"
+              onClick={() => setShowShortcuts((s) => !s)}
+              aria-label="Show keyboard shortcuts"
+            >
+              ?
+            </button>
+            <a
+              href="https://github.com/bunizao/ogis"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nav-gh"
+            >
+              GitHub ↗
+            </a>
           </div>
-        </nav>
-
-        {/* Hero Section */}
-        <header style={{
-          paddingTop: '120px',
-          paddingBottom: '80px',
-          paddingLeft: '24px',
-          paddingRight: '24px',
-          maxWidth: '1400px',
-          margin: '0 auto',
-          opacity: mounted ? 1 : 0,
-          transform: mounted ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: !isMobile ? '1fr 1fr' : '1fr',
-            gap: !isMobile ? '80px' : '40px',
-            alignItems: 'end',
-          }}>
-            <div>
-              <p style={{
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '11px',
-                letterSpacing: '0.1em',
-                color: 'var(--text-muted)',
-                marginBottom: '24px',
-                textTransform: 'uppercase',
-              }}>
-                OGIS - Open Graph Image Service
-              </p>
-              <h1 style={{
-                fontFamily: '"Instrument Serif", serif',
-                fontSize: 'clamp(40px, 10vw, 96px)',
-                fontWeight: 400,
-                lineHeight: 0.95,
-                margin: 0,
-                letterSpacing: '-0.02em',
-              }}>
-                Dynamic<br />
-                <span style={{ fontStyle: 'italic' }}>Social</span><br />
-                Images
-              </h1>
-            </div>
-            <div style={{
-              borderLeft: !isMobile ? '1px solid var(--border-secondary)' : 'none',
-              paddingLeft: !isMobile ? '40px' : '0',
-              paddingTop: !isMobile ? '0' : '20px',
-              borderTop: !isMobile ? 'none' : '1px solid var(--border-secondary)',
-            }}>
-              <p style={{
-                fontSize: '16px',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.7,
-                margin: 0,
-                maxWidth: '400px',
-              }}>
-                A dynamic Open Graph image generation service with multiple visual themes.
-                Built on Next.js and Vercel Edge Runtime for fast, globally distributed generation.
-              </p>
-              <div style={{
-                marginTop: '24px',
-                display: 'flex',
-                gap: '12px',
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '10px',
-                color: 'var(--text-muted)',
-                flexWrap: 'wrap',
-              }}>
-                <span>1200×630px</span>
-                <span>·</span>
-                <span>Zpix Font</span>
-                <span>·</span>
-                <span>Edge Runtime</span>
-                <span>·</span>
-                <span>MIT License</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Divider */}
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '0 24px',
-        }}>
-          <div style={{ height: '1px', background: 'var(--border-primary)' }} />
         </div>
+      </nav>
 
-        {/* Main Content */}
-        <main id="preview" style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: !isMobile ? '80px 24px' : '40px 24px',
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: !isMobile ? '400px 1fr' : '1fr',
-            gap: !isMobile ? '80px' : '40px',
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s',
-          }}>
-            {/* Form Panel */}
-            <div>
-              <div style={{
-                position: !isMobile ? 'sticky' : 'relative',
-                top: '100px',
-              }}>
-                <h2 style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '11px',
-                  fontWeight: 500,
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-muted)',
-                  marginBottom: '40px',
-                }}>
-                  Parameters
-                </h2>
-
-                {/* Theme toggle */}
-                <div style={{
-                  display: 'flex',
-                  gap: '0',
-                  marginBottom: '32px',
-                  border: '1px solid var(--border-tertiary)',
-                }}>
-                  {(['pixel', 'modern'] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setTheme(t)}
-                      style={{
-                        flex: 1,
-                        padding: '10px 16px',
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: '11px',
-                        fontWeight: 500,
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        color: theme === t ? 'var(--bg-primary)' : 'var(--text-muted)',
-                        background: theme === t ? 'var(--text-primary)' : 'transparent',
-                        border: 'none',
-                        borderRight: t === 'pixel' ? '1px solid var(--border-tertiary)' : 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <InputField label="Title" value={title} onChange={setTitle} required onKeyPress={handleKeyPress} />
-                  <InputField label="Site" value={site} onChange={setSite} required onKeyPress={handleKeyPress} />
-                  <InputField label="Excerpt" value={excerpt} onChange={setExcerpt} onKeyPress={handleKeyPress} />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <InputField label="Author" value={author} onChange={setAuthor} onKeyPress={handleKeyPress} />
-                    <InputField label="Date" value={date} onChange={setDate} onKeyPress={handleKeyPress} />
-                  </div>
-                  <InputField label="Image URL" value={image} onChange={setImage} onKeyPress={handleKeyPress} />
-                </div>
-
-                {/* URL Output */}
-                <div style={{ marginTop: '48px' }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '12px',
-                  }}>
-                    <span style={{
-                      fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: '11px',
-                      fontWeight: 500,
-                      letterSpacing: '0.15em',
-                      textTransform: 'uppercase',
-                      color: 'var(--text-muted)',
-                    }}>
-                      Endpoint
-                    </span>
-                    <button
-                      onClick={copyUrl}
-                      style={{
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: '11px',
-                        color: copied ? 'var(--text-primary)' : 'var(--text-muted)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0,
-                        transition: 'color 0.2s',
-                      }}
-                    >
-                      {copied ? 'Copied!' : 'Copy'}
-                    </button>
-                  </div>
-                  <div style={{
-                    fontFamily: '"JetBrains Mono", monospace',
-                    fontSize: '12px',
-                    color: 'var(--text-secondary)',
-                    padding: '16px',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-secondary)',
-                    wordBreak: 'break-all',
-                    lineHeight: 1.6,
-                    transition: 'background-color 0.3s ease, border-color 0.3s ease',
-                  }}>
-                    {generateUrl()}
-                  </div>
-                </div>
-              </div>
+      {/* ── Hero ── */}
+      <header className="hero">
+        <div className="hero-inner">
+          <div>
+            <p className="hero-label">Open Graph Image Service</p>
+            <h1 className="hero-title glitch">
+              Dynamic
+              <br />
+              <span className="hero-title-accent">Social</span>
+              <br />
+              Images
+            </h1>
+          </div>
+          <div className="hero-right">
+            <p className="hero-desc">
+              A dynamic Open Graph image generation service with multiple visual
+              themes. Built on Next.js and Vercel Edge Runtime for fast, globally
+              distributed generation.
+            </p>
+            <div className="hero-specs">
+              <span className="hero-spec">1200×630px</span>
+              <span className="hero-spec">Local Pixel Fonts</span>
+              <span className="hero-spec">Edge Runtime</span>
+              <span className="hero-spec">MIT License</span>
             </div>
+          </div>
+        </div>
+      </header>
 
-            {/* Preview Panel */}
-            <div>
-              <h2 style={{
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '11px',
-                fontWeight: 500,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                color: 'var(--text-muted)',
-                marginBottom: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-              }}>
-                Preview
-                <span style={{
-                  fontSize: '10px',
-                  color: 'var(--text-muted)',
-                  padding: '3px 8px',
-                  border: '1px solid var(--border-tertiary)',
-                  fontWeight: 400,
-                }}>
-                  {theme}
-                </span>
-              </h2>
+      <div className="divider">
+        <div />
+      </div>
 
-              <div style={{
-                marginBottom: '24px',
-                padding: '16px',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-secondary)',
-                borderRadius: '4px',
-                transition: 'background-color 0.3s ease, border-color 0.3s ease',
-              }}>
-                <p style={{
-                  margin: 0,
-                  fontSize: '12px',
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.6,
-                  fontFamily: '"JetBrains Mono", monospace',
-                }}>
-                  💡 Tip: Modify parameters above, then click "Generate Preview" to see changes
-                </p>
+      {/* ── Workspace ── */}
+      <main className="workspace" id="preview">
+        <div className="workspace-inner">
+          {/* Form Panel */}
+          <div className="form-panel">
+            <div className="form-sticky">
+              <h2 className="section-label">Parameters</h2>
+
+              {/* Theme toggle */}
+              <div className="theme-toggle">
+                <div
+                  className="theme-toggle-slider"
+                  style={{
+                    transform: `translateX(${theme === 'modern' ? '100%' : '0'})`,
+                  }}
+                />
+                {(['pixel', 'modern'] as const).map((t) => (
+                  <button
+                    key={t}
+                    className={theme === t ? 'active' : ''}
+                    onClick={() => setTheme(t)}
+                  >
+                    {t}
+                    <kbd>{t === 'pixel' ? '1' : '2'}</kbd>
+                  </button>
+                ))}
               </div>
 
-              <div style={{
-                position: 'relative',
-                background: '#000',
-                aspectRatio: '1200/630',
-                overflow: 'hidden',
-              }}>
-                <img
-                  src={previewUrl}
-                  alt="OG Preview"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'block',
-                    objectFit: 'cover',
-                  }}
-                  loading="lazy"
+              {/* Pixel font selector */}
+              {theme === 'pixel' && (
+                <div style={{ marginBottom: '20px' }}>
+                  <label className="field-label">Pixel Font</label>
+                  <select
+                    className="field-select"
+                    value={pixelFont}
+                    onChange={(e) =>
+                      setPixelFont(e.target.value as PixelFontKey)
+                    }
+                  >
+                    {PIXEL_FONT_OPTIONS.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="fields">
+                <InputField
+                  label="Title"
+                  value={title}
+                  onChange={setTitle}
+                  required
+                  inputRef={titleRef}
+                />
+                <InputField
+                  label="Site"
+                  value={site}
+                  onChange={setSite}
+                  required
+                />
+                <InputField
+                  label="Excerpt"
+                  value={excerpt}
+                  onChange={setExcerpt}
+                />
+                <div className="field-row">
+                  <InputField
+                    label="Author"
+                    value={author}
+                    onChange={setAuthor}
+                  />
+                  <InputField
+                    label="Date"
+                    value={date}
+                    onChange={setDate}
+                  />
+                </div>
+                <InputField
+                  label="Image URL"
+                  value={image}
+                  onChange={setImage}
                 />
               </div>
 
-              <div style={{
-                marginTop: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                flexWrap: 'wrap',
-              }}>
-                <span style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '11px',
-                  color: 'var(--text-muted)',
-                }}>
-                  1200 × 630
-                </span>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              {/* Endpoint URL */}
+              <div className="endpoint-section">
+                <div className="endpoint-header">
+                  <span className="section-label">Endpoint</span>
                   <button
-                    onClick={handleGenerate}
-                    style={{
-                      fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: '12px',
-                      color: isGenerating ? 'var(--text-muted)' : 'var(--text-primary)',
-                      background: 'transparent',
-                      textDecoration: 'none',
-                      padding: '12px 24px',
-                      border: '1px solid ' + (isGenerating ? 'var(--border-tertiary)' : 'var(--border-primary)'),
-                      cursor: isGenerating ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    disabled={isGenerating}
+                    className={`endpoint-copy${copied ? ' copied' : ''}`}
+                    onClick={copyUrl}
                   >
-                    {isGenerating ? 'Generating...' : 'Generate Preview'}
+                    {copied ? '✓ Copied' : 'Copy'}
+                    <kbd>{mod}⇧C</kbd>
                   </button>
-                  <a
-                    href={previewUrl}
-                    target="_blank"
-                    style={{
-                      fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: '12px',
-                      color: 'var(--text-primary)',
-                      textDecoration: 'none',
-                      padding: '12px 24px',
-                      border: '1px solid var(--border-primary)',
-                      transition: 'all 0.2s',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--text-primary)';
-                      e.currentTarget.style.color = 'var(--bg-primary)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }}
-                  >
-                    Open Full Size
-                    <span style={{ fontSize: '14px' }}>↗</span>
-                  </a>
+                </div>
+                <div className="endpoint-url">
+                  {generateUrl()}
+                  <span className="endpoint-cursor" />
                 </div>
               </div>
             </div>
           </div>
-        </main>
 
-        {/* API Reference */}
-        <section id="api" style={{
-          background: 'var(--bg-api)',
-          color: 'var(--api-text-primary)',
-          padding: !isMobile ? '120px 24px' : '60px 24px',
-          transition: 'background-color 0.3s ease',
-        }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-          }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: !isMobile ? '1fr 2fr' : '1fr',
-              gap: !isMobile ? '80px' : '40px',
-            }}>
-              <div>
-                <h2 style={{
-                  fontFamily: '"Instrument Serif", serif',
-                  fontSize: !isMobile ? '48px' : '36px',
-                  fontWeight: 400,
-                  lineHeight: 1.1,
-                  margin: 0,
-                }}>
-                  API<br />
-                  <span style={{ fontStyle: 'italic' }}>Reference</span>
-                </h2>
-                <p style={{
-                  marginTop: '24px',
-                  color: 'var(--api-text-muted)',
-                  fontSize: '15px',
-                  lineHeight: 1.7,
-                }}>
-                  Simple GET request with URL parameters.
-                  Returns a PNG image (1200x630px) with customizable visual themes and full CJK character support.
-                </p>
-                <div style={{
-                  marginTop: '32px',
-                  padding: '16px',
-                  border: '1px solid var(--api-border)',
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: !isMobile ? '12px' : '10px',
-                  color: 'var(--api-text-secondary)',
-                  wordBreak: 'break-all',
-                }}>
-                  GET /api/og?title=...&site=...
-                </div>
-              </div>
+          {/* Preview Panel */}
+          <div className="preview-panel">
+            <h2 className="section-label preview-header">
+              Preview
+              <span className="preview-badge">
+                {theme === 'pixel'
+                  ? `${theme} · ${selectedPixelFont.label}`
+                  : theme}
+              </span>
+            </h2>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: !isMobile ? 'repeat(2, 1fr)' : '1fr',
-                gap: '1px',
-                background: 'var(--api-border)',
-              }}>
-                <ParamCard name="title" type="string" required description="Article title (max 60 chars)" />
-                <ParamCard name="site" type="string" required description="Site name for branding" />
-                <ParamCard name="excerpt" type="string" description="Article excerpt (max 80 chars)" />
-                <ParamCard name="author" type="string" description="Author name" />
-                <ParamCard name="date" type="string" description="Publication date" />
-                <ParamCard name="image" type="url" description="Background image (PNG/JPG/GIF)" />
-                <ParamCard name="theme" type="string" description="Visual theme: pixel (default) or modern" />
+            <div className="preview-tip">
+              Modify parameters, then press <kbd>{mod}↵</kbd> or click Generate
+              to preview
+            </div>
+
+            <div
+              className={`preview-frame${isGenerating ? ' preview-loading' : ''}`}
+            >
+              <div className="preview-frame-inner">
+                <img
+                  className="preview-img"
+                  src={previewUrl}
+                  alt="OG Preview"
+                  onLoad={() => setIsGenerating(false)}
+                  onError={() => setIsGenerating(false)}
+                />
               </div>
             </div>
 
-            {/* Notes */}
-            <div style={{
-              marginTop: '80px',
-              display: 'grid',
-              gap: '16px',
-            }}>
-              {/* Demo Notice */}
-              <div style={{
-                padding: '24px 32px',
-                border: '1px solid var(--api-border)',
-                background: 'rgba(102, 126, 234, 0.08)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '16px',
-              }}>
-                <span style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '11px',
-                  color: 'var(--accent-color)',
-                  flexShrink: 0,
-                  fontWeight: 500,
-                }}>
-                  DEMO
-                </span>
-                <p style={{
-                  margin: 0,
-                  fontSize: '14px',
-                  color: 'var(--api-text-secondary)',
-                  lineHeight: 1.7,
-                }}>
-                  This is a demo site for demonstration purposes only. Preview images are cached and only regenerated when you click "Generate Preview". For production use, please{' '}
-                  <a
-                    href="https://github.com/bunizao/ogis#deployment"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: 'var(--accent-color)',
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    deploy your own instance
-                  </a>
-                  .
-                </p>
-              </div>
-
-              {/* Technical Note */}
-              <div style={{
-                padding: '24px 32px',
-                border: '1px solid var(--api-border)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '16px',
-              }}>
-                <span style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '11px',
-                  color: 'var(--api-text-muted)',
-                  flexShrink: 0,
-                }}>
-                  NOTE
-                </span>
-                <p style={{
-                  margin: 0,
-                  fontSize: '14px',
-                  color: 'var(--api-text-secondary)',
-                  lineHeight: 1.7,
-                }}>
-                  WebP, AVIF, and SVG formats are not supported due to Edge Runtime constraints.
-                  Use PNG, JPG, JPEG, or GIF for background images.
-                </p>
+            <div className="preview-actions">
+              <span className="preview-dim">1200 × 630</span>
+              <div className="preview-buttons">
+                <button
+                  className="btn btn-primary"
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? 'Generating…' : 'Generate Preview'}
+                  <kbd>{mod}↵</kbd>
+                </button>
+                <a
+                  className="btn"
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open Full Size ↗
+                </a>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </main>
 
-        {/* Footer */}
-        <footer style={{
-          padding: '32px 24px',
-          borderTop: '1px solid var(--border-secondary)',
-          transition: 'border-color 0.3s ease',
-        }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px',
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              flexWrap: 'wrap',
-            }}>
-              <span style={{
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '11px',
-                color: 'var(--text-muted)',
-              }}>
-                Built with Next.js 14 · @vercel/og
-              </span>
-              <span style={{ color: 'var(--border-tertiary)' }}>·</span>
-              <a
-                href="https://github.com/bunizao/ogis"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: '11px',
-                  color: 'var(--text-secondary)',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-              >
-                GitHub
-              </a>
-              <span style={{ color: 'var(--border-tertiary)' }}>·</span>
-              <span style={{
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: '11px',
-                color: 'var(--text-muted)',
-              }}>
-                MIT License
-              </span>
+      {/* ── API Reference ── */}
+      <section className="api-section" id="api">
+        <div className="api-inner">
+          <div className="api-header">
+            <div>
+              <h2 className="api-title">
+                API <em>Reference</em>
+              </h2>
+              <p className="api-desc">
+                Simple GET request with URL parameters. Returns a PNG image
+                (1200×630px) with customizable visual themes and full CJK
+                character support.
+              </p>
+              <div className="api-endpoint-block">
+                GET /api/og?title=...&site=...
+              </div>
             </div>
-            <span style={{
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: '11px',
-              color: 'var(--text-muted)',
-            }}>
-              © 2026 bunizao
-            </span>
+            <div className="api-grid">
+              <ParamCard
+                name="title"
+                type="string"
+                required
+                description="Article title (max 60 chars)"
+              />
+              <ParamCard
+                name="site"
+                type="string"
+                required
+                description="Site name for branding"
+              />
+              <ParamCard
+                name="excerpt"
+                type="string"
+                description="Article excerpt (max 80 chars)"
+              />
+              <ParamCard
+                name="author"
+                type="string"
+                description="Author name"
+              />
+              <ParamCard
+                name="date"
+                type="string"
+                description="Publication date"
+              />
+              <ParamCard
+                name="image"
+                type="url"
+                description="Background image (PNG/JPG/GIF)"
+              />
+              <ParamCard
+                name="theme"
+                type="string"
+                description="Visual theme: pixel (default) or modern"
+              />
+              <ParamCard
+                name="pixelFont"
+                type="string"
+                description="Pixel font for pixel theme (zpix/geist-*)"
+              />
+            </div>
           </div>
-        </footer>
-      </div>
+
+          <div className="api-notes">
+            <div className="note note-accent">
+              <span className="note-label">DEMO</span>
+              <p className="note-text">
+                This is a demo site for demonstration purposes only. Preview
+                images are cached and only regenerated when you click
+                &quot;Generate Preview&quot;. For production use, please{' '}
+                <a
+                  href="https://github.com/bunizao/ogis#deployment"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  deploy your own instance
+                </a>
+                .
+              </p>
+            </div>
+            <div className="note">
+              <span className="note-label">NOTE</span>
+              <p className="note-text">
+                WebP, AVIF, and SVG formats are not supported due to Edge
+                Runtime constraints. Use PNG, JPG, JPEG, or GIF for background
+                images.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="footer">
+        <div className="footer-inner">
+          <div className="footer-links">
+            <span>Built with Next.js · @vercel/og</span>
+            <span className="footer-sep">·</span>
+            <a
+              href="https://github.com/bunizao/ogis"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              GitHub
+            </a>
+            <span className="footer-sep">·</span>
+            <span>MIT License</span>
+          </div>
+          <span>© 2026 bunizao</span>
+        </div>
+      </footer>
     </>
   );
 }
+
+/* ── Sub-components ── */
 
 function InputField({
   label,
   value,
   onChange,
   required,
-  onKeyPress
+  inputRef,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
-  onKeyPress?: (e: React.KeyboardEvent) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   return (
     <div>
-      <label style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontFamily: '"JetBrains Mono", monospace',
-        fontSize: '11px',
-        fontWeight: 500,
-        letterSpacing: '0.05em',
-        color: 'var(--text-primary)',
-        marginBottom: '8px',
-      }}>
+      <label className="field-label">
         {label}
-        {required && (
-          <span style={{
-            fontSize: '10px',
-            color: 'var(--text-muted)',
-            fontWeight: 400,
-          }}>
-            required
-          </span>
-        )}
+        {required && <span className="field-required">required</span>}
       </label>
       <input
+        ref={inputRef}
+        className="field-input"
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onKeyPress={onKeyPress}
-        style={{
-          width: '100%',
-          padding: '14px 0',
-          background: 'transparent',
-          border: 'none',
-          borderBottom: '1px solid var(--border-tertiary)',
-          color: 'var(--text-primary)',
-          fontSize: '15px',
-          fontFamily: 'inherit',
-          transition: 'border-color 0.2s, color 0.3s ease',
-        }}
       />
     </div>
   );
@@ -856,7 +513,7 @@ function ParamCard({
   name,
   type,
   required,
-  description
+  description,
 }: {
   name: string;
   type: string;
@@ -864,56 +521,88 @@ function ParamCard({
   description: string;
 }) {
   return (
-    <div style={{
-      padding: '32px',
-      background: 'var(--api-card-bg)',
-      transition: 'background-color 0.3s ease',
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        marginBottom: '12px',
-      }}>
-        <code style={{
-          fontFamily: '"JetBrains Mono", monospace',
-          fontSize: '14px',
-          fontWeight: 500,
-          color: 'var(--api-text-primary)',
-        }}>
-          {name}
-        </code>
-        {required && (
-          <span style={{
-            fontFamily: '"JetBrains Mono", monospace',
-            fontSize: '9px',
-            fontWeight: 500,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            padding: '4px 8px',
-            border: '1px solid var(--api-border)',
-            color: 'var(--api-text-muted)',
-          }}>
-            Required
-          </span>
-        )}
+    <div className="param-card">
+      <div className="param-name">
+        <code>{name}</code>
+        {required && <span className="param-required-badge">Required</span>}
       </div>
-      <div style={{
-        fontFamily: '"JetBrains Mono", monospace',
-        fontSize: '11px',
-        color: 'var(--api-text-muted)',
-        marginBottom: '12px',
-      }}>
-        {type}
+      <div className="param-type">{type}</div>
+      <p className="param-desc">{description}</p>
+    </div>
+  );
+}
+
+function Toast() {
+  return (
+    <div className="toast" role="status" aria-live="polite">
+      <span>✓</span>
+      Copied to clipboard
+    </div>
+  );
+}
+
+function ShortcutsOverlay({
+  isMac,
+  onClose,
+}: {
+  isMac: boolean;
+  onClose: () => void;
+}) {
+  const mod = isMac ? '⌘' : 'Ctrl';
+
+  return (
+    <div className="overlay-backdrop" onClick={onClose}>
+      <div className="overlay-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="overlay-header">
+          <h3>Keyboard Shortcuts</h3>
+          <button className="overlay-close" onClick={onClose}>
+            Esc
+          </button>
+        </div>
+        <div className="overlay-body">
+          <div className="shortcut-row">
+            <span className="shortcut-label">Focus title</span>
+            <span className="shortcut-keys">
+              <kbd>/</kbd>
+            </span>
+          </div>
+          <div className="shortcut-row">
+            <span className="shortcut-label">Switch theme</span>
+            <span className="shortcut-keys">
+              <kbd>1</kbd>
+              <span className="key-sep">/</span>
+              <kbd>2</kbd>
+            </span>
+          </div>
+          <div className="shortcut-row">
+            <span className="shortcut-label">Generate preview</span>
+            <span className="shortcut-keys">
+              <kbd>{mod}</kbd>
+              <kbd>↵</kbd>
+            </span>
+          </div>
+          <div className="shortcut-row">
+            <span className="shortcut-label">Copy endpoint URL</span>
+            <span className="shortcut-keys">
+              <kbd>{mod}</kbd>
+              <kbd>⇧</kbd>
+              <kbd>C</kbd>
+            </span>
+          </div>
+          <div className="shortcut-row">
+            <span className="shortcut-label">Toggle shortcuts</span>
+            <span className="shortcut-keys">
+              <kbd>?</kbd>
+            </span>
+          </div>
+          <div className="shortcut-row">
+            <span className="shortcut-label">Close / unfocus</span>
+            <span className="shortcut-keys">
+              <kbd>Esc</kbd>
+            </span>
+          </div>
+        </div>
       </div>
-      <p style={{
-        margin: 0,
-        fontSize: '13px',
-        color: 'var(--api-text-secondary)',
-        lineHeight: 1.6,
-      }}>
-        {description}
-      </p>
     </div>
   );
 }
