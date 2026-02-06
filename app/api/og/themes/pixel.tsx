@@ -88,7 +88,6 @@ function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
           right: '64px',
           display: 'flex',
           flexDirection: 'column',
-          zIndex: 2,
         }}
       >
         <span

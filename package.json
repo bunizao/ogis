@@ -4,7 +4,8 @@
   "description": "A dynamic Open Graph image generation service with custom themes.",
   "packageManager": "bun@1.3.6",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack --disable-source-maps",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start"
   },

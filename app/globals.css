@@ -2,6 +2,14 @@
    OGIS — Monochrome Terminal Design System
    ═══════════════════════════════════════════════ */
 
+@font-face {
+  font-family: 'Geist Pixel';
+  src: url('/fonts/geist-pixel/GeistPixel-Square.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 /* ── Tokens ──────────────────────────────────── */
 :root {
   --bg-0: #09090b;
@@ -32,6 +40,7 @@
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   --font-body: 'Inter', system-ui, sans-serif;
+  --font-pixel: 'Geist Pixel', 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 @media (prefers-color-scheme: light) {
@@ -169,6 +178,26 @@ body::before {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+@keyframes hero-title-expand {
+  from { width: 4ch; }
+  to   { width: 10ch; }
+}
+
+@keyframes hero-title-short-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes hero-title-full-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hero-accent-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Navigation ──────────────────────────────── */
 .nav {
   position: fixed;
@@ -191,10 +220,11 @@ body::before {
 }
 
 .nav-logo {
-  font-family: var(--font-mono);
-  font-size: 14px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
+  text-transform: none;
   transition: opacity var(--dur) var(--ease);
 }
 .nav-logo:hover { opacity: 0.6; }
@@ -258,7 +288,7 @@ body::before {
 }
 
 .hero-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-pixel);
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -268,12 +298,37 @@ body::before {
 }
 
 .hero-title {
-  font-family: var(--font-display);
+  font-family: var(--font-pixel);
   font-size: clamp(42px, 8vw, 88px);
-  font-weight: 700;
+  font-weight: 400;
   line-height: 0.95;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.01em;
   animation: fade-up 0.6s var(--ease) 0.2s both;
+}
+
+.hero-title-expand {
+  position: relative;
+  display: inline-block;
+  width: 10ch;
+  min-height: 1em;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: hero-title-expand 850ms var(--ease) 250ms both;
+}
+
+.hero-title-short {
+  display: inline-block;
+  animation: hero-title-short-out 220ms linear 760ms forwards;
+}
+
+.hero-title-full {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  white-space: nowrap;
+  transform: translateX(10px);
+  animation: hero-title-full-in 420ms var(--ease) 760ms forwards;
 }
 
 .glitch {
@@ -283,6 +338,13 @@ body::before {
 .hero-title-accent {
   font-style: italic;
   font-weight: 400;
+}
+
+.hero-title-accent-reveal {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: hero-accent-in 420ms var(--ease) 980ms forwards;
 }
 
 .hero-right {
@@ -882,6 +944,15 @@ body::before {
 
 /* ── Responsive ──────────────────────────────── */
 @media (max-width: 900px) {
+  .nav-inner { padding: 0 16px; }
+  .nav-logo {
+    font-size: 10px;
+    max-width: 54vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .nav-gh { padding: 6px 10px; }
   .hero { padding: 100px 24px 48px; }
   .hero-inner { grid-template-columns: 1fr; gap: 32px; }
   .hero-right {
@@ -898,6 +969,8 @@ body::before {
 }
 
 @media (max-width: 480px) {
+  .nav-shortcut-btn { display: none; }
+  .nav-gh { font-size: 11px; padding: 6px 8px; }
   .field-row { grid-template-columns: 1fr; }
   .preview-actions { flex-direction: column; align-items: stretch; }
   .preview-buttons { flex-direction: column; }
@@ -911,6 +984,17 @@ body::before {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .hero-title-expand { width: auto; }
+  .hero-title-short { display: none; }
+  .hero-title-full {
+    position: static;
+    opacity: 1;
+    transform: none;
+  }
+  .hero-title-accent-reveal {
+    opacity: 1;
+    transform: none;
   }
   .scan-line { display: none; }
 }

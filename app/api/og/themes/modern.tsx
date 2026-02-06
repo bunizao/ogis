@@ -1,16 +1,35 @@
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
-async function loadFont(url: string, weight: 400 | 700): Promise<ThemeFont | null> {
-  try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    if (!response.ok) return null;
-    const data = await response.arrayBuffer();
-    return { name: 'Inter', data, style: 'normal', weight };
-  } catch {
-    return null;
+const fontDataCache = new Map<string, Promise<ArrayBuffer | null>>();
+
+async function fetchFontData(url: string): Promise<ArrayBuffer | null> {
+  let pending = fontDataCache.get(url);
+  if (!pending) {
+    pending = (async () => {
+      try {
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+        });
+        if (!response.ok) return null;
+        return await response.arrayBuffer();
+      } catch {
+        return null;
+      }
+    })();
+    fontDataCache.set(url, pending);
   }
+
+  const data = await pending;
+  if (!data) {
+    fontDataCache.delete(url);
+  }
+  return data;
+}
+
+async function loadFont(url: string, weight: 400 | 700): Promise<ThemeFont | null> {
+  const data = await fetchFontData(url);
+  if (!data) return null;
+  return { name: 'Inter', data, style: 'normal', weight };
 }
 
 async function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
@@ -157,7 +176,6 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
           display: 'flex',
           flexDirection: 'column',
           padding: `${CARD_PY}px ${CARD_PX}px`,
-          zIndex: 2,
         }}
       >
         <span

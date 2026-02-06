@@ -172,12 +172,19 @@ export default function Home() {
         <div className="hero-inner">
           <div>
             <p className="hero-label">Open Graph Image Service</p>
-            <h1 className="hero-title glitch">
-              Dynamic
+            <h1 className="hero-title">
+              <span className="hero-title-expand" aria-label="Open Graph">
+                <span className="hero-title-short" aria-hidden="true">
+                  OGIS
+                </span>
+                <span className="hero-title-full" aria-hidden="true">
+                  Open Graph
+                </span>
+              </span>
               <br />
-              <span className="hero-title-accent">Social</span>
-              <br />
-              Images
+              <span className="hero-title-accent hero-title-accent-reveal">
+                Image Service
+              </span>
             </h1>
           </div>
           <div className="hero-right">
