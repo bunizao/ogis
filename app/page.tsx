@@ -605,12 +605,46 @@ export default function Home() {
 
       {/* ── Footer ── */}
       <footer className="relative z-[1] py-8 px-6 bg-[#0a0a0c] border-t border-white/6">
-        <div className="max-w-[var(--max-w)] mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-6 text-[13px] text-[#5a5a68]">
-            <span className="font-[var(--font-pixel)] text-xs text-[#7a7a8a]">OGIS</span>
-            <span>Built with Next.js and @vercel/og</span>
+        <div className="max-w-[var(--max-w)] mx-auto flex items-center justify-between flex-wrap gap-5">
+          <div className="flex items-center gap-3 flex-wrap text-[13px] text-[#9091a2]">
+            <span className="font-[var(--font-pixel)] text-xs text-[#9091a2]">
+              OGIS
+            </span>
+            <span>Built with</span>
+            <a
+              href="https://nextjs.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-md border border-white/14 bg-white/[0.04] px-1.5 py-1 hover:bg-white/[0.08] transition-colors"
+              aria-label="Next.js website"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs&logoColor=white"
+                alt="Next.js 16 badge"
+                className="h-4 w-auto"
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
+            <a
+              href="https://vercel.com/docs/og-image-generation/og-image-api"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-md border border-white/14 bg-white/[0.04] px-1.5 py-1 hover:bg-white/[0.08] transition-colors"
+              aria-label="Vercel OG documentation"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://img.shields.io/badge/Vercel-%40vercel%2Fog-black?logo=vercel&logoColor=white"
+                alt="Vercel OG badge"
+                className="h-4 w-auto"
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
           </div>
-          <div className="flex items-center gap-5 text-[13px] text-[#5a5a68]">
+          <div className="flex items-center gap-5 text-[13px] text-[#9091a2]">
             <a
               href="https://github.com/bunizao/ogis"
               target="_blank"
@@ -620,7 +654,7 @@ export default function Home() {
               GitHub
             </a>
             <span>MIT License</span>
-            <span className="text-[#3a3a46]">© 2026 bunizao</span>
+            <span>© 2026 bunizao</span>
           </div>
         </div>
       </footer>
