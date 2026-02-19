@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black)](https://vercel.com)
 
-Dynamic Open Graph (OG) image generation service for blogs and websites. Built with Next.js 16 and deployed on Vercel Edge Runtime for fast, globally distributed image generation.
+Dynamic Open Graph (OG) image generation service for blogs and websites, built with Next.js 16 on Vercel Edge Runtime.
 
 **Demo**: https://og.tutuis.me
 
@@ -25,7 +25,49 @@ Dynamic Open Graph (OG) image generation service for blogs and websites. Built w
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bunizao/ogis)
 
+## Recommended Setup
 
+For most users, use a random custom API path:
+
+```
+OG_API_PATH=og_a9f4k2m8x7p1
+
+# Use a random path (8-16 chars, letters/numbers/_/-).
+```
+
+> Use `https://example.com/api/<OG_API_PATH>` as the API endpoint.
+
+
+If you only need OG image APIs (no landing page), enable API-only mode:
+
+```
+OG_API_ONLY=true
+```
+
+Behavior when enabled:
+- Returns `404` for non-API pages (for example `/`).
+- Keeps all API routes available (`/api/*`).
+- Keeps OG-required static assets available: `/default-bg.jpg`, `/fonts/*`, `/_next/*`.
+
+  
+## Technical Stack
+
+- **Framework**: Next.js 16 with App Router
+- **Runtime**: Vercel Edge Runtime
+- **Image Generation**: @vercel/og (Satori)
+- **Language**: TypeScript
+- **Deployment**: Vercel
+
+## Notes
+
+- **Supported Image Formats**: PNG, JPG, JPEG, GIF
+- **Unsupported Formats**: WebP, AVIF, SVG (@vercel/og limitation)
+- **Config Endpoint**: `/api/og-config` is disabled by default; enable with `OG_ENABLE_CONFIG_ENDPOINT=true` only when needed
+- **Debug Endpoint**: keep `/api/debug` disabled in production
+
+---
+<details>
+<summary>Developer Docs (Advanced)</summary>
 
 ## Local Development
 
@@ -55,12 +97,14 @@ Base pattern:
 GET /api/<OG_API_PATH>
 ```
 
-- Default mode (no `OG_SECRET`): endpoint is usually `/api/og`
-- `OG_SECRET` mode: endpoint is auto-derived (for example `/api/og_xxxxxxxx`) and signature check is enabled
+- No `OG_SECRET`: endpoint is usually `/api/og`
+- With `OG_SECRET`: endpoint is auto-derived (for example `/api/og_xxxxxxxx`) and signature check is enabled (advanced mode)
+- Optional: set `OG_API_PATH` to pin a stable path
 
-Check the current runtime endpoint and whether signature is required:
+To inspect current endpoint and signature requirement temporarily:
 
 ```bash
+OG_ENABLE_CONFIG_ENDPOINT=true
 GET /api/og-config
 ```
 
@@ -70,13 +114,11 @@ Required:
 - `title`: article title
 - `site`: site name
 
-Common optional:
+Optional:
 - `excerpt`, `author`, `date`, `image`
 - `theme` (`pixel` or `modern`)
 - `pixelFont` (used when `theme=pixel`)
-
-Security:
-- `sig`: required when `OG_SECRET` or `OG_SIGNATURE_SECRET` is set
+- `sig`: optional; required only when `OG_SECRET` or `OG_SIGNATURE_SECRET` is set
 - `exp`: optional Unix timestamp for expiring signatures
 
 Unsigned example:
@@ -91,19 +133,7 @@ Signed example:
 https://your-domain.com/api/your-random-key?title=Hello&site=Blog&sig=<signature>
 ```
 
-Full example:
-
-```
-https://your-domain.com/api/your-random-key?title=Getting%20Started&site=Tech%20Blog&author=Jane&date=2025-01-05&theme=pixel&pixelFont=geist-square&sig=<signature>
-```
-
-Background image example:
-
-```
-https://your-domain.com/api/your-random-key?title=Summer%20Post&site=Tech%20Blog&image=https://images.unsplash.com/photo-123456&sig=<signature>
-```
-
-### 3) Generate Signature (Recommended)
+### 3) Generate Signature
 
 ```bash
 bun scripts/sign-og-url.mjs \
@@ -114,28 +144,23 @@ bun scripts/sign-og-url.mjs \
 Secret priority:
 `--secret` > `OG_SIGNATURE_SECRET` > `OG_SECRET`
 
-### 4) Minimal Production Config
-
-```bash
-OG_SECRET=replace-with-long-random-secret
-OG_API_ONLY=true
-OG_ENABLE_DEBUG=false
-```
-
 ### Environment Variables
 
 | Variable | Required | Purpose | Example |
 |----------|----------|---------|---------|
-| `OG_SECRET` | Recommended | Single-variable mode: auto-derive API path and enable signature validation | `OG_SECRET=replace-with-long-random-secret` |
-| `OG_API_PATH` | No | Manually set API path (advanced) | `OG_API_PATH=og_myblog` |
+| `OG_SECRET` | No | Advanced mode: auto-derive API path and enable signature validation | `OG_SECRET=replace-with-long-random-secret` |
+| `OG_API_PATH` | Recommended | Set custom API path (random string recommended) | `OG_API_PATH=og_myblog` |
 | `OG_API_ALLOW_LEGACY_PATH` | No | Set `true` to allow legacy `/api/og` in advanced setups | `OG_API_ALLOW_LEGACY_PATH=true` |
 | `OG_SIGNATURE_SECRET` | No | Explicit signature secret (defaults to `OG_SECRET`) | `OG_SIGNATURE_SECRET=another-long-secret` |
 | `OG_API_ONLY` | No | Set `true` to disable non-API frontend routes | `OG_API_ONLY=true` |
 | `OG_ENABLE_DEBUG` | No | Set `true` to enable `/api/debug` in production | `OG_ENABLE_DEBUG=false` |
+| `OG_ENABLE_CONFIG_ENDPOINT` | No | Set `true` to expose `/api/og-config` (disabled by default) | `OG_ENABLE_CONFIG_ENDPOINT=true` |
 
 If neither `OG_SECRET` nor `OG_SIGNATURE_SECRET` is set, unsigned URLs work.
 
 ## Integration Guide
+
+Use `OG_API_PATH` direct URLs by default. If signature mode is enabled, generate signatures on the server side and avoid short-lived signatures for published pages.
 
 ### Ghost (with Attegi Theme)
 
@@ -152,8 +177,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = 'Hello World';
   const siteName = 'My Blog';
   const ogEndpoint = 'https://your-domain.com/api/your-random-key';
-  const signature = '<signed-on-server>';
-  const ogUrl = `${ogEndpoint}?title=${encodeURIComponent(title)}&site=${encodeURIComponent(siteName)}&sig=${signature}`;
+  const ogUrl = `${ogEndpoint}?title=${encodeURIComponent(title)}&site=${encodeURIComponent(siteName)}`;
 
   return {
     openGraph: {
@@ -170,8 +194,7 @@ Add to your page frontmatter or layout:
 ```astro
 ---
 const ogEndpoint = 'https://your-domain.com/api/your-random-key';
-const signature = '<signed-on-server>';
-const ogImage = `${ogEndpoint}?title=${encodeURIComponent(title)}&site=${encodeURIComponent(siteName)}&sig=${signature}`;
+const ogImage = `${ogEndpoint}?title=${encodeURIComponent(title)}&site=${encodeURIComponent(siteName)}`;
 ---
 
 <meta property="og:image" content={ogImage} />
@@ -187,8 +210,7 @@ Add to your template:
 {{ $title := .Title }}
 {{ $site := .Site.Title }}
 {{ $ogPath := "your-random-key" }}
-{{ $signature := "<signed-on-server>" }}
-{{ $ogImage := printf "https://your-domain.com/api/%s?title=%s&site=%s&sig=%s" $ogPath (urlquery $title) (urlquery $site) $signature }}
+{{ $ogImage := printf "https://your-domain.com/api/%s?title=%s&site=%s" $ogPath (urlquery $title) (urlquery $site) }}
 
 <meta property="og:image" content="{{ $ogImage }}" />
 <meta property="og:image:width" content="1200" />
@@ -204,38 +226,17 @@ For other frameworks and platforms, set `og:image` meta tags to the generated UR
 - **Image Size**: 1200×630px
 - **Font**: Zpix + Geist Pixel (`geist-square`, `geist-circle`, `geist-line`, `geist-triangle`, `geist-grid`)
 
-## Technical Stack
-
-- **Framework**: Next.js 16 with App Router
-- **Runtime**: Vercel Edge Runtime
-- **Image Generation**: @vercel/og (Satori)
-- **Language**: TypeScript
-- **Deployment**: Vercel
-
-## Notes
-
-- **Supported Image Formats**: PNG, JPG, JPEG, GIF
-- **Unsupported Formats**: WebP, AVIF, SVG (limitation of @vercel/og)
-- **Image Loading**: Remote images are fetched by @vercel/og at render time
-
 ## Customization
 
 ### Change Default Background
 
 Replace `/public/default-bg.jpg` with your own 1200×630px image.
 
-### Adjust Glass Effect
-
-Edit `app/api/og/handler.tsx` in the theme rendering block:
-
-```tsx
-background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.15) 70%, transparent 100%)',
-backdropFilter: 'blur(16px)',
-```
-
 ### Change Font
 
 Edit `app/lib/pixel-fonts.ts` to add/remove local font options, then place corresponding TTF files under `public/fonts`.
+
+</details>
 
 ## License
 
