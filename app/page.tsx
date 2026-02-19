@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import {
   DEFAULT_PIXEL_FONT,
@@ -28,7 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ArrowUp, Command, CornerDownLeft } from 'lucide-react';
+import { ArrowUp, Command, CornerDownLeft, Github } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -675,8 +676,17 @@ export default function Home() {
       >
         <div className="max-w-[var(--max-w)] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-3 flex-wrap text-[13px] text-[#9899ad]">
-            <span className="font-[var(--font-pixel)] text-xs tracking-[0.08em] text-[#cfd0dd]">
-              OGIS
+            <span className="inline-flex items-center gap-2 text-[#cfd0dd]">
+              <Image
+                src="/favicon.svg"
+                alt="OGIS logo"
+                width={16}
+                height={16}
+                className="size-4"
+              />
+              <span className="font-[var(--font-pixel)] text-xs tracking-[0.08em]">
+                OGIS
+              </span>
             </span>
             <span className="text-[#6f7083]">Built with</span>
             <FooterBadgeLink
@@ -695,14 +705,13 @@ export default function Home() {
             />
           </div>
           <div className="flex items-center gap-5 text-[13px] text-[#9899ad]">
-            <a
+            <FooterBadgeLink
               href="https://github.com/bunizao/ogis"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#f0f1f8] transition-colors"
-            >
-              GitHub
-            </a>
+              ariaLabel="OGIS GitHub repository"
+              marker={<Github className="size-3" />}
+              label="GitHub"
+              meta="Repository"
+            />
             <span>MIT License</span>
             <span className="text-[#6f7083]">© 2026 bunizao</span>
           </div>
@@ -813,7 +822,7 @@ function FooterBadgeLink({
 }: {
   href: string;
   ariaLabel: string;
-  marker: string;
+  marker: React.ReactNode;
   label: string;
   meta: string;
 }) {
