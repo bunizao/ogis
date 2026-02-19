@@ -703,16 +703,16 @@ export default function Home() {
               label="@vercel/og"
               meta="Edge OG"
             />
-          </div>
-          <div className="flex items-center gap-5 text-[13px] text-[#9899ad]">
+            <span className="text-[#6f7083]">Open source on</span>
             <FooterBadgeLink
               href="https://github.com/bunizao/ogis"
               ariaLabel="OGIS GitHub repository"
               marker={<Github className="size-3" />}
-              label="GitHub"
-              meta="Repository"
+              label="bunizao/ogis"
+              meta="MIT"
             />
-            <span>MIT License</span>
+          </div>
+          <div className="flex items-center gap-5 text-[13px] text-[#9899ad]">
             <span className="text-[#6f7083]">© 2026 bunizao</span>
           </div>
         </div>
