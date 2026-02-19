@@ -853,8 +853,8 @@ function FormField({
       <label className="flex items-center gap-2 text-[12px] font-medium tracking-wide text-[var(--text-1)] mb-1.5 uppercase">
         {label}
         {required && (
-          <span className="inline-flex items-center text-[11px] text-[var(--text-0)] font-bold tracking-[0.08em] px-2.5 py-0.5 border border-[var(--text-1)] bg-[var(--bg-2)] rounded-sm leading-none">
-            REQUIRED
+          <span className="inline-flex items-center rounded-sm border border-[var(--border-1)] bg-[var(--bg-1)] px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-[0.03em] text-[var(--text-1)] leading-none">
+            required
           </span>
         )}
       </label>
