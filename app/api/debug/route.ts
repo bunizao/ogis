@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
+  const debugEnabled = process.env.OG_ENABLE_DEBUG === 'true';
+  if (!debugEnabled) {
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   const { searchParams } = new URL(request.url);
 
   let image = searchParams.get('image') || '';
