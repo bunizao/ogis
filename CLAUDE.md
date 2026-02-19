@@ -17,7 +17,7 @@ bun run start        # Start production server
 
 No test suite or linter is configured.
 
-**Test URL**: `http://localhost:3000/api/og?title=Hello&site=Blog`
+**Test URL**: `http://localhost:3000/api/og?title=Hello&site=Blog` (default path; in single-secret mode the primary path is derived from `OG_SECRET`)
 
 ## Architecture
 
@@ -25,7 +25,10 @@ No test suite or linter is configured.
 
 ### Key Files
 
-- `app/api/og/route.tsx` — Main OG image endpoint (Edge function, ~420 lines). Contains SSRF protection, URL validation, text sanitization, and Satori JSX rendering.
+- `app/api/og/handler.tsx` — Main OG image handler (Edge function logic, SSRF protection, URL validation, text sanitization, and Satori JSX rendering).
+- `app/api/og/route.tsx` — Legacy/default route wrapper (`/api/og`) that delegates to the shared handler.
+- `app/api/[ogKey]/route.tsx` — Configurable API-path route wrapper (`/api/<OG_API_PATH>`).
+- `app/api/og-config/route.ts` — Runtime endpoint metadata (`endpoint`, `signatureRequired`) for UI/tooling.
 - `app/api/debug/route.ts` — Debug endpoint returning JSON diagnostics for URL reconstruction/validation.
 - `app/page.tsx` — Interactive landing page with live preview form, dark/light mode support, and API reference section.
 - `app/layout.tsx` — Root layout with metadata and OpenGraph tags.
@@ -33,7 +36,7 @@ No test suite or linter is configured.
 
 ### Image Generation Flow
 
-1. **GET `/api/og`** receives URL parameters (`title`, `site`, `excerpt`, `author`, `date`, `image`)
+1. **GET `/api/<OG_API_PATH>`** receives URL parameters (`title`, `site`, `excerpt`, `author`, `date`, `image`)
 2. **SSRF validation** — Image URLs go through `parsePublicImageUrl()`: protocol check, hostname blocking, DNS resolution via Google DNS (`dns.google/resolve`), IPv4/IPv6 public IP validation
 3. **Unsplash URL reconstruction** — Truncated Unsplash query params are recovered from the top-level search params
 4. **Format filtering** — Only PNG/JPG/JPEG/GIF allowed; WebP/AVIF/SVG rejected (Satori limitation)
