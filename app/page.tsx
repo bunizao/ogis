@@ -9,7 +9,6 @@ import {
 } from '@/app/lib/pixel-fonts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -24,7 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -204,13 +202,13 @@ export default function Home() {
           <div className="flex items-center gap-1.5">
             <a
               href="#preview"
-              className="hidden md:inline-flex font-mono text-xs text-[var(--text-2)] px-3 py-2 rounded hover:text-[var(--text-0)] hover:bg-[var(--border-0)] transition-colors"
+              className="hidden md:inline-flex text-[13px] text-[var(--text-2)] px-3 py-2 rounded hover:text-[var(--text-0)] hover:bg-[var(--border-0)] transition-colors"
             >
               Preview
             </a>
             <a
               href="#api"
-              className="hidden md:inline-flex font-mono text-xs text-[var(--text-2)] px-3 py-2 rounded hover:text-[var(--text-0)] hover:bg-[var(--border-0)] transition-colors"
+              className="hidden md:inline-flex text-[13px] text-[var(--text-2)] px-3 py-2 rounded hover:text-[var(--text-0)] hover:bg-[var(--border-0)] transition-colors"
             >
               API
             </a>
@@ -219,7 +217,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  className="text-[var(--text-2)] border-[var(--border-1)] bg-transparent hover:text-[var(--text-0)] hover:border-[var(--border-2)] font-mono text-sm hidden sm:inline-flex"
+                  className="text-[var(--text-2)] border-[var(--border-1)] bg-transparent hover:text-[var(--text-0)] hover:border-[var(--border-2)] text-sm hidden sm:inline-flex"
                   onClick={() => setShowShortcuts((s) => !s)}
                   aria-label="Show keyboard shortcuts"
                 >
@@ -231,7 +229,7 @@ export default function Home() {
             <Button
               variant="outline"
               size="sm"
-              className="font-mono text-xs border-[var(--border-2)] bg-transparent hover:bg-[var(--text-0)] hover:text-[var(--bg-0)] hover:border-[var(--text-0)]"
+              className="text-[13px] border-[var(--border-2)] bg-transparent hover:bg-[var(--text-0)] hover:text-[var(--bg-0)] hover:border-[var(--text-0)]"
               asChild
             >
               <a
@@ -247,24 +245,26 @@ export default function Home() {
       </nav>
 
       {/* ── Hero ── */}
-      <header className="relative z-[1] max-w-[var(--max-w)] mx-auto pt-28 md:pt-32 pb-16 md:pb-20 px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8 lg:gap-20 items-end">
+      <header className="relative z-[1] max-w-[var(--max-w)] mx-auto pt-24 md:pt-28 pb-12 md:pb-14 px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8 lg:gap-16 items-end">
           <div>
-            <p className="font-[var(--font-pixel)] text-[11px] tracking-[0.12em] uppercase text-[var(--text-2)] mb-5 animate-[fade-up_0.6s_var(--ease)_0.1s_both]">
+            <p className="font-[var(--font-pixel)] text-[11px] tracking-[0.12em] uppercase text-[var(--text-2)] mb-4 animate-[fade-up_0.6s_var(--ease)_0.1s_both]">
               Open Graph Image Service
             </p>
-            <h1 className="font-[var(--font-pixel)] text-[clamp(42px,8vw,88px)] font-normal leading-[0.95] tracking-[0.01em] animate-[fade-up_0.6s_var(--ease)_0.2s_both]">
-              <span className="hero-title-expand" aria-label="Open Graph">
+            <h1 className="font-[var(--font-pixel)] text-[clamp(32px,6vw,56px)] font-normal leading-[1.1] tracking-[0.01em] animate-[fade-up_0.6s_var(--ease)_0.2s_both]">
+              <span className="hero-title-expand" aria-label="Dynamic">
                 <span className="hero-title-short" aria-hidden="true">
                   OGIS
                 </span>
                 <span className="hero-title-full" aria-hidden="true">
-                  Open Graph
+                  Dynamic
                 </span>
               </span>
               <br />
-              <span className="italic font-normal hero-title-accent-reveal">
-                Image Service
+              <span className="hero-title-accent-reveal">Social</span>
+              <br />
+              <span className="italic font-normal hero-title-accent-reveal" style={{ animationDelay: '1.1s' }}>
+                Images
               </span>
             </h1>
           </div>
@@ -274,32 +274,17 @@ export default function Home() {
               themes. Built on Next.js and Vercel Edge Runtime for fast, globally
               distributed generation.
             </p>
-            <div className="flex flex-wrap gap-2 mt-6">
-              {['1200x630px', 'Local Pixel Fonts', 'Edge Runtime', 'MIT License'].map(
-                (spec) => (
-                  <Badge
-                    key={spec}
-                    variant="outline"
-                    className="font-mono text-[10px] tracking-wider text-[var(--text-2)] border-[var(--border-1)] rounded bg-transparent hover:border-[var(--text-0)] hover:text-[var(--text-0)] transition-colors"
-                  >
-                    {spec}
-                  </Badge>
-                ),
-              )}
-            </div>
           </div>
         </div>
       </header>
-
-      <Separator className="max-w-[var(--max-w)] mx-auto bg-[var(--text-0)]" />
 
       {/* ── Workspace ── */}
       <main className="relative z-[1] max-w-[var(--max-w)] mx-auto py-16 md:py-20 px-6" id="preview">
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-12 lg:gap-20 animate-[fade-up_0.6s_var(--ease)_0.3s_both]">
           {/* Form Panel */}
           <div>
-            <div className="lg:sticky lg:top-20">
-              <h2 className="font-mono text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)] mb-8">
+            <div className="form-card lg:sticky lg:top-20">
+              <h2 className="text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)] mb-8">
                 Parameters
               </h2>
 
@@ -324,14 +309,17 @@ export default function Home() {
               {/* Pixel Font Selector */}
               {theme === 'pixel' && (
                 <div className="mb-5">
-                  <label className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-wider text-[var(--text-0)] mb-2">
+                  <label className="flex items-center gap-2 text-[12px] font-medium tracking-wide uppercase text-[var(--text-1)] mb-2">
                     Pixel Font
                   </label>
                   <Select
                     value={pixelFont}
                     onValueChange={(v) => setPixelFont(v as PixelFontKey)}
                   >
-                    <SelectTrigger className="w-full font-mono text-sm bg-[var(--bg-1)] border-[var(--border-1)]">
+                    <SelectTrigger
+                      className="w-full text-sm bg-[var(--bg-1)] border-[var(--border-1)]"
+                      style={{ fontFamily: `'${selectedPixelFont.fontName}', monospace` }}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-[var(--bg-2)] border-[var(--border-1)]">
@@ -339,7 +327,8 @@ export default function Home() {
                         <SelectItem
                           key={option.key}
                           value={option.key}
-                          className="font-mono text-sm"
+                          className="text-sm"
+                          style={{ fontFamily: `'${option.fontName}', monospace` }}
                         >
                           {option.label}
                         </SelectItem>
@@ -402,33 +391,29 @@ export default function Home() {
 
           {/* Preview Panel */}
           <div className="animate-[fade-up_0.6s_var(--ease)_0.45s_both]">
-            <div className="flex items-center gap-3 mb-8">
-              <h2 className="font-mono text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)]">
-                Preview
-              </h2>
-              <Badge
-                variant="outline"
-                className="text-[10px] text-[var(--text-1)] border-[var(--border-1)] rounded bg-transparent font-normal tracking-normal"
-              >
-                {theme === 'pixel'
-                  ? `${theme} · ${selectedPixelFont.label}`
-                  : theme}
-              </Badge>
-            </div>
+            <h2 className="text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)] mb-6">
+              Preview
+            </h2>
 
-            <div className="mb-6 px-4 py-3 bg-[var(--bg-2)] border border-[var(--border-1)] rounded font-mono text-xs text-[var(--text-1)] leading-relaxed">
-              Modify parameters, then press{' '}
-              <kbd className="px-1.5 py-0.5 bg-[var(--bg-3)] border border-[var(--border-1)] rounded text-[11px] font-mono">
-                {mod}↵
+            <p className="mb-5 text-[13px] text-[var(--text-2)] leading-relaxed">
+              Fill in the form, then hit{' '}
+              <kbd className="inline-flex items-center px-1.5 py-0.5 bg-[var(--bg-2)] border border-[var(--border-1)] rounded text-[11px] font-mono text-[var(--text-1)]">
+                {mod}Enter
               </kbd>{' '}
-              or click Generate to preview
-            </div>
+              to generate.{' '}
+              <button
+                onClick={() => setShowShortcuts(true)}
+                className="text-[var(--text-1)] underline underline-offset-2 decoration-[var(--border-2)] hover:text-[var(--text-0)] transition-colors cursor-pointer"
+              >
+                More shortcuts
+              </button>
+            </p>
 
             {/* Preview Frame */}
             <div
-              className={`relative p-px rounded-lg bg-[var(--border-2)] transition-colors hover:bg-[var(--text-0)]${isGenerating ? ' preview-loading' : ''}`}
+              className={`preview-frame relative rounded-lg overflow-hidden${isGenerating ? ' preview-loading' : ''}`}
             >
-              <div className="preview-frame-inner relative rounded-[5px] overflow-hidden bg-[var(--bg-0)] aspect-[1200/630]">
+              <div className="preview-frame-inner relative rounded-[7px] overflow-hidden bg-[var(--bg-0)] aspect-[1200/630] border border-[var(--border-2)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className="w-full h-full block object-cover"
@@ -449,16 +434,25 @@ export default function Home() {
                 <Button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="font-mono text-xs gap-2"
+                  className="font-mono text-xs gap-2 bg-[var(--text-0)] text-[var(--bg-0)] hover:bg-[var(--text-1)] border-0 shadow-[0_0_0_1px_var(--border-2)]"
                 >
-                  {isGenerating ? 'Generating...' : 'Generate Preview'}
-                  <kbd className="font-mono text-[9px] px-1 py-0.5 border border-current rounded opacity-35">
-                    {mod}↵
-                  </kbd>
+                  {isGenerating ? (
+                    <>
+                      <span className="animate-pulse">generating</span>
+                      <span className="animate-[blink_1.2s_step-end_infinite]">_</span>
+                    </>
+                  ) : (
+                    <>
+                      Generate
+                      <kbd className="font-mono text-[9px] px-1 py-0.5 border border-current/20 rounded opacity-40">
+                        {mod}↵
+                      </kbd>
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="outline"
-                  className="font-mono text-xs"
+                  className="font-mono text-xs border-[var(--border-2)] bg-transparent hover:bg-[var(--accent-muted)] hover:border-[var(--text-1)]"
                   asChild
                 >
                   <a
@@ -475,7 +469,7 @@ export default function Home() {
             {/* Endpoint URL */}
             <div className="mt-10">
               <div className="flex items-center justify-between mb-3">
-                <span className="font-mono text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)]">
+                <span className="text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)]">
                   Endpoint
                 </span>
                 <Button
@@ -490,7 +484,7 @@ export default function Home() {
                   </kbd>
                 </Button>
               </div>
-              <div className="font-mono text-xs text-[var(--text-1)] p-4 bg-[var(--bg-1)] border border-[var(--border-1)] rounded break-all leading-relaxed">
+              <div className="endpoint-box font-mono text-xs text-[var(--text-1)] p-4 bg-[var(--bg-1)] border border-[var(--border-1)] rounded break-all leading-relaxed">
                 {generateUrl()}
                 <span className="endpoint-cursor" />
               </div>
@@ -501,7 +495,7 @@ export default function Home() {
 
       {/* ── API Reference ── */}
       <section
-        className="relative z-[1] bg-[#0a0a0c] text-[#e4e4ea] py-20 md:py-24 px-6"
+        className="relative z-[1] bg-[#0a0a0c] text-[#e4e4ea] py-20 md:py-24 px-6 border-t border-[var(--border-1)]"
         id="api"
       >
         <div className="max-w-[var(--max-w)] mx-auto">
@@ -510,16 +504,16 @@ export default function Home() {
               <h2 className="font-[var(--font-display)] text-[clamp(36px,5vw,52px)] font-bold leading-tight">
                 API <em className="font-normal italic">Reference</em>
               </h2>
-              <p className="mt-5 text-[#42424e] text-[15px] leading-relaxed">
+              <p className="mt-5 text-[#5a5a68] text-[15px] leading-relaxed">
                 Simple GET request with URL parameters. Returns a PNG image
                 (1200x630px) with customizable visual themes and full CJK
                 character support.
               </p>
-              <div className="mt-7 p-3.5 border border-white/6 rounded font-mono text-xs text-[#6a6a7a] break-all">
+              <div className="mt-7 p-3.5 border border-white/8 rounded font-mono text-xs text-[#7a7a8a] break-all bg-white/[0.02]">
                 GET /api/og?title=...&amp;site=...
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/6 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/8 rounded-lg overflow-hidden border border-white/6">
               <ParamCard
                 name="title"
                 type="string"
@@ -567,11 +561,11 @@ export default function Home() {
 
           {/* Notes */}
           <div className="mt-16 grid gap-3">
-            <div className="flex items-start gap-4 p-5 border border-white/6 rounded bg-white/[0.02]">
+            <div className="flex items-start gap-4 p-5 border border-white/8 rounded bg-white/[0.02]">
               <span className="font-mono text-[10px] font-semibold tracking-[0.1em] shrink-0 mt-0.5 text-[#e4e4ea]">
                 DEMO
               </span>
-              <p className="text-sm text-[#6a6a7a] leading-relaxed">
+              <p className="text-sm text-[#7a7a8a] leading-relaxed">
                 This is a demo site for demonstration purposes only. Preview
                 images are cached and only regenerated when you click
                 &quot;Generate Preview&quot;. For production use, please{' '}
@@ -586,11 +580,11 @@ export default function Home() {
                 .
               </p>
             </div>
-            <div className="flex items-start gap-4 p-5 border border-white/6 rounded">
-              <span className="font-mono text-[10px] font-semibold tracking-[0.1em] shrink-0 mt-0.5 text-[#42424e]">
+            <div className="flex items-start gap-4 p-5 border border-white/8 rounded">
+              <span className="font-mono text-[10px] font-semibold tracking-[0.1em] shrink-0 mt-0.5 text-[#52525e]">
                 NOTE
               </span>
-              <p className="text-sm text-[#6a6a7a] leading-relaxed">
+              <p className="text-sm text-[#7a7a8a] leading-relaxed">
                 WebP, AVIF, and SVG formats are not supported due to Edge
                 Runtime constraints. Use PNG, JPG, JPEG, or GIF for background
                 images.
@@ -601,23 +595,24 @@ export default function Home() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative z-[1] py-7 px-6 border-t border-[var(--border-0)]">
-        <div className="max-w-[var(--max-w)] mx-auto flex items-center justify-between flex-wrap gap-3 font-mono text-[11px] text-[var(--text-2)]">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span>Built with Next.js · @vercel/og</span>
-            <span className="text-[var(--border-1)]">·</span>
+      <footer className="relative z-[1] py-8 px-6 bg-[#0a0a0c] border-t border-white/6">
+        <div className="max-w-[var(--max-w)] mx-auto flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-6 text-[13px] text-[#5a5a68]">
+            <span className="font-[var(--font-pixel)] text-xs text-[#7a7a8a]">OGIS</span>
+            <span>Built with Next.js and @vercel/og</span>
+          </div>
+          <div className="flex items-center gap-5 text-[13px] text-[#5a5a68]">
             <a
               href="https://github.com/bunizao/ogis"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[var(--text-1)] hover:text-[var(--text-0)] transition-colors"
+              className="hover:text-[#e4e4ea] transition-colors"
             >
               GitHub
             </a>
-            <span className="text-[var(--border-1)]">·</span>
             <span>MIT License</span>
+            <span className="text-[#3a3a46]">© 2026 bunizao</span>
           </div>
-          <span>© 2026 bunizao</span>
         </div>
       </footer>
     </>
@@ -637,10 +632,10 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-wider text-[var(--text-0)] mb-1.5">
+      <label className="flex items-center gap-2 text-[12px] font-medium tracking-wide text-[var(--text-1)] mb-1.5 uppercase">
         {label}
         {required && (
-          <span className="text-[9px] text-[var(--text-2)] font-normal px-1.5 py-px border border-[var(--border-1)] rounded">
+          <span className="text-[9px] text-[var(--text-2)] font-normal normal-case px-1.5 py-px border border-[var(--border-1)] rounded">
             required
           </span>
         )}
@@ -662,19 +657,19 @@ function ParamCard({
   description: string;
 }) {
   return (
-    <div className="p-7 bg-[#101012] transition-colors hover:bg-[#161618]">
+    <div className="p-7 bg-[#101012] transition-colors hover:bg-[#161618] cursor-default group">
       <div className="flex items-center gap-2.5 mb-2">
-        <code className="font-mono text-sm font-medium text-[#e4e4ea]">
+        <code className="font-mono text-sm font-medium text-[#e4e4ea] group-hover:text-white transition-colors">
           {name}
         </code>
         {required && (
-          <span className="font-mono text-[8px] font-semibold tracking-[0.1em] uppercase px-1.5 py-0.5 border border-white/6 rounded text-[#42424e]">
+          <span className="font-mono text-[8px] font-semibold tracking-[0.1em] uppercase px-1.5 py-0.5 border border-white/10 rounded text-[#52525e]">
             Required
           </span>
         )}
       </div>
-      <div className="font-mono text-[11px] text-[#42424e] mb-2.5">{type}</div>
-      <p className="text-[13px] text-[#6a6a7a] leading-relaxed">
+      <div className="font-mono text-[11px] text-[#3a3a46] mb-2.5">{type}</div>
+      <p className="text-[13px] text-[#6a6a7a] leading-relaxed group-hover:text-[#8a8a96] transition-colors">
         {description}
       </p>
     </div>
