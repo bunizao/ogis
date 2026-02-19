@@ -38,6 +38,9 @@ bun run dev
 
 # Build for production
 bun run build
+
+# Run all tests
+bun test
 ```
 
 Visit `http://localhost:3000/api/og?title=Hello&site=Blog` to test (default path).
@@ -75,12 +78,14 @@ If neither `OG_SIGNATURE_SECRET` nor `OG_SECRET` is configured, `sig`/`exp` are 
 | `OG_API_PATH` | No | Optional explicit API path override (advanced mode) |
 | `OG_API_ALLOW_LEGACY_PATH` | No | `true/false`. If omitted, defaults to strict `false` in `OG_SECRET` mode, otherwise legacy `/api/og` is allowed only when `OG_API_PATH=og` |
 | `OG_SIGNATURE_SECRET` | No | Optional explicit signature secret override (defaults to `OG_SECRET`) |
+| `OG_API_ONLY` | No | `true` to disable all non-API frontend routes (returns 404) |
 | `OG_ENABLE_DEBUG` | No | `true` to enable `/api/debug` in production (disabled by default) |
 
 Recommended minimal production config:
 
 ```bash
 OG_SECRET=replace-with-long-random-secret
+OG_API_ONLY=true
 OG_ENABLE_DEBUG=false
 ```
 
@@ -88,6 +93,7 @@ OG_ENABLE_DEBUG=false
 - API path is auto-derived as `/api/og_<hash>`
 - Signature validation is enabled automatically
 - Legacy `/api/og` is disabled by default
+- With `OG_API_ONLY=true`, non-API frontend routes are disabled (404)
 
 You can inspect current runtime endpoint via:
 

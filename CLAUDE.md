@@ -13,9 +13,8 @@ bun install          # Install dependencies (bun is the configured package manag
 bun run dev          # Start dev server at http://localhost:3000
 bun run build        # Production build
 bun run start        # Start production server
+bun test             # Run full Bun test suite
 ```
-
-No test suite or linter is configured.
 
 **Test URL**: `http://localhost:3000/api/og?title=Hello&site=Blog` (default path; in single-secret mode the primary path is derived from `OG_SECRET`)
 
@@ -64,3 +63,7 @@ The largest portion of `route.tsx` (~lines 31–208) implements defense against 
 ### Edge Runtime Constraints
 
 No Node.js APIs (fs, path, etc.), no native modules. All external resources (fonts, images) must be fetched at runtime via `fetch()`. Images are passed as URLs directly to `<img src>` in the JSX — Satori/`@vercel/og` handles fetching them during rendering.
+
+### API-Only Mode
+
+Set `OG_API_ONLY=true` to disable non-API frontend routes. Middleware returns `404` for frontend pages while keeping API routes and OG-required static assets available.
