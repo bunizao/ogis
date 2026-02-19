@@ -28,6 +28,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ArrowUp, Command, CornerDownLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const [title, setTitle] = useState('Interstellar');
@@ -137,7 +139,9 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const mod = isMac ? '⌘' : 'Ctrl+';
+  const modKey = isMac ? 'Cmd' : 'Ctrl';
+  const generateKeys = [modKey, 'Enter'];
+  const copyKeys = [modKey, 'Shift', 'C'];
 
   return (
     <>
@@ -156,37 +160,25 @@ export default function Home() {
             {[
               { label: 'Focus title', keys: ['/'] },
               { label: 'Switch theme', keys: ['1', '/', '2'] },
-              { label: 'Generate preview', keys: [isMac ? '⌘' : 'Ctrl', '↵'] },
-              { label: 'Copy endpoint URL', keys: [isMac ? '⌘' : 'Ctrl', '⇧', 'C'] },
+              { label: 'Generate preview', keys: [modKey, 'Enter'] },
+              { label: 'Copy endpoint URL', keys: [modKey, 'Shift', 'C'] },
               { label: 'Toggle shortcuts', keys: ['?'] },
               { label: 'Close / unfocus', keys: ['Esc'] },
             ].map((shortcut) => (
               <div
                 key={shortcut.label}
-                className="flex items-center justify-between px-6 py-2.5 hover:bg-[var(--border-0)] transition-colors"
+                className="flex items-center justify-between px-6 py-2.5"
               >
                 <span className="text-sm text-[var(--text-1)]">
                   {shortcut.label}
                 </span>
-                <span className="flex items-center gap-1">
-                  {shortcut.keys.map((key, i) =>
-                    key === '/' && shortcut.keys.length === 3 ? (
-                      <span
-                        key={i}
-                        className="text-[10px] opacity-30 mx-0.5"
-                      >
-                        /
-                      </span>
-                    ) : (
-                      <kbd
-                        key={i}
-                        className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 bg-[var(--bg-3)] border border-[var(--border-1)] rounded text-[11px] font-mono text-[var(--text-1)]"
-                      >
-                        {key}
-                      </kbd>
-                    ),
-                  )}
-                </span>
+                <ShortcutKeys
+                  keys={shortcut.keys}
+                  kbdClassName="min-w-[28px] px-2 py-1 bg-[var(--bg-1)] border border-[var(--border-2)] rounded-md text-[10px] leading-none text-[var(--text-0)]"
+                  separatorClassName="text-[10px] opacity-45"
+                  dividerClassName="text-[10px] opacity-30 mx-0.5"
+                  iconClassName="size-3.5"
+                />
               </div>
             ))}
           </div>
@@ -397,9 +389,12 @@ export default function Home() {
 
             <p className="mb-5 text-[13px] text-[var(--text-2)] leading-relaxed">
               Fill in the form, then hit{' '}
-              <kbd className="inline-flex items-center px-1.5 py-0.5 bg-[var(--bg-2)] border border-[var(--border-1)] rounded text-[11px] font-mono text-[var(--text-1)]">
-                {mod}Enter
-              </kbd>{' '}
+              <ShortcutKeys
+                keys={generateKeys}
+                className="text-[10px] font-mono text-[var(--text-1)]"
+                kbdClassName="min-w-[24px] px-1.5 py-0.5 bg-[var(--bg-2)] border border-[var(--border-2)] rounded-md text-[11px] text-[var(--text-0)]"
+                separatorClassName="text-[var(--text-2)]"
+              />{' '}
               to generate.{' '}
               <button
                 onClick={() => setShowShortcuts(true)}
@@ -444,9 +439,13 @@ export default function Home() {
                   ) : (
                     <>
                       Generate
-                      <kbd className="font-mono text-[9px] px-1 py-0.5 border border-current/20 rounded opacity-40">
-                        {mod}↵
-                      </kbd>
+                      <ShortcutKeys
+                        keys={generateKeys}
+                        className="text-[9px] font-mono text-current/70"
+                        kbdClassName="min-w-[18px] px-1 py-0.5 border border-current/45 bg-current/10 rounded-sm text-current"
+                        separatorClassName="text-current/50"
+                        iconClassName="size-3"
+                      />
                     </>
                   )}
                 </Button>
@@ -475,13 +474,17 @@ export default function Home() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="font-mono text-[11px] text-[var(--text-2)] h-auto py-1 px-2 gap-1.5 hover:text-[var(--text-0)]"
+                  className="font-mono text-[11px] text-[var(--text-1)] h-auto py-1 px-2 gap-1.5 hover:text-[var(--text-0)]"
                   onClick={copyUrl}
                 >
                   Copy
-                  <kbd className="font-mono text-[9px] px-1 py-0.5 border border-current rounded opacity-35">
-                    {mod}⇧C
-                  </kbd>
+                  <ShortcutKeys
+                    keys={copyKeys}
+                    className="text-[10px] font-mono text-current"
+                    kbdClassName="min-w-[18px] px-1 py-0.5 border border-[var(--border-2)] bg-[var(--bg-1)] rounded-sm text-current"
+                    separatorClassName="text-current/55"
+                    iconClassName="size-3"
+                  />
                 </Button>
               </div>
               <div className="endpoint-box font-mono text-xs text-[var(--text-1)] p-4 bg-[var(--bg-1)] border border-[var(--border-1)] rounded break-all leading-relaxed">
@@ -620,6 +623,96 @@ export default function Home() {
 }
 
 /* ── Sub-components ── */
+
+function ShortcutKeys({
+  keys,
+  className,
+  kbdClassName,
+  separatorClassName,
+  dividerClassName,
+  iconClassName,
+}: {
+  keys: string[];
+  className?: string;
+  kbdClassName?: string;
+  separatorClassName?: string;
+  dividerClassName?: string;
+  iconClassName?: string;
+}) {
+  return (
+    <span className={cn('inline-flex items-center gap-1', className)}>
+      {keys.map((key, index) => {
+        const prev = keys[index - 1];
+        const showPlus = index > 0 && key !== '/' && prev !== '/';
+
+        return (
+          <span key={`${key}-${index}`} className="inline-flex items-center gap-1">
+            {showPlus && (
+              <span className={cn('text-current/55', separatorClassName)}>
+                +
+              </span>
+            )}
+            {key === '/' ? (
+              <span className={cn('mx-0.5 text-[10px] opacity-30', dividerClassName)}>
+                /
+              </span>
+            ) : (
+              <ShortcutKeycap
+                value={key}
+                className={kbdClassName}
+                iconClassName={iconClassName}
+              />
+            )}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function ShortcutKeycap({
+  value,
+  className,
+  iconClassName,
+}: {
+  value: string;
+  className?: string;
+  iconClassName?: string;
+}) {
+  const iconMap = {
+    Cmd: Command,
+    Enter: CornerDownLeft,
+    Shift: ArrowUp,
+  } as const;
+  const Icon = iconMap[value as keyof typeof iconMap];
+  const symbolClassName = cn('text-[0.95em] leading-none', iconClassName);
+  const keySymbol = value === 'Ctrl' ? '⌃' : null;
+
+  return (
+    <kbd
+      className={cn(
+        'inline-flex items-center justify-center min-w-[20px] px-1.5 py-0.5 border rounded-md font-mono leading-none',
+        className,
+      )}
+    >
+      {Icon ? (
+        <>
+          <Icon className={cn('size-3.5', iconClassName)} aria-hidden="true" />
+          <span className="sr-only">{value}</span>
+        </>
+      ) : keySymbol ? (
+        <>
+          <span className={symbolClassName} aria-hidden="true">
+            {keySymbol}
+          </span>
+          <span className="sr-only">{value}</span>
+        </>
+      ) : (
+        value
+      )}
+    </kbd>
+  );
+}
 
 function FormField({
   label,
