@@ -29,6 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { ArrowUp, Command, CornerDownLeft, Github } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -635,35 +636,56 @@ export default function Home() {
           </div>
 
           {/* Notes */}
-          <div className="mt-16 grid gap-3">
-            <div className="flex items-start gap-4 p-5 border border-white/8 rounded bg-white/[0.02]">
-              <span className="font-mono text-[10px] font-semibold tracking-[0.1em] shrink-0 mt-0.5 text-[#e4e4ea]">
-                DEMO
-              </span>
-              <p className="text-sm text-[#7a7a8a] leading-relaxed">
-                This is a demo site for demonstration purposes only. Preview
-                images are cached and only regenerated when you click
-                &quot;Generate Preview&quot;. For production use, please{' '}
-                <a
-                  href="https://github.com/bunizao/ogis#deployment"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#e4e4ea] underline underline-offset-2 hover:opacity-70"
+          <div className="mt-14 grid gap-3">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 border-white/22 bg-white/[0.05] text-[#eef0f8] font-mono text-[10px] tracking-[0.1em] uppercase"
                 >
-                  deploy your own instance
-                </a>
-                .
-              </p>
+                  Demo
+                </Badge>
+                <p className="text-sm leading-relaxed text-[#87899c]">
+                  Preview responses may be cached. Click{' '}
+                  <span className="text-[#d5d7e6]">&quot;Generate&quot;</span>{' '}
+                  to refresh.
+                  <span className="hidden sm:inline text-[#5f6171]"> · </span>
+                  <a
+                    href="https://github.com/bunizao/ogis#deployment"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#e8e9f3] underline underline-offset-2 hover:opacity-75"
+                  >
+                    Deploy your own instance
+                  </a>
+                  <span className="text-[#5f6171]"> · </span>
+                  <a
+                    href="https://github.com/bunizao/ogis#integration-guide"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#e8e9f3] underline underline-offset-2 hover:opacity-75"
+                  >
+                    Integration guide
+                  </a>
+                  .
+                </p>
+              </div>
             </div>
-            <div className="flex items-start gap-4 p-5 border border-white/8 rounded">
-              <span className="font-mono text-[10px] font-semibold tracking-[0.1em] shrink-0 mt-0.5 text-[#52525e]">
-                NOTE
-              </span>
-              <p className="text-sm text-[#7a7a8a] leading-relaxed">
-                WebP, AVIF, and SVG formats are not supported due to Edge
-                Runtime constraints. Use PNG, JPG, JPEG, or GIF for background
-                images.
-              </p>
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <Badge
+                  variant="outline"
+                  className="shrink-0 border-white/15 bg-white/[0.03] text-[#9a9db0] font-mono text-[10px] tracking-[0.1em] uppercase"
+                >
+                  Formats
+                </Badge>
+                <p className="text-sm leading-relaxed text-[#87899c]">
+                  Supported:{' '}
+                  <span className="text-[#d5d7e6]">PNG, JPG, JPEG, GIF</span>.
+                  Not supported:{' '}
+                  <span className="text-[#b4b7cb]">WebP, AVIF, SVG</span>.
+                </p>
+              </div>
             </div>
           </div>
         </div>
