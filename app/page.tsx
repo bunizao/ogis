@@ -286,14 +286,20 @@ export default function Home() {
                 onValueChange={(v) => setTheme(v as 'pixel' | 'modern')}
                 className="mb-7"
               >
-                <TabsList className="w-full bg-[var(--bg-1)] border border-[var(--border-1)]">
-                  <TabsTrigger value="pixel" className="flex-1 font-mono text-[11px] tracking-wider uppercase gap-2">
+                <TabsList className="grid h-10 w-full grid-cols-2 gap-2 bg-transparent p-0">
+                  <TabsTrigger
+                    value="pixel"
+                    className="h-full rounded-lg border border-[var(--border-1)] bg-[var(--bg-1)] font-mono text-[11px] tracking-[0.12em] uppercase gap-2 text-[var(--text-2)] transition-[color,background-color,border-color] hover:text-[var(--text-1)] data-[state=active]:bg-[var(--bg-0)] data-[state=active]:text-[var(--text-0)] data-[state=active]:border-[var(--border-2)] data-[state=active]:shadow-none group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none"
+                  >
                     pixel
-                    <kbd className="opacity-40 text-[9px]">1</kbd>
+                    <span className="text-[9px] text-current/55">1</span>
                   </TabsTrigger>
-                  <TabsTrigger value="modern" className="flex-1 font-mono text-[11px] tracking-wider uppercase gap-2">
+                  <TabsTrigger
+                    value="modern"
+                    className="h-full rounded-lg border border-[var(--border-1)] bg-[var(--bg-1)] font-mono text-[11px] tracking-[0.12em] uppercase gap-2 text-[var(--text-2)] transition-[color,background-color,border-color] hover:text-[var(--text-1)] data-[state=active]:bg-[var(--bg-0)] data-[state=active]:text-[var(--text-0)] data-[state=active]:border-[var(--border-2)] data-[state=active]:shadow-none group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none"
+                  >
                     modern
-                    <kbd className="opacity-40 text-[9px]">2</kbd>
+                    <span className="text-[9px] text-current/55">2</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
