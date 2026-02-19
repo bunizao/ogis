@@ -4,7 +4,20 @@ import { resolveOgSecurityConfig } from '@/app/lib/og-security';
 
 export const runtime = 'edge';
 
+function isConfigEndpointEnabled(): boolean {
+  return process.env.OG_ENABLE_CONFIG_ENDPOINT === 'true';
+}
+
 export async function GET() {
+  if (!isConfigEndpointEnabled()) {
+    return new Response('Not Found', {
+      status: 404,
+      headers: {
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
   const config = resolveOgSecurityConfig();
   return NextResponse.json(
     {
