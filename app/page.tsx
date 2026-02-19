@@ -682,8 +682,6 @@ export default function Home() {
                 <p className="text-sm leading-relaxed text-[#87899c]">
                   Supported:{' '}
                   <span className="text-[#d5d7e6]">PNG, JPG, JPEG, GIF</span>.
-                  Not supported:{' '}
-                  <span className="text-[#b4b7cb]">WebP, AVIF, SVG</span>.
                 </p>
               </div>
             </div>
