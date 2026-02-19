@@ -47,72 +47,63 @@ Visit `http://localhost:3000/api/og?title=Hello&site=Blog` to test (default path
 
 ## API Usage
 
-### Endpoint
+### 1) Find Your Endpoint
+
+Base pattern:
 
 ```
 GET /api/<OG_API_PATH>
 ```
 
-### Parameters
+- Default mode (no `OG_SECRET`): endpoint is usually `/api/og`
+- `OG_SECRET` mode: endpoint is auto-derived (for example `/api/og_xxxxxxxx`) and signature check is enabled
 
-| Parameter | Type | Required | Description | Example |
-|-----------|------|----------|-------------|---------|
-| `title` | string | Yes | Article title (max 60 chars) | `Hello World` |
-| `site` | string | Yes | Site name for branding | `My Blog` |
-| `excerpt` | string | No | Article excerpt (max 80 chars) | `A brief description...` |
-| `author` | string | No | Author name | `John Doe` |
-| `date` | string | No | Publication date | `2025-01-05` |
-| `image` | string | No | Background image URL | `https://...` |
-| `theme` | string | No | Visual theme: `pixel` (default) or `modern` | `modern` |
-| `pixelFont` | string | No | Pixel font (only for `theme=pixel`) | `geist-square` |
-| `exp` | number | No | Expiry unix timestamp (required only if you choose expiring signatures) | `1767225599` |
-| `sig` | string | Depends | HMAC-SHA256 signature (required when `OG_SIGNATURE_SECRET` or `OG_SECRET` is set) | `7dc12f...` |
-
-If neither `OG_SIGNATURE_SECRET` nor `OG_SECRET` is configured, `sig`/`exp` are optional and unsigned URLs continue to work.
-
-### Security Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `OG_SECRET` | Recommended | Single-variable mode: auto-derives API path and enables signature validation |
-| `OG_API_PATH` | No | Optional explicit API path override (advanced mode) |
-| `OG_API_ALLOW_LEGACY_PATH` | No | `true/false`. If omitted, defaults to strict `false` in `OG_SECRET` mode, otherwise legacy `/api/og` is allowed only when `OG_API_PATH=og` |
-| `OG_SIGNATURE_SECRET` | No | Optional explicit signature secret override (defaults to `OG_SECRET`) |
-| `OG_API_ONLY` | No | `true` to disable all non-API frontend routes (returns 404) |
-| `OG_ENABLE_DEBUG` | No | `true` to enable `/api/debug` in production (disabled by default) |
-
-Recommended minimal production config:
-
-```bash
-OG_SECRET=replace-with-long-random-secret
-OG_API_ONLY=true
-OG_ENABLE_DEBUG=false
-```
-
-`OG_SECRET` mode behavior:
-- API path is auto-derived as `/api/og_<hash>`
-- Signature validation is enabled automatically
-- Legacy `/api/og` is disabled by default
-- With `OG_API_ONLY=true`, non-API frontend routes are disabled (404)
-
-You can inspect current runtime endpoint via:
+Check the current runtime endpoint and whether signature is required:
 
 ```bash
 GET /api/og-config
 ```
 
-### Signature Generation
+### 2) Build Query Parameters
 
-Use the built-in script to generate signed URLs:
+Required:
+- `title`: article title
+- `site`: site name
 
-```bash
-bun scripts/sign-og-url.mjs \
-  --url "https://your-domain.com/api/your-random-key?title=Hello&site=Blog"
+Common optional:
+- `excerpt`, `author`, `date`, `image`
+- `theme` (`pixel` or `modern`)
+- `pixelFont` (used when `theme=pixel`)
+
+Security:
+- `sig`: required when `OG_SECRET` or `OG_SIGNATURE_SECRET` is set
+- `exp`: optional Unix timestamp for expiring signatures
+
+Unsigned example:
+
+```
+https://your-domain.com/api/og?title=Hello&site=Blog
 ```
 
-The generated `sig` is an HMAC-SHA256 hex digest over canonicalized query parameters (excluding `sig`).
+Signed example:
 
-With expiration (recommended):
+```
+https://your-domain.com/api/your-random-key?title=Hello&site=Blog&sig=<signature>
+```
+
+Full example:
+
+```
+https://your-domain.com/api/your-random-key?title=Getting%20Started&site=Tech%20Blog&author=Jane&date=2025-01-05&theme=pixel&pixelFont=geist-square&sig=<signature>
+```
+
+Background image example:
+
+```
+https://your-domain.com/api/your-random-key?title=Summer%20Post&site=Tech%20Blog&image=https://images.unsplash.com/photo-123456&sig=<signature>
+```
+
+### 3) Generate Signature (Recommended)
 
 ```bash
 bun scripts/sign-og-url.mjs \
@@ -120,25 +111,29 @@ bun scripts/sign-og-url.mjs \
   --exp-seconds 604800
 ```
 
-The script reads secret in this order: `--secret` > `OG_SIGNATURE_SECRET` > `OG_SECRET`.
+Secret priority:
+`--secret` > `OG_SIGNATURE_SECRET` > `OG_SECRET`
 
-### Example Request
+### 4) Minimal Production Config
 
-```
-https://og.tutuis.me/api/your-random-key?title=Getting%20Started&site=Tech%20Blog&author=Jane&date=2025-01-05&sig=<signature>
-```
-
-### With Custom Background
-
-```
-https://og.tutuis.me/api/your-random-key?title=My%20Article&site=Blog&image=https://images.unsplash.com/photo-123456&sig=<signature>
+```bash
+OG_SECRET=replace-with-long-random-secret
+OG_API_ONLY=true
+OG_ENABLE_DEBUG=false
 ```
 
-### With Geist Pixel Font
+### Environment Variables
 
-```
-https://og.tutuis.me/api/your-random-key?title=Pixel%20Type&site=Blog&theme=pixel&pixelFont=geist-square&sig=<signature>
-```
+| Variable | Required | Purpose | Example |
+|----------|----------|---------|---------|
+| `OG_SECRET` | Recommended | Single-variable mode: auto-derive API path and enable signature validation | `OG_SECRET=replace-with-long-random-secret` |
+| `OG_API_PATH` | No | Manually set API path (advanced) | `OG_API_PATH=og_myblog` |
+| `OG_API_ALLOW_LEGACY_PATH` | No | Set `true` to allow legacy `/api/og` in advanced setups | `OG_API_ALLOW_LEGACY_PATH=true` |
+| `OG_SIGNATURE_SECRET` | No | Explicit signature secret (defaults to `OG_SECRET`) | `OG_SIGNATURE_SECRET=another-long-secret` |
+| `OG_API_ONLY` | No | Set `true` to disable non-API frontend routes | `OG_API_ONLY=true` |
+| `OG_ENABLE_DEBUG` | No | Set `true` to enable `/api/debug` in production | `OG_ENABLE_DEBUG=false` |
+
+If neither `OG_SECRET` nor `OG_SIGNATURE_SECRET` is set, unsigned URLs work.
 
 ## Integration Guide
 
