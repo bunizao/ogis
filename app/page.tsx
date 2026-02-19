@@ -604,57 +604,39 @@ export default function Home() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative z-[1] py-8 px-6 bg-[#0a0a0c] border-t border-white/6">
-        <div className="max-w-[var(--max-w)] mx-auto flex items-center justify-between flex-wrap gap-5">
-          <div className="flex items-center gap-3 flex-wrap text-[13px] text-[#9091a2]">
-            <span className="font-[var(--font-pixel)] text-xs text-[#9091a2]">
+      <footer className="relative z-[1] py-10 px-6 bg-[linear-gradient(180deg,#0a0a0c_0%,#0d0d11_100%)] border-t border-white/8">
+        <div className="max-w-[var(--max-w)] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex items-center gap-3 flex-wrap text-[13px] text-[#9899ad]">
+            <span className="font-[var(--font-pixel)] text-xs tracking-[0.08em] text-[#cfd0dd]">
               OGIS
             </span>
-            <span>Built with</span>
-            <a
+            <span className="text-[#6f7083]">Built with</span>
+            <FooterBadgeLink
               href="https://nextjs.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center rounded-md border border-white/14 bg-white/[0.04] px-1.5 py-1 hover:bg-white/[0.08] transition-colors"
-              aria-label="Next.js website"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs&logoColor=white"
-                alt="Next.js 16 badge"
-                className="h-4 w-auto"
-                loading="lazy"
-                decoding="async"
-              />
-            </a>
-            <a
+              ariaLabel="Next.js website"
+              marker="N"
+              label="Next.js"
+              meta="App Router"
+            />
+            <FooterBadgeLink
               href="https://vercel.com/docs/og-image-generation/og-image-api"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center rounded-md border border-white/14 bg-white/[0.04] px-1.5 py-1 hover:bg-white/[0.08] transition-colors"
-              aria-label="Vercel OG documentation"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://img.shields.io/badge/Vercel-%40vercel%2Fog-black?logo=vercel&logoColor=white"
-                alt="Vercel OG badge"
-                className="h-4 w-auto"
-                loading="lazy"
-                decoding="async"
-              />
-            </a>
+              ariaLabel="Vercel OG documentation"
+              marker="▲"
+              label="@vercel/og"
+              meta="Edge OG"
+            />
           </div>
-          <div className="flex items-center gap-5 text-[13px] text-[#9091a2]">
+          <div className="flex items-center gap-5 text-[13px] text-[#9899ad]">
             <a
               href="https://github.com/bunizao/ogis"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#e4e4ea] transition-colors"
+              className="hover:text-[#f0f1f8] transition-colors"
             >
               GitHub
             </a>
             <span>MIT License</span>
-            <span>© 2026 bunizao</span>
+            <span className="text-[#6f7083]">© 2026 bunizao</span>
           </div>
         </div>
       </footer>
@@ -751,6 +733,41 @@ function ShortcutKeycap({
         value
       )}
     </kbd>
+  );
+}
+
+function FooterBadgeLink({
+  href,
+  ariaLabel,
+  marker,
+  label,
+  meta,
+}: {
+  href: string;
+  ariaLabel: string;
+  marker: string;
+  label: string;
+  meta: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={ariaLabel}
+      className="group inline-flex items-center gap-2.5 rounded-full border border-white/14 bg-white/[0.04] px-3 py-1.5 text-[12px] text-[#e7e8f1] transition-[background-color,border-color,color] hover:bg-white/[0.08] hover:border-white/22"
+    >
+      <span className="inline-flex size-5 items-center justify-center rounded-full border border-white/20 bg-black/25 text-[9px] font-semibold text-white/90">
+        {marker}
+      </span>
+      <span className="leading-none">{label}</span>
+      <span className="hidden sm:inline text-[10px] text-[#8a8c9f] group-hover:text-[#b5b7cb] transition-colors">
+        {meta}
+      </span>
+      <span className="text-[#76788b] group-hover:text-[#b7b9ce] transition-colors">
+        ↗
+      </span>
+    </a>
   );
 }
 
