@@ -7,7 +7,7 @@
 
 Dynamic Open Graph (OG) image generation service for blogs and websites, built with Next.js 16 on Vercel Edge Runtime.
 
-**Demo**: https://og.tutuis.me
+**Demo**: https://og.tuuhub.com
 
 > **⚠️ Important**: The demo site is for **demonstration** purposes **ONLY**. Please deploy your **OWN** instance for production use.
 
