@@ -1,5 +1,26 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'OGIS - Open Graph Image Service',
@@ -16,7 +37,7 @@ export const metadata: Metadata = {
     url: 'https://og.tutuis.me',
     images: [
       {
-        url: 'https://og.tutuis.me/api/og?title=OGIS&site=og.tutuis.me&excerpt=Dynamic%20Open%20Graph%20Image%20Service&author=bunizao&image=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1635776062127-d379bfcba9f8',
+        url: 'https://og.tutuis.me/preview.png',
         width: 1200,
         height: 630,
         alt: 'OGIS - Open Graph Image Service',
@@ -27,7 +48,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'OGIS - Open Graph Image Service',
     description: 'Dynamic OG image generation with pixel-style typography and frosted glass effects',
-    images: ['https://og.tutuis.me/api/og?title=OGIS&site=og.tutuis.me&excerpt=Dynamic%20Open%20Graph%20Image%20Service&author=bunizao&image=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1635776062127-d379bfcba9f8'],
+    images: ['https://og.tutuis.me/preview.png'],
   },
 };
 
@@ -42,8 +63,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable}`}>
+      <body>
+        <TooltipProvider delayDuration={300}>
+          {children}
+        </TooltipProvider>
+        <Toaster position="bottom-right" />
+      </body>
     </html>
   );
 }
