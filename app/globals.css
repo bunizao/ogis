@@ -361,11 +361,6 @@ body::before {
   border: 1px solid var(--border-1);
   border-radius: 8px;
   padding: 28px;
-  transition: border-color var(--dur) var(--ease);
-}
-
-.form-card:hover {
-  border-color: var(--border-2);
 }
 
 @media (prefers-color-scheme: light) {
