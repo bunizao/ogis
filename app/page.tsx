@@ -46,6 +46,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const [isNavOnDark, setIsNavOnDark] = useState(false);
 
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -139,6 +140,37 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  useEffect(() => {
+    const navProbeY = 28;
+
+    const updateNavTheme = () => {
+      const darkSections = document.querySelectorAll<HTMLElement>(
+        '[data-nav-theme="dark"]',
+      );
+      let nextIsNavOnDark = false;
+
+      darkSections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        if (rect.top <= navProbeY && rect.bottom >= navProbeY) {
+          nextIsNavOnDark = true;
+        }
+      });
+
+      setIsNavOnDark((prev) =>
+        prev === nextIsNavOnDark ? prev : nextIsNavOnDark,
+      );
+    };
+
+    updateNavTheme();
+    window.addEventListener('scroll', updateNavTheme, { passive: true });
+    window.addEventListener('resize', updateNavTheme);
+
+    return () => {
+      window.removeEventListener('scroll', updateNavTheme);
+      window.removeEventListener('resize', updateNavTheme);
+    };
+  }, []);
+
   const modKey = isMac ? 'Cmd' : 'Ctrl';
   const generateKeys = [modKey, 'Enter'];
   const copyKeys = [modKey, 'Shift', 'C'];
@@ -186,21 +218,43 @@ export default function Home() {
       </Dialog>
 
       {/* ── Navigation ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[color-mix(in_srgb,var(--bg-0)_85%,transparent)] backdrop-blur-xl backdrop-saturate-150 border-b border-[var(--border-0)] animate-[fade-up_0.5s_var(--ease)_both]">
+      <nav
+        className={cn(
+          'fixed top-0 left-0 right-0 z-50 backdrop-blur-xl backdrop-saturate-150 animate-[fade-up_0.5s_var(--ease)_both]',
+          isNavOnDark
+            ? 'border-b border-white/10 bg-[#07070a]/92 supports-[backdrop-filter]:bg-[#07070a]/80'
+            : 'border-b border-[var(--border-0)] bg-[color-mix(in_srgb,var(--bg-0)_88%,transparent)]',
+        )}
+      >
         <div className="max-w-[var(--max-w)] mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="font-[var(--font-pixel)] text-xs font-semibold tracking-wide cursor-default">
+          <span
+            className={cn(
+              'font-[var(--font-pixel)] text-xs font-semibold tracking-wide cursor-default',
+              isNavOnDark ? 'text-[#eef0f8]' : 'text-[var(--text-0)]',
+            )}
+          >
             OGIS/
           </span>
           <div className="flex items-center gap-1.5">
             <a
               href="#preview"
-              className="hidden md:inline-flex text-[13px] text-[var(--text-2)] px-3 py-2 rounded hover:text-[var(--text-0)] hover:bg-[var(--border-0)] transition-colors"
+              className={cn(
+                'hidden md:inline-flex text-[13px] px-3 py-2 rounded-md transition-colors',
+                isNavOnDark
+                  ? 'text-[#9396ab] hover:text-[#f2f3fa] hover:bg-white/[0.08]'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-0)] hover:bg-[var(--border-0)]',
+              )}
             >
               Preview
             </a>
             <a
               href="#api"
-              className="hidden md:inline-flex text-[13px] text-[var(--text-2)] px-3 py-2 rounded hover:text-[var(--text-0)] hover:bg-[var(--border-0)] transition-colors"
+              className={cn(
+                'hidden md:inline-flex text-[13px] px-3 py-2 rounded-md transition-colors',
+                isNavOnDark
+                  ? 'text-[#9396ab] hover:text-[#f2f3fa] hover:bg-white/[0.08]'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-0)] hover:bg-[var(--border-0)]',
+              )}
             >
               API
             </a>
@@ -209,7 +263,12 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  className="text-[var(--text-2)] border-[var(--border-1)] bg-transparent hover:text-[var(--text-0)] hover:border-[var(--border-2)] text-sm hidden sm:inline-flex"
+                  className={cn(
+                    'text-sm hidden sm:inline-flex',
+                    isNavOnDark
+                      ? 'text-[#a4a7bb] border-white/16 bg-white/[0.02] hover:text-[#f2f3fa] hover:border-white/28 hover:bg-white/[0.08]'
+                      : 'text-[var(--text-2)] border-[var(--border-1)] bg-transparent hover:text-[var(--text-0)] hover:border-[var(--border-2)] hover:bg-[var(--border-0)]',
+                  )}
                   onClick={() => setShowShortcuts((s) => !s)}
                   aria-label="Show keyboard shortcuts"
                 >
@@ -221,7 +280,12 @@ export default function Home() {
             <Button
               variant="outline"
               size="sm"
-              className="text-[13px] border-[var(--border-2)] bg-transparent hover:bg-[var(--text-0)] hover:text-[var(--bg-0)] hover:border-[var(--text-0)]"
+              className={cn(
+                'text-[13px]',
+                isNavOnDark
+                  ? 'text-[#edf0fa] border-white/20 bg-white/[0.03] hover:bg-white/[0.12] hover:text-white hover:border-white/32'
+                  : 'text-[var(--text-0)] border-[var(--border-2)] bg-transparent hover:bg-[var(--text-0)] hover:text-[var(--bg-0)] hover:border-[var(--text-0)]',
+              )}
               asChild
             >
               <a
@@ -506,6 +570,7 @@ export default function Home() {
       <section
         className="relative z-[1] bg-[#0a0a0c] text-[#e4e4ea] py-20 md:py-24 px-6 border-t border-[var(--border-1)]"
         id="api"
+        data-nav-theme="dark"
       >
         <div className="max-w-[var(--max-w)] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 lg:gap-20">
@@ -604,7 +669,10 @@ export default function Home() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative z-[1] py-10 px-6 bg-[linear-gradient(180deg,#0a0a0c_0%,#0d0d11_100%)] border-t border-white/8">
+      <footer
+        className="relative z-[1] py-10 px-6 bg-[linear-gradient(180deg,#0a0a0c_0%,#0d0d11_100%)] border-t border-white/8"
+        data-nav-theme="dark"
+      >
         <div className="max-w-[var(--max-w)] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-3 flex-wrap text-[13px] text-[#9899ad]">
             <span className="font-[var(--font-pixel)] text-xs tracking-[0.08em] text-[#cfd0dd]">
