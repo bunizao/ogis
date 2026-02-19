@@ -196,7 +196,7 @@ export default function Home() {
       {/* ── Navigation ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[color-mix(in_srgb,var(--bg-0)_85%,transparent)] backdrop-blur-xl backdrop-saturate-150 border-b border-[var(--border-0)] animate-[fade-up_0.5s_var(--ease)_both]">
         <div className="max-w-[var(--max-w)] mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="font-[var(--font-pixel)] text-xs font-semibold tracking-wide hover:opacity-60 transition-opacity cursor-default">
+          <span className="font-[var(--font-pixel)] text-xs font-semibold tracking-wide cursor-default">
             OGIS/
           </span>
           <div className="flex items-center gap-1.5">
@@ -635,8 +635,8 @@ function FormField({
       <label className="flex items-center gap-2 text-[12px] font-medium tracking-wide text-[var(--text-1)] mb-1.5 uppercase">
         {label}
         {required && (
-          <span className="text-[9px] text-[var(--text-2)] font-normal normal-case px-1.5 py-px border border-[var(--border-1)] rounded">
-            required
+          <span className="inline-flex items-center text-[11px] text-[var(--text-0)] font-bold tracking-[0.08em] px-2.5 py-0.5 border border-[var(--text-1)] bg-[var(--bg-2)] rounded-sm leading-none">
+            REQUIRED
           </span>
         )}
       </label>
@@ -657,19 +657,19 @@ function ParamCard({
   description: string;
 }) {
   return (
-    <div className="p-7 bg-[#101012] transition-colors hover:bg-[#161618] cursor-default group">
+    <div className="p-7 bg-[#101012] cursor-default">
       <div className="flex items-center gap-2.5 mb-2">
-        <code className="font-mono text-sm font-medium text-[#e4e4ea] group-hover:text-white transition-colors">
+        <code className="font-mono text-sm font-medium text-[#ececf2]">
           {name}
         </code>
         {required && (
-          <span className="font-mono text-[8px] font-semibold tracking-[0.1em] uppercase px-1.5 py-0.5 border border-white/10 rounded text-[#52525e]">
-            Required
+          <span className="font-mono text-[10px] font-semibold tracking-[0.11em] uppercase px-2 py-0.5 border border-white/30 rounded text-[#eff0f8] bg-white/[0.06]">
+            REQUIRED
           </span>
         )}
       </div>
-      <div className="font-mono text-[11px] text-[#3a3a46] mb-2.5">{type}</div>
-      <p className="text-[13px] text-[#6a6a7a] leading-relaxed group-hover:text-[#8a8a96] transition-colors">
+      <div className="font-mono text-[11px] text-[#b8bbcf] mb-2.5">{type}</div>
+      <p className="text-[13px] text-[#999caf] leading-relaxed">
         {description}
       </p>
     </div>
