@@ -17,10 +17,7 @@ const DNS_CACHE_TTL_MS = 10 * 60 * 1000;
 const securityConfig = resolveOgSecurityConfig();
 const primaryRouteKey = securityConfig.primaryRouteKey;
 const allowLegacyPath = securityConfig.allowLegacyPath;
-const allowedRouteKeys = new Set<string>([primaryRouteKey]);
-if (allowLegacyPath) {
-  allowedRouteKeys.add(DEFAULT_OG_API_PATH);
-}
+const allowedRouteKeys = new Set<string>([primaryRouteKey, DEFAULT_OG_API_PATH]);
 
 const signatureSecret = securityConfig.signatureSecret;
 const hasSignatureProtection = securityConfig.hasSignatureProtection;
@@ -244,7 +241,7 @@ async function hasValidSignature(requestUrl: URL): Promise<boolean> {
 
 function requiresSignature(routeKey: string): boolean {
   if (!hasSignatureProtection) return false;
-  return !(allowLegacyPath && routeKey === DEFAULT_OG_API_PATH && primaryRouteKey !== DEFAULT_OG_API_PATH);
+  return routeKey !== DEFAULT_OG_API_PATH;
 }
 
 async function fetchDnsRecords(hostname: string, recordType: 'A' | 'AAAA'): Promise<string[]> {

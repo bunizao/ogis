@@ -98,7 +98,7 @@ GET /api/<OG_API_PATH>
 ```
 
 - No `OG_SECRET`: endpoint is usually `/api/og`
-- With `OG_SECRET`: a signed endpoint is auto-derived (for example `/api/og_xxxxxxxx`), while `/api/og` remains available for static Ghost/social-crawler integrations unless disabled
+- With `OG_SECRET`: a signed endpoint is auto-derived (for example `/api/og_xxxxxxxx`), while `/api/og` remains available for static Ghost/social-crawler integrations
 - Optional: set `OG_API_PATH` to pin a stable path
 
 To inspect current endpoint and signature requirement temporarily:
@@ -150,7 +150,7 @@ Secret priority:
 |----------|----------|---------|---------|
 | `OG_SECRET` | No | Advanced mode: auto-derive API path and enable signature validation | `OG_SECRET=replace-with-long-random-secret` |
 | `OG_API_PATH` | Recommended | Set custom API path (random string recommended) | `OG_API_PATH=og_myblog` |
-| `OG_API_ALLOW_LEGACY_PATH` | No | Set `false` to disable public legacy `/api/og` in advanced setups | `OG_API_ALLOW_LEGACY_PATH=false` |
+| `OG_API_ALLOW_LEGACY_PATH` | No | Deprecated; `/api/og` remains public for Ghost/social-crawler compatibility | `OG_API_ALLOW_LEGACY_PATH=true` |
 | `OG_SIGNATURE_SECRET` | No | Explicit signature secret (defaults to `OG_SECRET`) | `OG_SIGNATURE_SECRET=another-long-secret` |
 | `OG_API_ONLY` | No | Set `true` to disable non-API frontend routes | `OG_API_ONLY=true` |
 | `OG_ENABLE_DEBUG` | No | Set `true` to enable `/api/debug` in production | `OG_ENABLE_DEBUG=false` |

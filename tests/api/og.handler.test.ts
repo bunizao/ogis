@@ -209,7 +209,7 @@ afterEach(() => {
 });
 
 describe('handleOgGet', () => {
-  test('returns 404 when route key is not allowed', async () => {
+  test('allows public legacy route even when legacy env policy is disabled', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_custom',
       allowLegacyPath: false,
@@ -221,6 +221,24 @@ describe('handleOgGet', () => {
     const response = await handleOgGet(
       new NextRequest('https://example.com/api/og?title=Hello&site=Blog'),
       'og'
+    );
+
+    expect(response.status).toBe(200);
+    expect(state.pixelRenderCalls).toHaveLength(1);
+  });
+
+  test('returns 404 when custom route key is not allowed', async () => {
+    state.securityConfig = {
+      primaryRouteKey: 'og_custom',
+      allowLegacyPath: false,
+      signatureSecret: '',
+      hasSignatureProtection: false,
+    };
+
+    const { handleOgGet } = await loadHandler();
+    const response = await handleOgGet(
+      new NextRequest('https://example.com/api/other?title=Hello&site=Blog'),
+      'other'
     );
 
     expect(response.status).toBe(404);
@@ -247,7 +265,7 @@ describe('handleOgGet', () => {
   test('allows unsigned legacy path while signed primary path is enabled', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_secure',
-      allowLegacyPath: true,
+      allowLegacyPath: false,
       signatureSecret: 'sig-secret',
       hasSignatureProtection: true,
     };
