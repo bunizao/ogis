@@ -29,14 +29,14 @@ describe('og-security', () => {
     expect(config.hasSignatureProtection).toBeFalse();
   });
 
-  test('enables signature and strict legacy path by default in OG_SECRET mode', () => {
+  test('enables signature and public legacy path by default in OG_SECRET mode', () => {
     const config = resolveOgSecurityConfig({ OG_SECRET: 'abc123' });
 
     expect(config.primaryRouteKey).toStartWith('og_');
     expect(config.primaryRouteKey).not.toBe(DEFAULT_OG_API_PATH);
     expect(config.signatureSecret).toBe('abc123');
     expect(config.hasSignatureProtection).toBeTrue();
-    expect(config.allowLegacyPath).toBeFalse();
+    expect(config.allowLegacyPath).toBeTrue();
   });
 
   test('honors explicit OG_API_PATH and normalizes it', () => {
@@ -47,7 +47,7 @@ describe('og-security', () => {
 
     expect(config.primaryRouteKey).toBe('custom_key');
     expect(config.hasSignatureProtection).toBeTrue();
-    expect(config.allowLegacyPath).toBeFalse();
+    expect(config.allowLegacyPath).toBeTrue();
   });
 
   test('uses OG_SIGNATURE_SECRET over OG_SECRET when provided', () => {
@@ -88,6 +88,6 @@ describe('og-security', () => {
       OG_API_ALLOW_LEGACY_PATH: 'yes',
     });
 
-    expect(config.allowLegacyPath).toBeFalse();
+    expect(config.allowLegacyPath).toBeTrue();
   });
 });

@@ -244,6 +244,24 @@ describe('handleOgGet', () => {
     expect(state.pixelRenderCalls).toHaveLength(1);
   });
 
+  test('allows unsigned legacy path while signed primary path is enabled', async () => {
+    state.securityConfig = {
+      primaryRouteKey: 'og_secure',
+      allowLegacyPath: true,
+      signatureSecret: 'sig-secret',
+      hasSignatureProtection: true,
+    };
+
+    const { handleOgGet } = await loadHandler();
+    const response = await handleOgGet(
+      new NextRequest('https://example.com/api/og?title=Hello&site=Blog'),
+      'og'
+    );
+
+    expect(response.status).toBe(200);
+    expect(state.pixelRenderCalls).toHaveLength(1);
+  });
+
   test('requires signature when protection is enabled', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_secure',

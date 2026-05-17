@@ -46,8 +46,9 @@ function resolveLegacyPathPolicy(
   const explicit = parseBoolean(envValue);
   if (explicit !== null) return explicit;
 
-  // In single-secret mode, strict-by-default: disable legacy path unless explicitly enabled.
-  if (hasUnifiedSecret) return false;
+  // Keep the public legacy path available for static integrations such as Ghost themes.
+  // Signed, non-guessable endpoints still use the derived primary path in single-secret mode.
+  if (hasUnifiedSecret) return true;
 
   return primaryPath === DEFAULT_OG_API_PATH;
 }

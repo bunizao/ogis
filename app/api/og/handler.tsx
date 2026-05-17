@@ -242,6 +242,11 @@ async function hasValidSignature(requestUrl: URL): Promise<boolean> {
   return constantTimeEqual(expectedSig, providedSig);
 }
 
+function requiresSignature(routeKey: string): boolean {
+  if (!hasSignatureProtection) return false;
+  return !(allowLegacyPath && routeKey === DEFAULT_OG_API_PATH && primaryRouteKey !== DEFAULT_OG_API_PATH);
+}
+
 async function fetchDnsRecords(hostname: string, recordType: 'A' | 'AAAA'): Promise<string[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), DNS_TIMEOUT_MS);
@@ -308,7 +313,7 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
   }
 
   const requestUrl = new URL(request.url);
-  if (!(await hasValidSignature(requestUrl))) {
+  if (requiresSignature(routeKey) && !(await hasValidSignature(requestUrl))) {
     return createNotFoundResponse();
   }
 
