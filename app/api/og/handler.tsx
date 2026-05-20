@@ -382,6 +382,22 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
   const site = sanitizeText(rawSite);
   const excerpt = sanitizeText(rawExcerpt);
 
+  console.info(
+    'og.request',
+    JSON.stringify({
+      routeKey,
+      userAgent: request.headers.get('user-agent') || '',
+      theme: themeName,
+      title: title.slice(0, 80),
+      site: site.slice(0, 80),
+      hasExcerpt: rawExcerpt.length > 0,
+      hasImageParam: image.length > 0,
+      imageHost: allowedImageUrl?.hostname || '',
+      imageAccepted: Boolean(validImageUrl),
+      urlLength: request.url.length,
+    })
+  );
+
   // Load theme fonts
   const fonts = await fontPromise;
 
