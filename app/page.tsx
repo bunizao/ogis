@@ -30,7 +30,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, Command, CornerDownLeft, Github } from 'lucide-react';
+import { ArrowUp, Command, CornerDownLeft, GitFork } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -733,7 +733,7 @@ export default function Home() {
                 <FooterBadgeLink
                   href="https://github.com/bunizao/ogis"
                   ariaLabel="OGIS GitHub repository"
-                  marker={<Github className="size-3" />}
+                  marker={<GitFork className="size-3" />}
                   label="bunizao/ogis"
                   meta="MIT"
                 />
