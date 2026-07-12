@@ -26,5 +26,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/:path*',
+  matcher: '/((?!api(?:/|$)|_next(?:/|$)|fonts(?:/|$)|default-bg\\.jpg$).*)',
 };

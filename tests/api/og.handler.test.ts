@@ -161,7 +161,7 @@ function signUrl(url: string, secret: string): string {
 }
 
 function mockDns(records: Record<string, { A?: string[]; AAAA?: string[]; status?: number }>) {
-  return spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  return spyOn(globalThis, 'fetch').mockImplementation((async (input) => {
     const rawUrl =
       typeof input === 'string'
         ? input
@@ -196,7 +196,7 @@ function mockDns(records: Record<string, { A?: string[]; AAAA?: string[]; status
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  });
+  }) as typeof fetch);
 }
 
 beforeEach(() => {
@@ -536,5 +536,36 @@ describe('handleOgGet', () => {
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  test('evicts old DNS entries after the cache reaches its capacity', async () => {
+    const records = Object.fromEntries(
+      Array.from({ length: 257 }, (_, index) => [
+        `cache-${index}.example.com`,
+        { A: ['8.8.8.8'], AAAA: [] },
+      ])
+    );
+    const fetchSpy = mockDns(records);
+    const { handleOgGet } = await loadHandler();
+
+    for (let index = 0; index < 257; index += 1) {
+      const response = await handleOgGet(
+        new NextRequest(
+          `https://example.com/api/og?title=Hello&site=Blog&image=https://cache-${index}.example.com/image.jpg`
+        ),
+        'og'
+      );
+      expect(response.status).toBe(200);
+    }
+
+    const repeated = await handleOgGet(
+      new NextRequest(
+        'https://example.com/api/og?title=Hello&site=Blog&image=https://cache-0.example.com/image.jpg'
+      ),
+      'og'
+    );
+
+    expect(repeated.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(516);
   });
 });
