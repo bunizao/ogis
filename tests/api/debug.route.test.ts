@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { NextRequest } from 'next/server';
 import { GET } from '../../app/api/debug/route';
 
@@ -12,6 +12,7 @@ beforeEach(() => {
 
 afterEach(() => {
   process.env.NODE_ENV = originalNodeEnv;
+  mock.restore();
   process.env.OG_ENABLE_DEBUG = originalDebugFlag;
 });
 
@@ -30,6 +31,20 @@ describe('/api/debug', () => {
   test('is enabled in production when OG_ENABLE_DEBUG=true', async () => {
     process.env.NODE_ENV = 'production';
     process.env.OG_ENABLE_DEBUG = 'true';
+    spyOn(globalThis, 'fetch').mockImplementation((async input => {
+      const rawUrl =
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      const url = new URL(rawUrl);
+      const records = url.searchParams.get('type') === 'A' ? ['1.1.1.1'] : [];
+      return Response.json({
+        Status: 0,
+        Answer: records.map(data => ({ data })),
+      });
+    }) as typeof fetch);
 
     const request = new NextRequest(
       'https://example.com/api/debug?image=https://images.unsplash.com/photo-1?auto=format&crop=entropy&q=80&w=1200'
