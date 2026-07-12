@@ -2,23 +2,19 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 import { NextRequest } from 'next/server';
 import { GET } from '../../app/api/debug/route';
 
-const originalNodeEnv = process.env.NODE_ENV;
 const originalDebugFlag = process.env.OG_ENABLE_DEBUG;
 
 beforeEach(() => {
-  process.env.NODE_ENV = originalNodeEnv;
   process.env.OG_ENABLE_DEBUG = originalDebugFlag;
 });
 
 afterEach(() => {
-  process.env.NODE_ENV = originalNodeEnv;
   mock.restore();
   process.env.OG_ENABLE_DEBUG = originalDebugFlag;
 });
 
 describe('/api/debug', () => {
   test('returns 404 in production when debug flag is disabled', async () => {
-    process.env.NODE_ENV = 'production';
     process.env.OG_ENABLE_DEBUG = 'false';
 
     const request = new NextRequest('https://example.com/api/debug?image=https://example.com/a.png');
@@ -29,7 +25,6 @@ describe('/api/debug', () => {
   });
 
   test('is enabled in production when OG_ENABLE_DEBUG=true', async () => {
-    process.env.NODE_ENV = 'production';
     process.env.OG_ENABLE_DEBUG = 'true';
     spyOn(globalThis, 'fetch').mockImplementation((async input => {
       const rawUrl =

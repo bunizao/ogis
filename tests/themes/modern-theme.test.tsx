@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import type { ThemeFont } from '../../app/api/og/themes/types';
 
 async function loadModernTheme() {
   const mod = await import(`../../app/api/og/themes/modern.tsx?case=${Math.random()}`);
@@ -12,7 +13,7 @@ afterEach(() => {
 describe('modern theme', () => {
   test('loads both regular and bold inter fonts', async () => {
     const fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
-      async () => new Response(new Uint8Array([1, 2, 3]), { status: 200 })
+      (async () => new Response(new Uint8Array([1, 2, 3]), { status: 200 })) as unknown as typeof fetch
     );
 
     const modernTheme = await loadModernTheme();
@@ -22,7 +23,7 @@ describe('modern theme', () => {
     });
 
     expect(fonts).toHaveLength(2);
-    expect(fonts.map((font) => font.weight)).toEqual([400, 700]);
+    expect(fonts.map((font: ThemeFont) => font.weight)).toEqual([400, 700]);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
