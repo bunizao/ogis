@@ -1,5 +1,6 @@
 const DNS_TIMEOUT_MS = 2000;
 const DNS_CACHE_TTL_MS = 10 * 60 * 1000;
+const DNS_CACHE_MAX_ENTRIES = 256;
 
 type DnsCacheEntry = { expiresAt: number; ips: string[] };
 type HostnameResolver = (hostname: string) => Promise<string[]>;
@@ -185,7 +186,11 @@ async function fetchDnsRecords(hostname: string, recordType: 'A' | 'AAAA'): Prom
 async function resolveHostnameWithGoogleDns(hostname: string): Promise<string[]> {
   const now = Date.now();
   const cached = dnsCache.get(hostname);
-  if (cached && cached.expiresAt > now) return cached.ips;
+  if (cached && cached.expiresAt > now) {
+    dnsCache.delete(hostname);
+    dnsCache.set(hostname, cached);
+    return cached.ips;
+  }
   if (cached) dnsCache.delete(hostname);
 
   const [ipv4Records, ipv6Records] = await Promise.all([
@@ -195,6 +200,11 @@ async function resolveHostnameWithGoogleDns(hostname: string): Promise<string[]>
   const ips = [...ipv4Records, ...ipv6Records];
 
   if (ips.length > 0) {
+    while (dnsCache.size >= DNS_CACHE_MAX_ENTRIES) {
+      const oldestHostname = dnsCache.keys().next().value;
+      if (!oldestHostname) break;
+      dnsCache.delete(oldestHostname);
+    }
     dnsCache.set(hostname, { expiresAt: now + DNS_CACHE_TTL_MS, ips });
   }
   return ips;
