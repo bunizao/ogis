@@ -34,6 +34,16 @@ function preloadShortcutsDialog() {
   void import('@/components/shortcuts-dialog');
 }
 
+const SHORTCUTS = {
+  focusTitle: { key: '/', label: '/' },
+  pixelTheme: { key: '1', label: '1' },
+  modernTheme: { key: '2', label: '2' },
+  generate: { key: 'Enter', label: 'Enter' },
+  copy: { key: 'c', label: 'C' },
+  toggleHelp: { key: '?', label: '?' },
+  close: { key: 'Escape', label: 'Esc' },
+} as const;
+
 export default function HomeClient({ children }: { children: React.ReactNode }) {
   const [title, setTitle] = useState('Interstellar');
   const [site, setSite] = useState('buxx.me');
@@ -122,17 +132,17 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
         document.activeElement?.tagName === 'TEXTAREA' ||
         document.activeElement?.tagName === 'SELECT';
 
-      if (mod && e.key === 'Enter') {
+      if (mod && e.key === SHORTCUTS.generate.key) {
         e.preventDefault();
         handleGenerateRef.current();
         return;
       }
-      if (mod && e.shiftKey && e.key.toLowerCase() === 'c') {
+      if (mod && e.shiftKey && e.key.toLowerCase() === SHORTCUTS.copy.key) {
         e.preventDefault();
         copyUrlRef.current();
         return;
       }
-      if (e.key === 'Escape') {
+      if (e.key === SHORTCUTS.close.key) {
         setShowShortcuts(false);
         (document.activeElement as HTMLElement)?.blur();
         return;
@@ -141,18 +151,18 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
       if (inInput) return;
 
       switch (e.key) {
-        case '/':
+        case SHORTCUTS.focusTitle.key:
           e.preventDefault();
           titleRef.current?.focus();
           break;
-        case '?':
+        case SHORTCUTS.toggleHelp.key:
           e.preventDefault();
           setShowShortcuts((s) => !s);
           break;
-        case '1':
+        case SHORTCUTS.pixelTheme.key:
           setTheme('pixel');
           break;
-        case '2':
+        case SHORTCUTS.modernTheme.key:
           setTheme('modern');
           break;
       }
@@ -206,15 +216,22 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   }, []);
 
   const modKey = isMac ? 'Cmd' : 'Ctrl';
-  const generateKeys = [modKey, 'Enter'];
-  const copyKeys = [modKey, 'Shift', 'C'];
+  const generateKeys = [modKey, SHORTCUTS.generate.label];
+  const copyKeys = [modKey, 'Shift', SHORTCUTS.copy.label];
   const shortcuts = [
-    { label: 'Focus title', keys: ['/'] },
-    { label: 'Switch theme', keys: ['1', '/', '2'] },
+    { label: 'Focus title', keys: [SHORTCUTS.focusTitle.label] },
+    {
+      label: 'Switch theme',
+      keys: [
+        SHORTCUTS.pixelTheme.label,
+        '/',
+        SHORTCUTS.modernTheme.label,
+      ],
+    },
     { label: 'Generate preview', keys: generateKeys },
     { label: 'Copy endpoint URL', keys: copyKeys },
-    { label: 'Toggle shortcuts', keys: ['?'] },
-    { label: 'Close / unfocus', keys: ['Esc'] },
+    { label: 'Toggle shortcuts', keys: [SHORTCUTS.toggleHelp.label] },
+    { label: 'Close / unfocus', keys: [SHORTCUTS.close.label] },
   ];
 
   return (
