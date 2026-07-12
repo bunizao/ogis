@@ -258,7 +258,9 @@ describe('Home page behavior', () => {
     expect(copied.startsWith('https://example.com/api/og?')).toBeTrue();
     expect(copied.includes('title=Interstellar')).toBeTrue();
     expect(copied.includes('site=buxx.me')).toBeTrue();
-    expect(ui.getByRole('status').textContent).toBe('Copied to clipboard');
+    const copyStatus = ui.getByRole('status');
+    expect(copyStatus.textContent).toBe('Copied to clipboard');
+    expect(copyStatus.className.includes('sr-only')).toBeFalse();
   });
 
   test('keyboard shortcut ? opens shortcuts dialog and Escape closes it', async () => {

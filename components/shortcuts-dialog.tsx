@@ -9,21 +9,12 @@ import {
 import { ShortcutKeys } from '@/components/shortcut-keys';
 
 export default function ShortcutsDialog({
-  modKey,
+  shortcuts,
   onOpenChange,
 }: {
-  modKey: string;
+  shortcuts: Array<{ label: string; keys: string[] }>;
   onOpenChange: (open: boolean) => void;
 }) {
-  const shortcuts = [
-    { label: 'Focus title', keys: ['/'] },
-    { label: 'Switch theme', keys: ['1', '/', '2'] },
-    { label: 'Generate preview', keys: [modKey, 'Enter'] },
-    { label: 'Copy endpoint URL', keys: [modKey, 'Shift', 'C'] },
-    { label: 'Toggle shortcuts', keys: ['?'] },
-    { label: 'Close / unfocus', keys: ['Esc'] },
-  ];
-
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-[var(--bg-2)] border-[var(--border-1)]">

@@ -50,9 +50,10 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [isMac, setIsMac] = useState(false);
   const [isNavOnDark, setIsNavOnDark] = useState(false);
-  const [copyMessage, setCopyMessage] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState({ id: 0, message: '' });
 
   const titleRef = useRef<HTMLInputElement>(null);
+  const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const buildParams = (withTimestamp = false) => {
     const params = new URLSearchParams();
@@ -80,7 +81,18 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   const copyUrl = async () => {
     const fullUrl = window.location.origin + generateUrl();
     await navigator.clipboard.writeText(fullUrl);
-    setCopyMessage('Copied to clipboard');
+    setCopyFeedback((current) => ({
+      id: current.id + 1,
+      message: 'Copied to clipboard',
+    }));
+
+    if (copyFeedbackTimerRef.current) {
+      clearTimeout(copyFeedbackTimerRef.current);
+    }
+    copyFeedbackTimerRef.current = setTimeout(() => {
+      setCopyFeedback((current) => ({ ...current, message: '' }));
+      copyFeedbackTimerRef.current = null;
+    }, 2000);
   };
 
   const handleGenerateRef = useRef(handleGenerate);
@@ -94,6 +106,12 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     setIsMac(navigator.platform?.toLowerCase().includes('mac') ?? false);
+
+    return () => {
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -190,6 +208,14 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   const modKey = isMac ? 'Cmd' : 'Ctrl';
   const generateKeys = [modKey, 'Enter'];
   const copyKeys = [modKey, 'Shift', 'C'];
+  const shortcuts = [
+    { label: 'Focus title', keys: ['/'] },
+    { label: 'Switch theme', keys: ['1', '/', '2'] },
+    { label: 'Generate preview', keys: generateKeys },
+    { label: 'Copy endpoint URL', keys: copyKeys },
+    { label: 'Toggle shortcuts', keys: ['?'] },
+    { label: 'Close / unfocus', keys: ['Esc'] },
+  ];
 
   return (
     <>
@@ -197,7 +223,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
       <div className="scan-line" aria-hidden="true" />
 
       {showShortcuts ? (
-        <ShortcutsDialog modKey={modKey} onOpenChange={setShowShortcuts} />
+        <ShortcutsDialog shortcuts={shortcuts} onOpenChange={setShowShortcuts} />
       ) : null}
 
       {/* ── Navigation ── */}
@@ -530,29 +556,36 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                 <span className="text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)]">
                   Endpoint
                 </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="font-mono text-[11px] text-[var(--text-1)] h-auto py-1 px-2 gap-1.5 hover:text-[var(--text-0)]"
-                  onClick={copyUrl}
-                >
-                  Copy
-                  <ShortcutKeys
-                    keys={copyKeys}
-                    className="text-[10px] font-mono text-current"
-                    kbdClassName="min-w-[18px] px-1 py-0.5 border border-[var(--border-2)] bg-[var(--bg-1)] rounded-sm text-current"
-                    separatorClassName="text-current/55"
-                    iconClassName="size-3"
-                  />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="min-w-[112px] text-right font-mono text-[11px] text-[var(--text-2)]"
+                  >
+                    <span key={copyFeedback.id}>{copyFeedback.message}</span>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="font-mono text-[11px] text-[var(--text-1)] h-auto py-1 px-2 gap-1.5 hover:text-[var(--text-0)]"
+                    onClick={copyUrl}
+                  >
+                    Copy
+                    <ShortcutKeys
+                      keys={copyKeys}
+                      className="text-[10px] font-mono text-current"
+                      kbdClassName="min-w-[18px] px-1 py-0.5 border border-[var(--border-2)] bg-[var(--bg-1)] rounded-sm text-current"
+                      separatorClassName="text-current/55"
+                      iconClassName="size-3"
+                    />
+                  </Button>
+                </div>
               </div>
               <div className="endpoint-box font-mono text-xs text-[var(--text-1)] p-4 bg-[var(--bg-1)] border border-[var(--border-1)] rounded break-all leading-relaxed">
                 {generateUrl()}
                 <span className="endpoint-cursor" />
               </div>
-              <span className="sr-only" role="status" aria-live="polite">
-                {copyMessage}
-              </span>
             </div>
           </div>
         </div>
