@@ -2,32 +2,54 @@ import '../setup-dom';
 
 import React, { createContext, useContext } from 'react';
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 type RenderResult = ReturnType<typeof render>;
 
 const root = process.cwd();
+const intersectionObservers: TestIntersectionObserver[] = [];
 
-const state = {
-  toastMessages: [] as string[],
-};
+class TestIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin: string;
+  readonly thresholds = [0];
+  readonly scrollMargin = '0px';
 
-function resetState() {
-  state.toastMessages = [];
+  constructor(
+    private readonly callback: IntersectionObserverCallback,
+    options?: IntersectionObserverInit
+  ) {
+    this.rootMargin = options?.rootMargin ?? '0px';
+    intersectionObservers.push(this);
+  }
+
+  disconnect() {}
+  observe(_target: Element) {}
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+  unobserve(_target: Element) {}
+
+  emit(target: Element, isIntersecting: boolean) {
+    this.callback(
+      [
+        {
+          target,
+          isIntersecting,
+          time: 0,
+          intersectionRatio: isIntersecting ? 1 : 0,
+          boundingClientRect: target.getBoundingClientRect(),
+          intersectionRect: target.getBoundingClientRect(),
+          rootBounds: null,
+        },
+      ],
+      this
+    );
+  }
 }
 
 function installUiMocks() {
-  const toastFactory = () => ({
-    toast: {
-      success: (message: string) => {
-        state.toastMessages.push(message);
-      },
-    },
-  });
-
-  mock.module('sonner', toastFactory);
-
   const buttonFactory = () => ({
     Button: React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }>(
       ({ asChild, children, ...props }, ref) => {
@@ -168,7 +190,7 @@ async function renderHome(): Promise<RenderResult> {
 }
 
 function installClipboardMock() {
-  const writeText = mock(async () => {});
+  const writeText = mock(async (_text: string) => {});
   Object.defineProperty(window.navigator, 'clipboard', {
     value: { writeText },
     configurable: true,
@@ -184,9 +206,14 @@ function setPlatform(platform: string) {
 }
 
 beforeEach(() => {
-  resetState();
   mock.restore();
   setPlatform('MacIntel');
+  intersectionObservers.length = 0;
+  Object.defineProperty(globalThis, 'IntersectionObserver', {
+    value: TestIntersectionObserver,
+    configurable: true,
+    writable: true,
+  });
 });
 
 afterEach(() => {
@@ -216,7 +243,7 @@ describe('Home page behavior', () => {
     nowSpy.mockRestore();
   });
 
-  test('copy button writes absolute url to clipboard and triggers success toast', async () => {
+  test('copy button writes absolute url and announces success in the page', async () => {
     const writeText = installClipboardMock();
     const ui = await renderHome();
 
@@ -231,14 +258,16 @@ describe('Home page behavior', () => {
     expect(copied.startsWith('https://example.com/api/og?')).toBeTrue();
     expect(copied.includes('title=Interstellar')).toBeTrue();
     expect(copied.includes('site=buxx.me')).toBeTrue();
-    expect(state.toastMessages).toEqual(['Copied to clipboard']);
+    expect(ui.getByRole('status').textContent).toBe('Copied to clipboard');
   });
 
   test('keyboard shortcut ? opens shortcuts dialog and Escape closes it', async () => {
     const ui = await renderHome();
 
     fireEvent.keyDown(window, { key: '?' });
-    expect(ui.getByText('Keyboard Shortcuts')).toBeTruthy();
+    await waitFor(() => {
+      expect(ui.getByText('Keyboard Shortcuts')).toBeTruthy();
+    });
 
     fireEvent.keyDown(window, { key: 'Escape' });
 
@@ -253,6 +282,26 @@ describe('Home page behavior', () => {
     const titleInput = ui.getAllByRole('textbox')[0] as HTMLInputElement;
     fireEvent.keyDown(window, { key: '/' });
     expect(document.activeElement).toBe(titleInput);
+  });
+
+  test('navigation follows dark sections reported at the top probe', async () => {
+    const ui = await renderHome();
+    const nav = ui.container.querySelector('nav');
+    const darkSection = ui.container.querySelector('[data-nav-theme="dark"]');
+
+    expect(nav).toBeTruthy();
+    expect(darkSection).toBeTruthy();
+    expect(intersectionObservers).toHaveLength(1);
+
+    act(() => intersectionObservers[0]?.emit(darkSection as Element, true));
+    await waitFor(() => {
+      expect(nav?.className.includes('bg-[#07070a]')).toBeTrue();
+    });
+
+    act(() => intersectionObservers[0]?.emit(darkSection as Element, false));
+    await waitFor(() => {
+      expect(nav?.className.includes('bg-[#07070a]')).toBeFalse();
+    });
   });
 
   test('keyboard shortcuts 1/2 switch themes when not in input', async () => {

@@ -1,8 +1,20 @@
 const DNS_TIMEOUT_MS = 2000;
 const DNS_CACHE_TTL_MS = 10 * 60 * 1000;
-const DNS_CACHE_MAX_ENTRIES = 256;
 
 type DnsCacheEntry = { expiresAt: number; ips: string[] };
+type HostnameResolver = (hostname: string) => Promise<string[]>;
+
+export type OgBackgroundImageRejectionReason =
+  | 'missing'
+  | 'truncated'
+  | 'invalid-url'
+  | 'unsupported-protocol'
+  | 'credentials'
+  | 'unsupported-port'
+  | 'blocked-host'
+  | 'unresolvable-host'
+  | 'non-public-host'
+  | 'unsupported-format';
 
 export type OgBackgroundImage = {
   rawImage: string | null;
@@ -12,6 +24,12 @@ export type OgBackgroundImage = {
   imageAccepted: boolean;
   imageHost: string;
   backgroundImageSrc: string;
+  rejectionReason: OgBackgroundImageRejectionReason | null;
+};
+
+type PublicImageUrlValidation = {
+  url: URL | null;
+  rejectionReason: OgBackgroundImageRejectionReason | null;
 };
 
 const dnsCache = new Map<string, DnsCacheEntry>();
@@ -164,14 +182,10 @@ async function fetchDnsRecords(hostname: string, recordType: 'A' | 'AAAA'): Prom
   }
 }
 
-async function resolveHostname(hostname: string): Promise<string[]> {
+async function resolveHostnameWithGoogleDns(hostname: string): Promise<string[]> {
   const now = Date.now();
   const cached = dnsCache.get(hostname);
-  if (cached && cached.expiresAt > now) {
-    dnsCache.delete(hostname);
-    dnsCache.set(hostname, cached);
-    return cached.ips;
-  }
+  if (cached && cached.expiresAt > now) return cached.ips;
   if (cached) dnsCache.delete(hostname);
 
   const [ipv4Records, ipv6Records] = await Promise.all([
@@ -181,56 +195,75 @@ async function resolveHostname(hostname: string): Promise<string[]> {
   const ips = [...ipv4Records, ...ipv6Records];
 
   if (ips.length > 0) {
-    while (dnsCache.size >= DNS_CACHE_MAX_ENTRIES) {
-      const oldestHostname = dnsCache.keys().next().value;
-      if (!oldestHostname) break;
-      dnsCache.delete(oldestHostname);
-    }
     dnsCache.set(hostname, { expiresAt: now + DNS_CACHE_TTL_MS, ips });
   }
   return ips;
 }
 
-async function parsePublicImageUrl(value: string): Promise<URL | null> {
-  if (!value || value.endsWith('…') || value.endsWith('...') || value.length < 20) {
-    return null;
+function rejectImageUrl(
+  rejectionReason: OgBackgroundImageRejectionReason
+): PublicImageUrlValidation {
+  return { url: null, rejectionReason };
+}
+
+async function validatePublicImageUrl(
+  value: string,
+  resolveHostname: HostnameResolver
+): Promise<PublicImageUrlValidation> {
+  if (!value) return rejectImageUrl('missing');
+  if (value.endsWith('…') || value.endsWith('...') || value.length < 20) {
+    return rejectImageUrl('truncated');
   }
 
   try {
     const parsed = new URL(value);
-    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
-    if (parsed.username || parsed.password) return null;
-    if (parsed.port && !['80', '443'].includes(parsed.port)) return null;
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return rejectImageUrl('unsupported-protocol');
+    }
+    if (parsed.username || parsed.password) return rejectImageUrl('credentials');
+    if (parsed.port && !['80', '443'].includes(parsed.port)) {
+      return rejectImageUrl('unsupported-port');
+    }
 
     const hostname = normalizeHostname(parsed.hostname);
-    if (isBlockedHostname(hostname)) return null;
-    if (parseIpv4(hostname)) return isPublicIpv4(hostname) ? parsed : null;
-    if (parseIpv6(hostname)) return isPublicIpv6(hostname) ? parsed : null;
+    if (isBlockedHostname(hostname)) return rejectImageUrl('blocked-host');
+    if (parseIpv4(hostname)) {
+      return isPublicIpv4(hostname)
+        ? { url: parsed, rejectionReason: null }
+        : rejectImageUrl('non-public-host');
+    }
+    if (parseIpv6(hostname)) {
+      return isPublicIpv6(hostname)
+        ? { url: parsed, rejectionReason: null }
+        : rejectImageUrl('non-public-host');
+    }
 
     const ips = await resolveHostname(hostname);
-    if (!ips.length || !ips.every(isPublicIp)) return null;
-    return parsed;
+    if (!ips.length) return rejectImageUrl('unresolvable-host');
+    if (!ips.every(isPublicIp)) return rejectImageUrl('non-public-host');
+    return { url: parsed, rejectionReason: null };
   } catch {
-    return null;
+    return rejectImageUrl('invalid-url');
   }
 }
 
 function reconstructImageUrl(searchParams: URLSearchParams): string {
   const rawImage = searchParams.get('image') ?? '';
 
+  let parsed: URL;
   try {
-    const parsed = new URL(rawImage);
+    parsed = new URL(rawImage);
     if (parsed.hostname !== 'images.unsplash.com') return rawImage;
   } catch {
     return rawImage;
   }
 
   const knownParams = ['crop', 'cs', 'fit', 'fm', 'ixid', 'ixlib', 'q', 'w', 'h'];
-  const recoveredParams = knownParams.flatMap(param => {
+  for (const param of knownParams) {
     const value = searchParams.get(param);
-    return value ? [`${param}=${value}`] : [];
-  });
-  return recoveredParams.length > 0 ? `${rawImage}&${recoveredParams.join('&')}` : rawImage;
+    if (value) parsed.searchParams.set(param, value);
+  }
+  return parsed.toString();
 }
 
 function isSupportedImageFormat(value: string): boolean {
@@ -247,12 +280,18 @@ function isSupportedImageFormat(value: string): boolean {
   return hasSupportedExtension || !/\.(webp|avif|svg|bmp|tiff?)(\?|$)/i.test(lowerUrl);
 }
 
-export async function resolveOgBackgroundImage(requestUrl: URL): Promise<OgBackgroundImage> {
+export async function resolveOgBackgroundImage(
+  requestUrl: URL,
+  resolveHostname: HostnameResolver = resolveHostnameWithGoogleDns
+): Promise<OgBackgroundImage> {
   const rawImage = requestUrl.searchParams.get('image');
   const reconstructedImage = reconstructImageUrl(requestUrl.searchParams);
-  const allowedImageUrl = await parsePublicImageUrl(reconstructedImage);
+  const validation = await validatePublicImageUrl(reconstructedImage, resolveHostname);
   const isSupportedFormat = isSupportedImageFormat(reconstructedImage);
+  const allowedImageUrl = validation.url;
   const acceptedImageUrl = allowedImageUrl && isSupportedFormat ? allowedImageUrl : null;
+  const rejectionReason =
+    validation.rejectionReason ?? (isSupportedFormat ? null : 'unsupported-format');
 
   return {
     rawImage,
@@ -263,5 +302,6 @@ export async function resolveOgBackgroundImage(requestUrl: URL): Promise<OgBackg
     imageHost: allowedImageUrl?.hostname ?? '',
     backgroundImageSrc:
       acceptedImageUrl?.toString() ?? new URL('/default-bg.jpg', requestUrl.origin).toString(),
+    rejectionReason,
   };
 }

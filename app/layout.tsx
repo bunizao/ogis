@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
-import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
 const inter = Inter({
@@ -65,10 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable}`}>
       <body>
-        <TooltipProvider delayDuration={300}>
-          {children}
-        </TooltipProvider>
-        <Toaster position="bottom-right" />
+        {children}
       </body>
     </html>
   );
