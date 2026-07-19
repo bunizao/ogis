@@ -24,31 +24,38 @@ bun test             # Run full Bun test suite
 
 ### Key Files
 
-- `app/api/og/handler.tsx` — Main OG image handler (Edge function logic, SSRF protection, URL validation, text sanitization, and Satori JSX rendering).
+- `app/api/og/handler.tsx` — Main OG image handler (route-key allow-list, HMAC signature validation, text sanitization, theme dispatch).
+- `app/api/og/themes/` — Theme definitions (`pixel.tsx`, `modern.tsx`, shared `font-data.ts` fetch cache, `types.ts`).
 - `app/api/og/route.tsx` — Legacy/default route wrapper (`/api/og`) that delegates to the shared handler.
 - `app/api/[ogKey]/route.tsx` — Configurable API-path route wrapper (`/api/<OG_API_PATH>`).
 - `app/api/og-config/route.ts` — Runtime endpoint metadata (`endpoint`, `signatureRequired`) for UI/tooling.
 - `app/api/debug/route.ts` — Debug endpoint returning JSON diagnostics for URL reconstruction/validation.
+- `app/lib/og-background-image.ts` — SSRF protection and background image admission (URL validation, DNS resolution, public-IP checks, format filtering).
+- `app/lib/og-security.ts` — Security config from env (`OG_SECRET`, `OG_API_PATH`, `OG_SIGNATURE_SECRET`); derives the primary route key.
+- `app/lib/pixel-fonts.ts` — Pixel font registry shared by the landing page and the pixel theme.
 - `app/page.tsx` — Interactive landing page with live preview form, dark/light mode support, and API reference section.
 - `app/layout.tsx` — Root layout with metadata and OpenGraph tags.
+- `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
 - `public/default-bg.jpg` — Default starry sky background when no image URL is provided.
+- `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants) served locally.
 
 ### Image Generation Flow
 
-1. **GET `/api/<OG_API_PATH>`** receives URL parameters (`title`, `site`, `excerpt`, `author`, `date`, `image`)
-2. **SSRF validation** — Image URLs go through `parsePublicImageUrl()`: protocol check, hostname blocking, DNS resolution via Google DNS (`dns.google/resolve`), IPv4/IPv6 public IP validation
-3. **Unsplash URL reconstruction** — Truncated Unsplash query params are recovered from the top-level search params
-4. **Format filtering** — Only PNG/JPG/JPEG/GIF allowed; WebP/AVIF/SVG rejected (Satori limitation)
-5. **Font loading** — Zpix TTF fetched from jsdelivr CDN (must be TTF/OTF, not woff2)
-6. **Text sanitization** — Em dashes, smart quotes, Unicode whitespace normalized
-7. **Satori rendering** — React JSX rendered to PNG with responsive font sizing (88px short titles, 72px medium, 56px long 40+ chars)
-8. **Caching** — `s-maxage=86400, stale-while-revalidate=604800`
+1. **GET `/api/og` or `/api/<derived-path>`** receives URL parameters (`title`, `site`, `excerpt`, `author`, `date`, `image`, `theme`, `pixelFont`, optional `sig`/`exp`)
+2. **Route-key + signature check** — Non-default paths require a valid HMAC-SHA256 `sig` over the canonicalized query when a signature secret is configured
+3. **SSRF validation** — Image URLs go through `resolveOgBackgroundImage()` in `app/lib/og-background-image.ts`: protocol check, hostname blocking, DNS resolution via Google DNS (`dns.google/resolve`), IPv4/IPv6 public IP validation
+4. **Unsplash URL reconstruction** — Truncated Unsplash query params are recovered from the top-level search params
+5. **Format filtering** — Only PNG/JPG/JPEG/GIF allowed; WebP/AVIF/SVG rejected (Satori limitation)
+6. **Font loading** — Pixel fonts served from `public/fonts/`; the modern theme fetches pinned Inter TTFs from jsdelivr (must be TTF/OTF, not woff2). Fetches are cached per edge isolate in `themes/font-data.ts`
+7. **Text sanitization** — Typographic dashes, smart quotes, Unicode whitespace normalized
+8. **Satori rendering** — Theme JSX rendered to PNG with responsive font sizing based on title length
+9. **Caching** — `s-maxage=86400, stale-while-revalidate=604800`
 
 ### SSRF Protection Layer
 
-The largest portion of `route.tsx` (~lines 31–208) implements defense against Server-Side Request Forgery:
+`app/lib/og-background-image.ts` implements defense against Server-Side Request Forgery:
 
-- **DNS resolution** via `dns.google/resolve` API with 2s timeout and 10-minute cache (`dnsCache` Map)
+- **DNS resolution** via `dns.google/resolve` API with 2s timeout and a bounded 10-minute LRU cache
 - **IPv4 validation** — Blocks RFC 1918, loopback, link-local, and all non-routable ranges
 - **IPv6 validation** — Blocks `::1`, ULA (`fc00::/7`), link-local (`fe80::/10`), multicast, documentation ranges, and IPv4-mapped addresses (delegates to IPv4 check)
 - **Hostname blocking** — Rejects `localhost`, `.localhost`, `.local`
@@ -56,9 +63,8 @@ The largest portion of `route.tsx` (~lines 31–208) implements defense against 
 
 ### Design System
 
-- **Frosted glass**: Bottom gradient overlay with `backdrop-filter: blur(16px)`
-- **Layout**: Bottom-aligned content — site name, title (responsive sizing), optional excerpt, author/date metadata
-- **Font**: Zpix pixel font (single font covers Latin + CJK characters)
+- **Themes**: `pixel` (default; frosted-glass bottom gradient, selectable pixel fonts) and `modern` (liquid-glass centered card, Inter)
+- **Layout**: 1200x630 with bottom- or center-aligned content — site name, title (responsive sizing), optional excerpt, author/date metadata
 
 ### Edge Runtime Constraints
 
@@ -66,4 +72,4 @@ No Node.js APIs (fs, path, etc.), no native modules. All external resources (fon
 
 ### API-Only Mode
 
-Set `OG_API_ONLY=true` to disable non-API frontend routes. Middleware returns `404` for frontend pages while keeping API routes and OG-required static assets available.
+Set `OG_API_ONLY=true` to disable non-API frontend routes. The proxy (`proxy.ts`) returns `404` for frontend pages while keeping API routes and OG-required static assets available.
