@@ -2,7 +2,7 @@
   "name": "ogis",
   "version": "1.0.0",
   "description": "A dynamic Open Graph image generation service with custom themes.",
-  "packageManager": "bun@1.3.6",
+  "packageManager": "bun@1.3.14",
   "scripts": {
     "dev": "next dev --webpack --disable-source-maps",
     "dev:turbo": "next dev --turbopack",
@@ -13,34 +13,34 @@
     "test:coverage": "bun test --coverage"
   },
   "dependencies": {
-    "@radix-ui/react-dialog": "1.1.16",
-    "@radix-ui/react-select": "2.3.0",
-    "@radix-ui/react-separator": "1.1.9",
-    "@radix-ui/react-slot": "1.2.5",
-    "@radix-ui/react-tabs": "1.1.14",
-    "@radix-ui/react-tooltip": "1.2.9",
-    "@tailwindcss/postcss": "^4.3.2",
+    "@radix-ui/react-dialog": "1.1.19",
+    "@radix-ui/react-select": "2.3.3",
+    "@radix-ui/react-separator": "1.1.11",
+    "@radix-ui/react-slot": "1.3.0",
+    "@radix-ui/react-tabs": "1.1.17",
+    "@radix-ui/react-tooltip": "1.2.12",
+    "@tailwindcss/postcss": "^4.3.3",
     "@vercel/og": "^0.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.24.0",
+    "lucide-react": "^1.25.0",
     "next": "^16.2.10",
-    "postcss": "^8.5.17",
+    "postcss": "^8.5.20",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss": "^4.3.2"
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/bun": "^1.3.14",
     "@types/jsdom": "^28.0.3",
-    "@types/node": "^25.9.2",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "jsdom": "^29.1.1",
-    "shadcn": "^4.11.0",
+    "shadcn": "^4.13.1",
     "tw-animate-css": "^1.4.0",
-    "typescript": "^6.0.3"
+    "typescript": "6.0.3"
   }
 }
