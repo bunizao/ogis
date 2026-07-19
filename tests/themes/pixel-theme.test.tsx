@@ -1,9 +1,14 @@
-import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { clearFontDataCache } from '../../app/api/og/themes/font-data';
 
 async function loadPixelTheme() {
   const mod = await import(`../../app/api/og/themes/pixel.tsx?case=${Math.random()}`);
   return mod.pixelTheme;
 }
+
+beforeEach(() => {
+  clearFontDataCache();
+});
 
 afterEach(() => {
   mock.restore();

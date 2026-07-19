@@ -1,10 +1,15 @@
-import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { clearFontDataCache } from '../../app/api/og/themes/font-data';
 import type { ThemeFont } from '../../app/api/og/themes/types';
 
 async function loadModernTheme() {
   const mod = await import(`../../app/api/og/themes/modern.tsx?case=${Math.random()}`);
   return mod.modernTheme;
 }
+
+beforeEach(() => {
+  clearFontDataCache();
+});
 
 afterEach(() => {
   mock.restore();

@@ -1,30 +1,8 @@
+import { fetchFontData } from './font-data';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
-const fontDataCache = new Map<string, Promise<ArrayBuffer | null>>();
-
-async function fetchFontData(url: string): Promise<ArrayBuffer | null> {
-  let pending = fontDataCache.get(url);
-  if (!pending) {
-    pending = (async () => {
-      try {
-        const response = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-        });
-        if (!response.ok) return null;
-        return await response.arrayBuffer();
-      } catch {
-        return null;
-      }
-    })();
-    fontDataCache.set(url, pending);
-  }
-
-  const data = await pending;
-  if (!data) {
-    fontDataCache.delete(url);
-  }
-  return data;
-}
+// Pinned so a CDN-side "latest" bump can't silently change rendering.
+const INTER_FONT_BASE = 'https://cdn.jsdelivr.net/fontsource/fonts/inter@5.3.0';
 
 async function loadFont(url: string, weight: 400 | 700): Promise<ThemeFont | null> {
   const data = await fetchFontData(url);
@@ -34,8 +12,8 @@ async function loadFont(url: string, weight: 400 | 700): Promise<ThemeFont | nul
 
 async function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
   const [regular, bold] = await Promise.all([
-    loadFont('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf', 400),
-    loadFont('https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf', 700),
+    loadFont(`${INTER_FONT_BASE}/latin-400-normal.ttf`, 400),
+    loadFont(`${INTER_FONT_BASE}/latin-700-normal.ttf`, 700),
   ]);
   const fonts: ThemeFont[] = [];
   if (regular) fonts.push(regular);

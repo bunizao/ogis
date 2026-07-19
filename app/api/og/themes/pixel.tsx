@@ -1,31 +1,6 @@
 import { getPixelFontOption } from '@/app/lib/pixel-fonts';
+import { fetchFontData } from './font-data';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
-
-const fontDataCache = new Map<string, Promise<ArrayBuffer | null>>();
-
-async function fetchFontData(url: string): Promise<ArrayBuffer | null> {
-  let pending = fontDataCache.get(url);
-  if (!pending) {
-    pending = (async () => {
-      try {
-        const response = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-        });
-        if (!response.ok) return null;
-        return await response.arrayBuffer();
-      } catch {
-        return null;
-      }
-    })();
-    fontDataCache.set(url, pending);
-  }
-
-  const data = await pending;
-  if (!data) {
-    fontDataCache.delete(url);
-  }
-  return data;
-}
 
 async function loadFonts(context: ThemeContext): Promise<ThemeFont[]> {
   const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
