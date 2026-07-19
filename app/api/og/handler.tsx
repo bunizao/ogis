@@ -14,7 +14,8 @@ const themes: Record<string, ThemeDefinition> = {
 
 const securityConfig = resolveOgSecurityConfig();
 const primaryRouteKey = securityConfig.primaryRouteKey;
-const allowLegacyPath = securityConfig.allowLegacyPath;
+// The default 'og' path stays public for static integrations such as Ghost themes;
+// signed, non-guessable endpoints use the derived primary path.
 const allowedRouteKeys = new Set<string>([primaryRouteKey, DEFAULT_OG_API_PATH]);
 
 const signatureSecret = securityConfig.signatureSecret;

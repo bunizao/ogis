@@ -24,19 +24,17 @@ describe('og-security', () => {
     const config = resolveOgSecurityConfig({});
 
     expect(config.primaryRouteKey).toBe(DEFAULT_OG_API_PATH);
-    expect(config.allowLegacyPath).toBeTrue();
     expect(config.signatureSecret).toBe('');
     expect(config.hasSignatureProtection).toBeFalse();
   });
 
-  test('enables signature and public legacy path by default in OG_SECRET mode', () => {
+  test('enables signature protection in OG_SECRET mode', () => {
     const config = resolveOgSecurityConfig({ OG_SECRET: 'abc123' });
 
     expect(config.primaryRouteKey).toStartWith('og_');
     expect(config.primaryRouteKey).not.toBe(DEFAULT_OG_API_PATH);
     expect(config.signatureSecret).toBe('abc123');
     expect(config.hasSignatureProtection).toBeTrue();
-    expect(config.allowLegacyPath).toBeTrue();
   });
 
   test('honors explicit OG_API_PATH and normalizes it', () => {
@@ -47,7 +45,6 @@ describe('og-security', () => {
 
     expect(config.primaryRouteKey).toBe('custom_key');
     expect(config.hasSignatureProtection).toBeTrue();
-    expect(config.allowLegacyPath).toBeTrue();
   });
 
   test('uses OG_SIGNATURE_SECRET over OG_SECRET when provided', () => {
@@ -58,36 +55,5 @@ describe('og-security', () => {
 
     expect(config.signatureSecret).toBe('signature-only-secret');
     expect(config.hasSignatureProtection).toBeTrue();
-  });
-
-  test('supports explicit legacy path policy override', () => {
-    const enabled = resolveOgSecurityConfig({
-      OG_SECRET: 'abc123',
-      OG_API_ALLOW_LEGACY_PATH: 'true',
-    });
-    const disabled = resolveOgSecurityConfig({
-      OG_API_PATH: 'og',
-      OG_API_ALLOW_LEGACY_PATH: 'false',
-    });
-
-    expect(enabled.allowLegacyPath).toBeTrue();
-    expect(disabled.allowLegacyPath).toBeFalse();
-  });
-
-  test('in non-unified mode, legacy path is allowed only when primary path is og', () => {
-    const sameAsLegacy = resolveOgSecurityConfig({ OG_API_PATH: 'og' });
-    const customPath = resolveOgSecurityConfig({ OG_API_PATH: 'custom' });
-
-    expect(sameAsLegacy.allowLegacyPath).toBeTrue();
-    expect(customPath.allowLegacyPath).toBeFalse();
-  });
-
-  test('invalid OG_API_ALLOW_LEGACY_PATH value falls back to derived default policy', () => {
-    const config = resolveOgSecurityConfig({
-      OG_SECRET: 'abc123',
-      OG_API_ALLOW_LEGACY_PATH: 'yes',
-    });
-
-    expect(config.allowLegacyPath).toBeTrue();
   });
 });

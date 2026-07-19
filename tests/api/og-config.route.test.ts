@@ -2,7 +2,6 @@ import { afterEach, describe, expect, mock, test } from 'bun:test';
 
 type SecurityConfig = {
   primaryRouteKey: string;
-  allowLegacyPath: boolean;
   signatureSecret: string;
   hasSignatureProtection: boolean;
 };
@@ -37,7 +36,6 @@ describe('/api/og-config', () => {
     const route = await loadRouteWithConfig(
       {
         primaryRouteKey: 'og_custom_key',
-        allowLegacyPath: false,
         signatureSecret: 'secret',
         hasSignatureProtection: true,
       },
@@ -55,7 +53,6 @@ describe('/api/og-config', () => {
     const route = await loadRouteWithConfig(
       {
         primaryRouteKey: 'og_custom_key',
-        allowLegacyPath: false,
         signatureSecret: 'secret',
         hasSignatureProtection: true,
       },
@@ -77,7 +74,6 @@ describe('/api/og-config', () => {
     const route = await loadRouteWithConfig(
       {
         primaryRouteKey: ' invalid path ',
-        allowLegacyPath: false,
         signatureSecret: '',
         hasSignatureProtection: false,
       },

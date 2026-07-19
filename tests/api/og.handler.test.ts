@@ -4,7 +4,6 @@ import { NextRequest } from 'next/server';
 
 type SecurityConfig = {
   primaryRouteKey: string;
-  allowLegacyPath: boolean;
   signatureSecret: string;
   hasSignatureProtection: boolean;
 };
@@ -29,7 +28,6 @@ const root = process.cwd();
 const state = {
   securityConfig: {
     primaryRouteKey: 'og',
-    allowLegacyPath: true,
     signatureSecret: '',
     hasSignatureProtection: false,
   } as SecurityConfig,
@@ -57,7 +55,6 @@ const state = {
 function resetState() {
   state.securityConfig = {
     primaryRouteKey: 'og',
-    allowLegacyPath: true,
     signatureSecret: '',
     hasSignatureProtection: false,
   };
@@ -209,10 +206,9 @@ afterEach(() => {
 });
 
 describe('handleOgGet', () => {
-  test('allows public legacy route even when legacy env policy is disabled', async () => {
+  test('allows public default route alongside a custom primary path', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_custom',
-      allowLegacyPath: false,
       signatureSecret: '',
       hasSignatureProtection: false,
     };
@@ -230,7 +226,6 @@ describe('handleOgGet', () => {
   test('returns 404 when custom route key is not allowed', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_custom',
-      allowLegacyPath: false,
       signatureSecret: '',
       hasSignatureProtection: false,
     };
@@ -244,28 +239,9 @@ describe('handleOgGet', () => {
     expect(response.status).toBe(404);
   });
 
-  test('allows legacy path when explicitly enabled', async () => {
-    state.securityConfig = {
-      primaryRouteKey: 'og_custom',
-      allowLegacyPath: true,
-      signatureSecret: '',
-      hasSignatureProtection: false,
-    };
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog'),
-      'og'
-    );
-
-    expect(response.status).toBe(200);
-    expect(state.pixelRenderCalls).toHaveLength(1);
-  });
-
   test('allows unsigned legacy path while signed primary path is enabled', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_secure',
-      allowLegacyPath: false,
       signatureSecret: 'sig-secret',
       hasSignatureProtection: true,
     };
@@ -283,7 +259,6 @@ describe('handleOgGet', () => {
   test('requires signature when protection is enabled', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_secure',
-      allowLegacyPath: false,
       signatureSecret: 'sig-secret',
       hasSignatureProtection: true,
     };
@@ -300,7 +275,6 @@ describe('handleOgGet', () => {
   test('rejects invalid or expired signatures', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_secure',
-      allowLegacyPath: false,
       signatureSecret: 'sig-secret',
       hasSignatureProtection: true,
     };
@@ -325,7 +299,6 @@ describe('handleOgGet', () => {
   test('accepts valid signatures with canonical query ordering', async () => {
     state.securityConfig = {
       primaryRouteKey: 'og_secure',
-      allowLegacyPath: false,
       signatureSecret: 'sig-secret',
       hasSignatureProtection: true,
     };

@@ -4,16 +4,9 @@ type EnvironmentMap = Record<string, string | undefined>;
 
 export type OgSecurityConfig = {
   primaryRouteKey: string;
-  allowLegacyPath: boolean;
   signatureSecret: string;
   hasSignatureProtection: boolean;
 };
-
-function parseBoolean(value?: string): boolean | null {
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return null;
-}
 
 // Stable non-cryptographic hash for deriving a deterministic route key from OG_SECRET.
 function hashToBase36(seed: string): string {
@@ -38,21 +31,6 @@ export function deriveOgApiPathFromSecret(secret: string): string {
   return `og_${suffix}`;
 }
 
-function resolveLegacyPathPolicy(
-  primaryPath: string,
-  hasUnifiedSecret: boolean,
-  envValue?: string
-): boolean {
-  const explicit = parseBoolean(envValue);
-  if (explicit !== null) return explicit;
-
-  // Keep the public legacy path available for static integrations such as Ghost themes.
-  // Signed, non-guessable endpoints still use the derived primary path in single-secret mode.
-  if (hasUnifiedSecret) return true;
-
-  return primaryPath === DEFAULT_OG_API_PATH;
-}
-
 export function resolveOgSecurityConfig(
   env: EnvironmentMap = process.env
 ): OgSecurityConfig {
@@ -65,15 +43,9 @@ export function resolveOgSecurityConfig(
 
   const signatureSecret = (env.OG_SIGNATURE_SECRET ?? unifiedSecret).trim();
   const hasSignatureProtection = signatureSecret.length > 0;
-  const allowLegacyPath = resolveLegacyPathPolicy(
-    primaryRouteKey,
-    unifiedSecret.length > 0,
-    env.OG_API_ALLOW_LEGACY_PATH
-  );
 
   return {
     primaryRouteKey,
-    allowLegacyPath,
     signatureSecret,
     hasSignatureProtection,
   };

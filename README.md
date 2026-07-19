@@ -150,7 +150,6 @@ Secret priority:
 |----------|----------|---------|---------|
 | `OG_SECRET` | No | Advanced mode: auto-derive API path and enable signature validation | `OG_SECRET=replace-with-long-random-secret` |
 | `OG_API_PATH` | Recommended | Set custom API path (random string recommended) | `OG_API_PATH=og_myblog` |
-| `OG_API_ALLOW_LEGACY_PATH` | No | Deprecated; `/api/og` remains public for Ghost/social-crawler compatibility | `OG_API_ALLOW_LEGACY_PATH=true` |
 | `OG_SIGNATURE_SECRET` | No | Explicit signature secret (defaults to `OG_SECRET`) | `OG_SIGNATURE_SECRET=another-long-secret` |
 | `OG_API_ONLY` | No | Set `true` to disable non-API frontend routes | `OG_API_ONLY=true` |
 | `OG_ENABLE_DEBUG` | No | Set `true` to enable `/api/debug` in production | `OG_ENABLE_DEBUG=false` |
