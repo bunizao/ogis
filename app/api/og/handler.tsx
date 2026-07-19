@@ -29,11 +29,12 @@ function createNotFoundResponse(): Response {
 // Sanitize text - replace unsupported characters with safe alternatives
 function sanitizeText(text: string): string {
   return text
-    .replace(/[⸺⸻—–-]+/g, ' — ')
+    .replace(/[⸺⸻—–]+|-{2,}/g, ' — ')
     .replace(/[""“”]/g, '"')
     .replace(/[''‘’]/g, "'")
     .replace(/…/g, '...')
     .replace(/[\u2000-\u200F\u2028-\u202F]/g, ' ')
+    .replace(/ {2,}/g, ' ')
     .trim();
 }
 

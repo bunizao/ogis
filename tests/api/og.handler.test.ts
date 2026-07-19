@@ -361,6 +361,23 @@ describe('handleOgGet', () => {
     expect(rendered?.excerpt).toBe('Line Break');
   });
 
+  test('keeps single hyphens intact and collapses dash spacing', async () => {
+    const { handleOgGet } = await loadHandler();
+
+    const response = await handleOgGet(
+      new NextRequest(
+        'https://example.com/api/og?title=state-of-the-art&site=Blog&excerpt=Pause%20%E2%80%94%20resume'
+      ),
+      'og'
+    );
+
+    expect(response.status).toBe(200);
+
+    const rendered = state.pixelRenderCalls[0]?.props;
+    expect(rendered?.title).toBe('state-of-the-art');
+    expect(rendered?.excerpt).toBe('Pause — resume');
+  });
+
   test('falls back to pixel theme for unknown theme names', async () => {
     const { handleOgGet } = await loadHandler();
 
