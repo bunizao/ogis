@@ -198,7 +198,9 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
       height: 630,
       fonts: fonts.length > 0 ? fonts : undefined,
       headers: {
-        'Cache-Control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
+        // Lowercase on purpose: @vercel/og sets its own `cache-control` (immutable, one
+        // year) and spreads ours after it, so a different casing would append instead.
+        'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
       },
     }
   );
