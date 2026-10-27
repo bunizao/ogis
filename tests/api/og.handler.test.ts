@@ -376,9 +376,41 @@ describe('handleOgGet', () => {
     expect(response.status).toBe(200);
     const init = state.imageResponseCalls[0]?.init;
     expect(init?.fonts).toBeUndefined();
-    expect(response.headers.get('Cache-Control')).toBe(
-      'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
+    // A fallback-font render is degraded, so it must not stick in the CDN for a day.
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=300');
+  });
+
+  test('renders emoji as twemoji images', async () => {
+    const { handleOgGet } = await loadHandler();
+    await handleOgGet(new NextRequest('https://example.com/api/og?title=Launch%20%F0%9F%9A%80'), 'og');
+
+    expect(state.imageResponseCalls[0]?.init.emoji).toBe('twemoji');
+  });
+
+  test('caches ts-versioned urls as immutable', async () => {
+    const { handleOgGet } = await loadHandler();
+    const response = await handleOgGet(
+      new NextRequest('https://example.com/api/og?title=Hello&site=Blog&ts=1730000000000'),
+      'og'
     );
+
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=31536000, s-maxage=31536000, immutable'
+    );
+  });
+
+  test('keeps the cache short when the image host could not be resolved', async () => {
+    mockDns({});
+
+    const { handleOgGet } = await loadHandler();
+    const response = await handleOgGet(
+      new NextRequest(
+        'https://example.com/api/og?title=Hello&site=Blog&ts=1730000000000&image=https://gone.example.com/bg.jpg'
+      ),
+      'og'
+    );
+
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=300');
   });
 
   test('uses default title and site when required params are missing', async () => {

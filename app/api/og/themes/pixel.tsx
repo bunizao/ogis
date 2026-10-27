@@ -1,13 +1,9 @@
 import { getPixelFontOption } from '@/app/lib/pixel-fonts';
-import { fetchFontData } from './font-data';
+import { loadPixelFonts } from './font-data';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
 async function loadFonts(context: ThemeContext): Promise<ThemeFont[]> {
-  const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
-  const fontUrl = new URL(selectedFont.filePath, context.baseUrl).toString();
-  const data = await fetchFontData(fontUrl);
-  if (!data) return [];
-  return [{ name: selectedFont.fontName, data, style: 'normal', weight: 400 }];
+  return loadPixelFonts(context);
 }
 
 function render(props: ThemeProps, context: ThemeContext): React.ReactElement {

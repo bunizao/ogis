@@ -37,7 +37,7 @@ bun test             # Run full Bun test suite
 - `app/layout.tsx` — Root layout with metadata and OpenGraph tags.
 - `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
 - `public/default-bg.jpg` — Default starry sky background when no image URL is provided.
-- `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants) served locally.
+- `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants) served locally. `zpix/zpix-NN.ttf` are on-demand chunks of `zpix.ttf`, listed in the generated `app/lib/zpix-chunks.ts`; regenerate both with `uv run --with fonttools scripts/split-zpix.py`.
 
 ### Image Generation Flow
 
@@ -46,10 +46,10 @@ bun test             # Run full Bun test suite
 3. **SSRF validation** — Image URLs go through `resolveOgBackgroundImage()` in `app/lib/og-background-image.ts`: protocol check, hostname blocking, DNS resolution via Google DNS (`dns.google/resolve`), IPv4/IPv6 public IP validation
 4. **Unsplash URL reconstruction** — Truncated Unsplash query params are recovered from the top-level search params
 5. **Format filtering** — Only PNG/JPG/JPEG/GIF allowed; WebP/AVIF/SVG rejected (Satori limitation)
-6. **Font loading** — Pixel fonts served from `public/fonts/`; the modern theme fetches pinned Inter TTFs from jsdelivr (must be TTF/OTF, not woff2). Fetches are cached per edge isolate in `themes/font-data.ts`
+6. **Font loading** — `loadPixelFonts()` in `themes/font-data.ts` loads the selected pixel font plus only the Zpix chunks the query text needs (Zpix is also the CJK fallback for Geist Pixel). The modern theme fetches pinned Inter TTFs from jsdelivr (must be TTF/OTF, not woff2). Fetches are cached per edge isolate. Characters no loaded font covers fall back to @vercel/og's Google Fonts loader; emoji render as twemoji
 7. **Text sanitization** — Typographic dashes, smart quotes, Unicode whitespace normalized
 8. **Satori rendering** — Theme JSX rendered to PNG with responsive font sizing based on title length
-9. **Caching** — `s-maxage=86400, stale-while-revalidate=604800`
+9. **Caching** — `app/lib/og-cache-control.ts`: `s-maxage=86400, stale-while-revalidate=604800` by default; one year `immutable` when Attegi's `ts=` cache-buster is present; `s-maxage=300` for degraded renders (fonts failed, image host unresolvable); signed URLs never cached past `exp`
 
 ### SSRF Protection Layer
 
