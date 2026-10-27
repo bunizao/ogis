@@ -1,16 +1,16 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
+const geistSans = Geist({
   subsets: ['latin'],
-  variable: '--font-body',
+  variable: '--font-geist-sans',
   display: 'swap',
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  variable: '--font-mono',
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
@@ -55,7 +55,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <head>
+        {/* Sets the hero headline, so fetch it with the page rather than on first use. */}
+        <link rel="preload" href="/fonts/geist-pixel/GeistPixel-Square.ttf" as="font" type="font/ttf" crossOrigin="" />
+      </head>
       <body>
         {children}
       </body>

@@ -1,3 +1,5 @@
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 const GITHUB_URL = 'https://github.com/bunizao/ogis';
 
 type Param = { name: string; description: string; limit?: string };
@@ -51,15 +53,15 @@ const NOTES = [
 export default function HomeStaticContent() {
   return (
     <>
-      <section id="api" className="scroll-mt-14 border-t border-[var(--border-0)]">
-        <div className="mx-auto grid max-w-[var(--max-w)] gap-12 px-4 py-20 sm:px-6 md:py-28 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-20">
+      <section id="api" className="scroll-mt-14 border-t">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 md:py-28 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16">
           <div>
-            <h2 className="text-[22px] font-semibold tracking-[-0.02em]">API</h2>
-            <p className="mt-3 text-[15px] leading-[1.6] text-pretty text-[var(--text-1)]">
+            <h2 className="text-2xl font-semibold tracking-tight">API</h2>
+            <p className="mt-2 text-pretty text-muted-foreground">
               One GET request that returns a PNG. Every parameter is optional.
             </p>
-            <pre className="mt-6 overflow-x-auto rounded-xl border border-[var(--border-1)] bg-[var(--bg-1)] px-4 py-3.5 font-mono text-[12.5px] leading-[1.75] text-[var(--text-1)]">
-              <span className="text-[var(--text-0)]">GET</span> /api/og{'\n'}
+            <pre className="mt-6 overflow-x-auto rounded-lg border bg-muted/40 px-4 py-3.5 font-mono text-[13px] leading-[1.75] text-muted-foreground">
+              <span className="text-foreground">GET</span> /api/og{'\n'}
               {'  '}?title=Interstellar{'\n'}
               {'  '}&amp;site=buxx.me{'\n'}
               {'  '}&amp;theme=editorial
@@ -68,38 +70,50 @@ export default function HomeStaticContent() {
               href={`${GITHUB_URL}#integration-guide`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-block text-[14px] text-[var(--text-1)] underline decoration-[var(--border-2)] underline-offset-4 transition-colors hover:text-[var(--text-0)]"
+              className="mt-5 inline-block text-sm text-muted-foreground underline decoration-foreground/20 underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground/50"
             >
               Integration guides for Ghost, Next.js, Astro and Hugo
             </a>
           </div>
 
-          <div className="grid gap-12">
-            {PARAM_GROUPS.map(group => (
-              <div key={group.title}>
-                <h3 className="text-[13px] font-medium text-[var(--text-2)]">{group.title}</h3>
-                <dl className="mt-3 border-t border-[var(--border-0)]">
-                  {group.params.map(param => (
-                    <div
-                      key={param.name}
-                      className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-6 gap-y-1 border-b border-[var(--border-0)] py-3.5 sm:grid-cols-[140px_minmax(0,1fr)_auto]"
-                    >
-                      <dt className="font-mono text-[13px] leading-[1.6] text-[var(--text-0)]">{param.name}</dt>
-                      <dd className="text-[14px] leading-[1.55] text-pretty text-[var(--text-1)]">{param.description}</dd>
-                      <dd className="col-start-2 font-mono text-[12px] leading-[1.6] text-[var(--text-2)] tabular-nums sm:col-start-3">
-                        {param.limit ? `≤ ${param.limit}` : null}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            ))}
+          <div className="grid gap-10">
+            <div className="overflow-hidden rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[112px] pl-4">Parameter</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="pr-4 text-right">Max</TableHead>
+                  </TableRow>
+                </TableHeader>
+                {PARAM_GROUPS.map(group => (
+                  <TableBody key={group.title} className="border-b last:border-b-0">
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableCell colSpan={3} className="py-1.5 pl-4 text-xs font-medium text-muted-foreground">
+                        {group.title}
+                      </TableCell>
+                    </TableRow>
+                    {group.params.map(param => (
+                      <TableRow key={param.name}>
+                        <TableCell className="py-3 pl-4 align-top font-mono text-[13px]">{param.name}</TableCell>
+                        <TableCell className="py-3 align-top whitespace-normal text-pretty text-muted-foreground">
+                          {param.description}
+                        </TableCell>
+                        <TableCell className="py-3 pr-4 text-right align-top font-mono text-[13px] text-muted-foreground tabular-nums">
+                          {param.limit ?? null}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                ))}
+              </Table>
+            </div>
 
             <div className="grid gap-8 sm:grid-cols-3">
               {NOTES.map(note => (
                 <div key={note.title}>
-                  <h3 className="text-[13px] font-medium text-[var(--text-0)]">{note.title}</h3>
-                  <p className="mt-2 text-[14px] leading-[1.55] text-pretty text-[var(--text-2)]">{note.body}</p>
+                  <h3 className="text-sm font-medium">{note.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">{note.body}</p>
                 </div>
               ))}
             </div>
@@ -107,21 +121,21 @@ export default function HomeStaticContent() {
         </div>
       </section>
 
-      <footer className="border-t border-[var(--border-0)]">
-        <div className="mx-auto flex max-w-[var(--max-w)] flex-col gap-4 px-4 py-10 text-[13px] text-[var(--text-2)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p className="flex items-center gap-3">
-            <span className="font-pixel text-[14px] text-[var(--text-0)]">OGIS</span>
+            <span className="font-pixel text-base leading-none text-foreground">OGIS</span>
             <span>MIT licensed. Built on Next.js and @vercel/og.</span>
           </p>
           <p className="flex gap-5">
-            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[var(--text-0)]">
+            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
               GitHub
             </a>
             <a
               href="https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-[var(--text-0)]"
+              className="transition-colors hover:text-foreground"
             >
               Starfield by Paul Lichtblau
             </a>

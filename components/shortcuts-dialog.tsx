@@ -1,44 +1,34 @@
 'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { ShortcutKeys } from '@/components/shortcut-keys';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+type Shortcut = { label: string; keys: string[] };
 
 export default function ShortcutsDialog({
   shortcuts,
   onOpenChange,
 }: {
-  shortcuts: Array<{ label: string; keys: string[] }>;
+  shortcuts: Shortcut[];
   onOpenChange: (open: boolean) => void;
 }) {
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 sm:max-w-sm border-[var(--border-1)] bg-[var(--bg-1)] p-0">
+      <DialogContent className="gap-0 p-0 sm:max-w-sm">
         <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="text-[15px] font-semibold tracking-[-0.01em]">Keyboard shortcuts</DialogTitle>
+          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogDescription className="sr-only">Shortcuts available on this page.</DialogDescription>
         </DialogHeader>
-        <div className="px-5 pb-3">
+        <dl className="px-5 pb-3">
           {shortcuts.map(shortcut => (
-            <div
-              key={shortcut.label}
-              className="flex items-center justify-between border-t border-[var(--border-0)] py-2.5"
-            >
-              <span className="text-[14px] text-[var(--text-1)]">{shortcut.label}</span>
-              <ShortcutKeys
-                keys={shortcut.keys}
-                className="gap-0.5"
-                kbdClassName="h-[22px] min-w-[22px] px-1.5 rounded-[5px] border-[var(--border-1)] bg-[var(--bg-2)] text-[11px] text-[var(--text-1)]"
-                separatorClassName="hidden"
-                dividerClassName="mx-0.5 text-[11px] text-[var(--text-2)] opacity-100"
-                iconClassName="size-3"
-              />
+            <div key={shortcut.label} className="flex items-center justify-between border-t py-2.5">
+              <dt className="text-sm">{shortcut.label}</dt>
+              <dd>
+                <ShortcutKeys keys={shortcut.keys} />
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
       </DialogContent>
     </Dialog>
   );

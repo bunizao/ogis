@@ -34,6 +34,8 @@ bun test             # Run full Bun test suite
 - `app/lib/og-themes.ts` — Theme keys, labels and descriptions shared by the handler and the landing page.
 - `app/lib/pixel-fonts.ts` — Pixel font registry shared by the landing page and the pixel theme.
 - `app/page.tsx` — Interactive landing page with live preview form and API reference.
+- `app/link-previews.tsx` — X, Slack and iMessage stand-ins that the playground shows the card inside.
+- `components/ui/` — shadcn components (new-york, `radix-ui` package). Add more with `bunx shadcn@latest add <name>`, then point their `cn` import at `@/lib/utils`.
 - `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
 - `public/default-bg.jpg` — Starfield used by `pixel`/`modern` when no image is given.
 - `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants) served locally.

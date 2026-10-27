@@ -1,92 +1,29 @@
-import { ArrowUp, Command, CornerDownLeft } from 'lucide-react';
+import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
 
-export function ShortcutKeys({
-  keys,
-  className,
-  kbdClassName,
-  separatorClassName,
-  dividerClassName,
-  iconClassName,
-}: {
-  keys: string[];
-  className?: string;
-  kbdClassName?: string;
-  separatorClassName?: string;
-  dividerClassName?: string;
-  iconClassName?: string;
-}) {
+const SYMBOLS: Record<string, string> = {
+  Cmd: '⌘',
+  Shift: '⇧',
+  Enter: '↵',
+};
+
+export function ShortcutKeys({ keys, className }: { keys: string[]; className?: string }) {
   // A `/` between two keys separates alternatives; on its own it is the slash key.
   const isDivider = (index: number) => keys[index] === '/' && index > 0 && index < keys.length - 1;
 
   return (
-    <span className={cn('inline-flex items-center gap-1', className)}>
-      {keys.map((key, index) => {
-        const showPlus = index > 0 && !isDivider(index) && !isDivider(index - 1);
-
-        return (
-          <span key={`${key}-${index}`} className="inline-flex items-center gap-1">
-            {showPlus ? (
-              <span className={cn('text-current/55', separatorClassName)}>+</span>
-            ) : null}
-            {isDivider(index) ? (
-              <span className={cn('mx-0.5 text-[10px] opacity-30', dividerClassName)}>
-                /
-              </span>
-            ) : (
-              <ShortcutKeycap
-                value={key}
-                className={kbdClassName}
-                iconClassName={iconClassName}
-              />
-            )}
+    <KbdGroup className={className}>
+      {keys.map((key, index) =>
+        isDivider(index) ? (
+          <span key={index} className="text-xs text-muted-foreground/60">
+            /
           </span>
-        );
-      })}
-    </span>
-  );
-}
-
-function ShortcutKeycap({
-  value,
-  className,
-  iconClassName,
-}: {
-  value: string;
-  className?: string;
-  iconClassName?: string;
-}) {
-  const iconMap = {
-    Cmd: Command,
-    Enter: CornerDownLeft,
-    Shift: ArrowUp,
-  } as const;
-  const Icon = iconMap[value as keyof typeof iconMap];
-  const symbolClassName = cn('text-[0.95em] leading-none', iconClassName);
-  const keySymbol = value === 'Ctrl' ? '⌃' : null;
-
-  return (
-    <kbd
-      className={cn(
-        'inline-flex items-center justify-center min-w-[20px] px-1.5 py-0.5 border rounded-md font-mono leading-none',
-        className
+        ) : (
+          <Kbd key={index} aria-label={SYMBOLS[key] ? key : undefined} className={cn(SYMBOLS[key] && 'text-[13px]')}>
+            {SYMBOLS[key] ?? key}
+          </Kbd>
+        )
       )}
-    >
-      {Icon ? (
-        <>
-          <Icon className={cn('size-3.5', iconClassName)} aria-hidden="true" />
-          <span className="sr-only">{value}</span>
-        </>
-      ) : keySymbol ? (
-        <>
-          <span className={symbolClassName} aria-hidden="true">
-            {keySymbol}
-          </span>
-          <span className="sr-only">{value}</span>
-        </>
-      ) : (
-        value
-      )}
-    </kbd>
+    </KbdGroup>
   );
 }

@@ -1,13 +1,37 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { Check, Copy, ExternalLink, Keyboard, RotateCw } from 'lucide-react';
 import { DEFAULT_OG_THEME, OG_THEMES, type OgThemeKey } from '@/app/lib/og-themes';
 import { DEFAULT_PIXEL_FONT, PIXEL_FONT_OPTIONS, type PixelFontKey } from '@/app/lib/pixel-fonts';
+import { ChatUnfurl, FeedPost, MessageBubble } from '@/app/link-previews';
 import { ShortcutKeys } from '@/components/shortcut-keys';
 import { Button } from '@/components/ui/button';
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupTextarea,
+} from '@/components/ui/input-group';
+import { Kbd } from '@/components/ui/kbd';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const ShortcutsDialog = dynamic(() => import('@/components/shortcuts-dialog'), { ssr: false });
@@ -50,6 +74,13 @@ const SAMPLE: Fields = {
   accent: '',
 };
 
+const CONTEXTS = [
+  { key: 'image', label: 'Image' },
+  { key: 'feed', label: 'X' },
+  { key: 'chat', label: 'Slack' },
+  { key: 'message', label: 'iMessage' },
+] as const;
+
 // Keys follow the Fields order so generated URLs read naturally.
 function buildQuery(fields: Fields, theme: OgThemeKey, pixelFont: PixelFontKey): URLSearchParams {
   const params = new URLSearchParams();
@@ -70,6 +101,12 @@ function parseHex(value: string): string | null {
   return null;
 }
 
+// Link previews show a domain; use the site name when it looks like one.
+function previewDomain(site: string): string {
+  const value = site.trim().toLowerCase();
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(value) ? value : 'example.com';
+}
+
 export default function HomeClient({ children }: { children: React.ReactNode }) {
   const [fields, setFields] = useState<Fields>(SAMPLE);
   const [theme, setTheme] = useState<OgThemeKey>(DEFAULT_OG_THEME);
@@ -84,7 +121,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   const [origin, setOrigin] = useState('');
   const [isMac, setIsMac] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [copyMessage, setCopyMessage] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const titleRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLImageElement>(null);
@@ -126,9 +163,9 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
 
   const copyUrl = async () => {
     await navigator.clipboard.writeText(window.location.origin + endpointPath);
-    setCopyMessage('Copied');
+    setCopied(true);
     clearTimeout(copyTimerRef.current);
-    copyTimerRef.current = setTimeout(() => setCopyMessage(''), 2000);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   // The global key handler is bound once; read the latest closures through a ref.
@@ -193,46 +230,79 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
     { label: 'Refresh preview', keys: refreshKeys },
     { label: 'Copy image URL', keys: copyKeys },
     { label: 'Toggle shortcuts', keys: ['?'] },
-    { label: 'Close / unfocus', keys: ['Esc'] },
+    { label: 'Close or unfocus', keys: ['Esc'] },
   ];
 
   const accentHex = parseHex(fields.accent);
-  const kbdClassName = 'min-w-[18px] h-[18px] px-1 rounded-[4px] border-[var(--border-1)] bg-[var(--bg-2)] text-[10px] text-[var(--text-1)]';
+  const themeOption = OG_THEMES.find(option => option.key === theme) ?? OG_THEMES[0];
+  const status = previewFailed && !isRendering ? 'Render failed. Try refreshing.' : isRendering ? 'Rendering…' : '1200 × 630 PNG';
+
+  const previewImage = (className?: string) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      ref={previewRef}
+      src={previewUrl}
+      alt="OG Preview"
+      width={1200}
+      height={630}
+      onLoad={() => {
+        setSettledUrl(previewUrl);
+        setPreviewFailed(false);
+      }}
+      onError={() => {
+        setSettledUrl(previewUrl);
+        setPreviewFailed(true);
+      }}
+      className={cn('block aspect-[1200/630] w-full object-cover transition-opacity duration-200', isRendering && 'opacity-50', className)}
+    />
+  );
+
+  const linkPreview = {
+    image: previewImage(),
+    title: fields.title.trim() || 'Untitled',
+    site: fields.site.trim() || 'Blog',
+    excerpt: fields.excerpt.trim(),
+    author: fields.author.trim(),
+    domain: previewDomain(fields.site),
+  };
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       {showShortcuts ? <ShortcutsDialog shortcuts={shortcuts} onOpenChange={setShowShortcuts} /> : null}
 
-      <header className="sticky top-0 z-40 border-b border-[var(--border-0)] bg-[color-mix(in_srgb,var(--bg-0)_86%,transparent)] backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-[var(--max-w)] items-center justify-between px-4 sm:px-6">
-          <a href="#top" className="font-pixel text-[15px] tracking-[0.02em] text-[var(--text-0)]">
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <a href="#top" className="font-pixel text-xl leading-none">
             OGIS
           </a>
-          <nav className="flex items-center gap-1 text-[14px]">
+          <nav className="flex items-center gap-1">
             {[
-              ['#themes', 'Themes'],
               ['#playground', 'Playground'],
               ['#api', 'API'],
             ].map(([href, label]) => (
-              <a
-                key={href}
-                href={href}
-                className="hidden rounded-md px-3 py-2 text-[var(--text-1)] transition-colors hover:text-[var(--text-0)] sm:inline-flex"
-              >
-                {label}
-              </a>
+              <Button key={href} asChild variant="ghost" size="sm" className="hidden text-muted-foreground hover:text-foreground sm:inline-flex">
+                <a href={href}>{label}</a>
+              </Button>
             ))}
-            <button
-              type="button"
-              onClick={() => setShowShortcuts(open => !open)}
-              onFocus={preloadShortcutsDialog}
-              onMouseEnter={preloadShortcutsDialog}
-              aria-label="Show keyboard shortcuts"
-              className="hidden size-9 items-center justify-center rounded-md font-mono text-[13px] text-[var(--text-1)] transition-colors hover:text-[var(--text-0)] md:inline-flex"
-            >
-              ?
-            </button>
-            <Button asChild variant="outline" size="sm" className="ml-2 border-[var(--border-1)] bg-transparent shadow-none">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setShowShortcuts(open => !open)}
+                  onFocus={preloadShortcutsDialog}
+                  onMouseEnter={preloadShortcutsDialog}
+                  aria-label="Show keyboard shortcuts"
+                  className="hidden text-muted-foreground hover:text-foreground md:inline-flex"
+                >
+                  <Keyboard />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Keyboard shortcuts <Kbd>?</Kbd>
+              </TooltipContent>
+            </Tooltip>
+            <Button asChild variant="outline" size="sm" className="ml-1">
               <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
                 GitHub
               </a>
@@ -242,37 +312,31 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
       </header>
 
       <main>
-        <section id="top" className="mx-auto max-w-[var(--max-w)] px-4 pt-20 pb-16 sm:px-6 md:pt-28 md:pb-20">
-          <h1 className="max-w-[15ch] text-[clamp(40px,6vw,68px)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance">
-            Open Graph images from a single URL.
-          </h1>
-          <p className="mt-6 max-w-[52ch] text-[17px] leading-[1.6] text-pretty text-[var(--text-1)]">
-            Put a title and a few details in the query string. OGIS renders a 1200{' × '}630 card at the
-            edge, and your CDN keeps it.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="active:scale-[0.97] transition-[background-color,scale]">
-              <a href="#playground">Open the playground</a>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-[var(--border-1)] bg-transparent shadow-none active:scale-[0.97] transition-[background-color,scale]"
-            >
-              <a href={DEPLOY_URL} target="_blank" rel="noopener noreferrer">
-                Deploy your own
-              </a>
-            </Button>
+        <section
+          id="top"
+          className="mx-auto grid max-w-6xl gap-12 px-4 pt-16 pb-20 sm:px-6 md:pt-24 md:pb-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:gap-16"
+        >
+          <div>
+            <h1 className="font-pixel text-[clamp(44px,6.4vw,76px)] leading-[0.95] text-balance">
+              Social cards from a URL.
+            </h1>
+            <p className="mt-6 max-w-[44ch] text-lg leading-relaxed text-pretty text-muted-foreground">
+              Put a title and a few details in the query string. OGIS renders a 1200{' × '}630 card at the
+              edge, and your CDN keeps it.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <a href="#playground">Try the playground</a>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <a href={DEPLOY_URL} target="_blank" rel="noopener noreferrer">
+                  Deploy to Vercel
+                </a>
+              </Button>
+            </div>
           </div>
-        </section>
 
-        <section id="themes" className="mx-auto max-w-[var(--max-w)] scroll-mt-14 px-4 pb-20 sm:px-6 md:pb-28">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-            <h2 className="text-[22px] font-semibold tracking-[-0.02em]">Four themes</h2>
-            <p className="text-[14px] text-[var(--text-2)]">The same post, set four ways. Pick one to try it.</p>
-          </div>
-          <div className="mt-8 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
             {OG_THEMES.map((option, index) => (
               <button
                 key={option.key}
@@ -282,13 +346,13 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                   selectTheme(option.key);
                   document.getElementById('playground')?.scrollIntoView({ block: 'start' });
                 }}
-                className="group rounded-xl text-left outline-none"
+                className="group rounded-lg text-left outline-none"
               >
                 <span
                   className={cn(
-                    'block overflow-hidden rounded-xl bg-[var(--bg-2)] shadow-[0_0_0_1px_var(--image-outline)] transition-shadow',
-                    'group-hover:shadow-[0_0_0_1px_var(--border-2)] group-focus-visible:shadow-[0_0_0_2px_var(--text-0)]',
-                    theme === option.key && 'shadow-[0_0_0_2px_var(--text-0)] group-hover:shadow-[0_0_0_2px_var(--text-0)]'
+                    'block overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10 transition-shadow',
+                    'group-hover:ring-foreground/25 group-focus-visible:ring-2 group-focus-visible:ring-ring',
+                    theme === option.key && 'ring-2 ring-foreground group-hover:ring-foreground'
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -300,188 +364,233 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                     className="block aspect-[1200/630] w-full object-cover"
                   />
                 </span>
-                <span className="mt-4 flex items-center justify-between gap-3">
-                  <span className="text-[15px] font-medium">{option.label}</span>
-                  <kbd className={cn('inline-flex items-center justify-center border font-mono pointer-coarse:hidden', kbdClassName)}>
-                    {index + 1}
-                  </kbd>
-                </span>
-                <span className="mt-1.5 block text-[14px] leading-[1.5] text-pretty text-[var(--text-2)]">
-                  {option.description}
+                <span className="mt-2.5 flex items-center justify-between gap-2 text-sm">
+                  <span className={cn('font-medium', theme !== option.key && 'text-muted-foreground group-hover:text-foreground')}>
+                    {option.label}
+                  </span>
+                  <Kbd className="pointer-coarse:hidden">{index + 1}</Kbd>
                 </span>
               </button>
             ))}
           </div>
         </section>
 
-        <section id="playground" className="scroll-mt-14 border-t border-[var(--border-0)]">
-          <div className="mx-auto max-w-[var(--max-w)] px-4 py-20 sm:px-6 md:py-28">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-              <h2 className="text-[22px] font-semibold tracking-[-0.02em]">Playground</h2>
-              <p className="text-[14px] text-[var(--text-2)]">Edit any field. The preview follows as you type.</p>
-            </div>
+        <section id="playground" className="scroll-mt-14 border-t bg-muted/30">
+          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
+            <h2 className="text-2xl font-semibold tracking-tight">Playground</h2>
+            <p className="mt-2 text-muted-foreground">Edit any field. The preview follows as you type.</p>
 
-            <div className="mt-8 grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-16">
-              <div className="lg:sticky lg:top-20">
-                <div className="overflow-hidden rounded-xl bg-[var(--bg-2)] shadow-[0_0_0_1px_var(--image-outline),0_12px_40px_-12px_rgba(0,0,0,0.35)]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    ref={previewRef}
-                    src={previewUrl}
-                    alt="OG Preview"
-                    width={1200}
-                    height={630}
-                    onLoad={() => {
-                      setSettledUrl(previewUrl);
-                      setPreviewFailed(false);
-                    }}
-                    onError={() => {
-                      setSettledUrl(previewUrl);
-                      setPreviewFailed(true);
-                    }}
-                    className={cn(
-                      'block aspect-[1200/630] w-full object-cover transition-opacity duration-200',
-                      isRendering && 'opacity-60'
-                    )}
-                  />
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-[13px] text-[var(--text-2)]" aria-live="polite">
-                    {previewFailed && !isRendering ? 'Render failed. Try refreshing.' : isRendering ? 'Rendering…' : '1200 × 630 PNG'}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={refresh}
-                      className="border-[var(--border-1)] bg-transparent shadow-none"
-                    >
-                      Refresh
-                      <ShortcutKeys keys={refreshKeys} className="gap-0.5 pointer-coarse:hidden" kbdClassName={kbdClassName} separatorClassName="hidden" iconClassName="size-2.5" />
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="border-[var(--border-1)] bg-transparent shadow-none">
-                      <a href={previewUrl} target="_blank" rel="noopener noreferrer">
-                        Open image
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-xl border border-[var(--border-1)] bg-[var(--bg-1)]">
-                  <div className="flex h-11 items-center justify-between gap-3 border-b border-[var(--border-0)] pr-1.5 pl-4">
-                    <span className="text-[13px] font-medium text-[var(--text-1)]">Image URL</span>
-                    <div className="flex items-center gap-2">
-                      <span role="status" aria-live="polite" className="text-[13px] text-[var(--text-2)]">
-                        {copyMessage}
-                      </span>
-                      <Button variant="ghost" size="sm" onClick={copyUrl} className="text-[13px]">
-                        Copy
-                        <ShortcutKeys keys={copyKeys} className="gap-0.5 pointer-coarse:hidden" kbdClassName={kbdClassName} separatorClassName="hidden" iconClassName="size-2.5" />
-                      </Button>
+            {/* overflow-clip, not hidden: hidden would make this the scroll container and break the sticky preview. */}
+            <div className="mt-8 grid overflow-clip rounded-xl border bg-card shadow-sm lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="min-w-0 border-b lg:sticky lg:top-14 lg:self-start lg:border-b-0">
+                <Tabs defaultValue="image" className="gap-0">
+                  <div className="flex items-center justify-between gap-2 border-b px-3 py-2.5 sm:px-4">
+                    <TabsList aria-label="Preview as">
+                      {CONTEXTS.map(context => (
+                        <TabsTrigger key={context.key} value={context.key} className="px-2.5">
+                          {context.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    <div className="flex items-center gap-0.5">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon-sm" onClick={refresh} aria-label="Refresh preview">
+                            <RotateCw />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Refresh <ShortcutKeys keys={refreshKeys} />
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button asChild variant="ghost" size="icon-sm">
+                            <a href={previewUrl} target="_blank" rel="noopener noreferrer" aria-label="Open image in a new tab">
+                              <ExternalLink />
+                            </a>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Open image</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
-                  <code className="block px-4 py-3.5 font-mono text-[12.5px] leading-[1.65] break-all text-[var(--text-1)]">
-                    {origin}
-                    {endpointPath}
-                  </code>
+
+                  <div className="flex min-h-[300px] items-center p-4 sm:min-h-[420px] sm:p-8">
+                    <TabsContent value="image">
+                      <div className="overflow-hidden rounded-lg ring-1 ring-foreground/10">{previewImage()}</div>
+                    </TabsContent>
+                    <TabsContent value="feed">
+                      <FeedPost {...linkPreview} />
+                    </TabsContent>
+                    <TabsContent value="chat">
+                      <ChatUnfurl {...linkPreview} />
+                    </TabsContent>
+                    <TabsContent value="message">
+                      <MessageBubble {...linkPreview} />
+                    </TabsContent>
+                  </div>
+                </Tabs>
+
+                <div className="border-t p-3 sm:p-4">
+                  <InputGroup>
+                    <InputGroupTextarea
+                      readOnly
+                      aria-label="Image URL"
+                      value={origin + endpointPath}
+                      rows={2}
+                      className="min-h-0 font-mono text-[13px] leading-relaxed break-all md:text-[13px]"
+                    />
+                    <InputGroupAddon align="block-end" className="justify-between border-t py-2">
+                      <span className="flex items-center gap-2 text-xs font-normal" aria-live="polite">
+                        {/* The text beside it already announces the state. */}
+                        {isRendering ? <Spinner role="presentation" aria-hidden="true" aria-label={undefined} className="size-3.5" /> : null}
+                        {status}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span role="status" className="sr-only">
+                          {copied ? 'Copied' : ''}
+                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <InputGroupButton variant="secondary" size="sm" onClick={copyUrl}>
+                              {copied ? <Check /> : <Copy />}
+                              {copied ? 'Copied' : 'Copy'}
+                            </InputGroupButton>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Copy image URL <ShortcutKeys keys={copyKeys} />
+                          </TooltipContent>
+                        </Tooltip>
+                      </span>
+                    </InputGroupAddon>
+                  </InputGroup>
                 </div>
               </div>
 
-              <form className="grid gap-9" onSubmit={event => event.preventDefault()}>
-                <Group title="Theme">
-                  <div role="radiogroup" aria-label="Theme" className="grid grid-cols-4 gap-1 rounded-[10px] bg-[var(--bg-2)] p-1">
-                    {OG_THEMES.map(option => (
-                      <button
-                        key={option.key}
-                        type="button"
-                        role="radio"
-                        aria-checked={theme === option.key}
-                        onClick={() => selectTheme(option.key)}
-                        className={cn(
-                          'h-8 rounded-[6px] text-[13px] font-medium transition-[color,background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-2)]',
-                          theme === option.key
-                            ? 'bg-[var(--bg-0)] text-[var(--text-0)] shadow-[0_0_0_1px_var(--border-1),0_1px_2px_rgba(0,0,0,0.12)]'
-                            : 'text-[var(--text-2)] hover:text-[var(--text-0)]'
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                  {theme === 'pixel' ? (
-                    <Field label="Pixel font">
-                      {id => (
+              <form className="p-5 sm:p-6 lg:border-l" onSubmit={event => event.preventDefault()}>
+                <FieldGroup className="gap-6">
+                  <FieldSet className="gap-3">
+                    <FieldLegend variant="label" className="mb-3 text-muted-foreground">
+                      Theme
+                    </FieldLegend>
+                    <ToggleGroup
+                      type="single"
+                      variant="outline"
+                      value={theme}
+                      onValueChange={value => value && selectTheme(value as OgThemeKey)}
+                      aria-label="Theme"
+                      className="w-full"
+                    >
+                      {OG_THEMES.map(option => (
+                        <ToggleGroupItem key={option.key} value={option.key} className="flex-1 px-2">
+                          {option.label}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                    <FieldDescription>{themeOption.description}</FieldDescription>
+                    {theme === 'pixel' ? (
+                      <Field className="gap-2">
+                        <FieldLabel htmlFor="pixel-font">Pixel font</FieldLabel>
                         <Select value={pixelFont} onValueChange={value => selectPixelFont(value as PixelFontKey)}>
-                          <SelectTrigger id={id} className={cn(inputClassName, 'w-full')}>
+                          <SelectTrigger id="pixel-font" className="w-full">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="border-[var(--border-1)] bg-[var(--bg-1)]">
+                          <SelectContent>
                             {PIXEL_FONT_OPTIONS.map(option => (
-                              <SelectItem
-                                key={option.key}
-                                value={option.key}
-                                style={{ fontFamily: `'${option.fontName}', monospace` }}
-                              >
+                              <SelectItem key={option.key} value={option.key} style={{ fontFamily: `'${option.fontName}', monospace` }}>
                                 {option.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      )}
-                    </Field>
-                  ) : null}
-                </Group>
+                      </Field>
+                    ) : null}
+                  </FieldSet>
 
-                <Group title="Text">
-                  <TextField label="Title" value={fields.title} onChange={value => setField('title', value)} inputRef={titleRef} />
-                  <TextField label="Site" value={fields.site} onChange={value => setField('site', value)} />
-                  <TextField label="Excerpt" value={fields.excerpt} onChange={value => setField('excerpt', value)} />
-                </Group>
+                  <FieldSeparator />
 
-                <Group title="Details">
-                  <div className="grid grid-cols-2 gap-3">
-                    <TextField label="Author" value={fields.author} onChange={value => setField('author', value)} />
-                    <TextField label="Date" value={fields.date} onChange={value => setField('date', value)} />
-                    <TextField label="Tag" value={fields.tag} onChange={value => setField('tag', value)} />
-                    <TextField label="Reading time" value={fields.reading} onChange={value => setField('reading', value)} />
-                  </div>
-                </Group>
-
-                <Group title="Images" hint="PNG, JPEG, GIF or SVG from a public host. Anything else is left out.">
-                  <TextField label="Cover image" type="url" placeholder="https://" value={fields.image} onChange={value => setField('image', value)} />
-                  <TextField label="Site icon" type="url" placeholder="https://" value={fields.icon} onChange={value => setField('icon', value)} />
-                  <TextField label="Author avatar" type="url" placeholder="https://" value={fields.avatar} onChange={value => setField('avatar', value)} />
-                </Group>
-
-                <Group title="Accent" hint="Colours the tag. Empty uses the theme default.">
-                  <div className="flex gap-2">
-                    <label
-                      className="relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-md shadow-[inset_0_0_0_1px_var(--border-1)]"
-                      style={{
-                        background:
-                          accentHex ??
-                          'linear-gradient(to top right, transparent calc(50% - 0.5px), var(--border-2) 50%, transparent calc(50% + 0.5px)), var(--bg-1)',
-                      }}
-                    >
-                      <span className="sr-only">Pick accent colour</span>
-                      <input
-                        type="color"
-                        value={accentHex ?? '#888888'}
-                        onChange={event => setField('accent', event.target.value)}
-                        className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  <FieldSet className="gap-4">
+                    <FieldLegend variant="label" className="mb-3 text-muted-foreground">
+                      Text
+                    </FieldLegend>
+                    <TextField id="title" label="Title" value={fields.title} onChange={value => setField('title', value)} inputRef={titleRef} />
+                    <TextField id="site" label="Site" value={fields.site} onChange={value => setField('site', value)} />
+                    <Field className="gap-2">
+                      <FieldLabel htmlFor="excerpt">Excerpt</FieldLabel>
+                      <Textarea
+                        id="excerpt"
+                        rows={2}
+                        value={fields.excerpt}
+                        onChange={event => setField('excerpt', event.target.value)}
+                        spellCheck={false}
+                        className="min-h-0 resize-none"
                       />
-                    </label>
-                    <Input
-                      aria-label="Accent hex"
-                      placeholder="Theme default"
-                      value={fields.accent}
-                      onChange={event => setField('accent', event.target.value)}
-                      spellCheck={false}
-                      className={cn(inputClassName, 'font-mono')}
-                    />
-                  </div>
-                </Group>
+                    </Field>
+                  </FieldSet>
+
+                  <FieldSeparator />
+
+                  <FieldSet className="gap-4">
+                    <FieldLegend variant="label" className="mb-3 text-muted-foreground">
+                      Details
+                    </FieldLegend>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+                      <TextField id="author" label="Author" value={fields.author} onChange={value => setField('author', value)} />
+                      <TextField id="date" label="Date" value={fields.date} onChange={value => setField('date', value)} />
+                      <TextField id="tag" label="Tag" value={fields.tag} onChange={value => setField('tag', value)} />
+                      <TextField id="reading" label="Reading time" value={fields.reading} onChange={value => setField('reading', value)} />
+                    </div>
+                  </FieldSet>
+
+                  <FieldSeparator />
+
+                  <FieldSet className="gap-4">
+                    <FieldLegend variant="label" className="mb-3 text-muted-foreground">
+                      Images
+                    </FieldLegend>
+                    <TextField id="image" label="Cover image" type="url" placeholder="https://" value={fields.image} onChange={value => setField('image', value)} />
+                    <TextField id="icon" label="Site icon" type="url" placeholder="https://" value={fields.icon} onChange={value => setField('icon', value)} />
+                    <TextField id="avatar" label="Author avatar" type="url" placeholder="https://" value={fields.avatar} onChange={value => setField('avatar', value)} />
+                    <FieldDescription>PNG, JPEG, GIF or SVG from a public host. Anything else is left out.</FieldDescription>
+                  </FieldSet>
+
+                  <FieldSeparator />
+
+                  <Field className="gap-2">
+                    <FieldLabel htmlFor="accent">Accent</FieldLabel>
+                    <InputGroup>
+                      <InputGroupAddon>
+                        <label
+                          className="relative size-5 cursor-pointer overflow-hidden rounded-sm ring-1 ring-foreground/15"
+                          style={{
+                            background:
+                              accentHex ??
+                              'linear-gradient(to top right, transparent calc(50% - 0.5px), var(--muted-foreground) 50%, transparent calc(50% + 0.5px))',
+                          }}
+                        >
+                          <span className="sr-only">Pick accent colour</span>
+                          <input
+                            type="color"
+                            value={accentHex ?? '#888888'}
+                            onChange={event => setField('accent', event.target.value)}
+                            className="absolute inset-0 size-full cursor-pointer opacity-0"
+                          />
+                        </label>
+                      </InputGroupAddon>
+                      <InputGroupInput
+                        id="accent"
+                        aria-label="Accent hex"
+                        placeholder="Theme default"
+                        value={fields.accent}
+                        onChange={event => setField('accent', event.target.value)}
+                        spellCheck={false}
+                        className="font-mono"
+                      />
+                    </InputGroup>
+                    <FieldDescription>Colours the tag. Leave empty for the theme default.</FieldDescription>
+                  </Field>
+                </FieldGroup>
               </form>
             </div>
           </div>
@@ -489,36 +598,12 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
 
         {children}
       </main>
-    </>
-  );
-}
-
-const inputClassName =
-  'h-9 border-[var(--border-1)] bg-[var(--bg-1)] text-base shadow-none placeholder:text-[var(--text-2)] focus-visible:border-[var(--border-2)] focus-visible:ring-[3px] focus-visible:ring-[var(--border-0)] md:text-[14px]';
-
-function Group({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <fieldset className="grid gap-3">
-      <legend className="mb-3 text-[13px] font-medium text-[var(--text-0)]">{title}</legend>
-      {children}
-      {hint ? <p className="text-[13px] leading-[1.5] text-pretty text-[var(--text-2)]">{hint}</p> : null}
-    </fieldset>
-  );
-}
-
-function Field({ label, children }: { label: string; children: (id: string) => React.ReactNode }) {
-  const id = useId();
-  return (
-    <div className="grid gap-1.5">
-      <label htmlFor={id} className="text-[13px] text-[var(--text-1)]">
-        {label}
-      </label>
-      {children(id)}
-    </div>
+    </TooltipProvider>
   );
 }
 
 function TextField({
+  id,
   label,
   value,
   onChange,
@@ -526,6 +611,7 @@ function TextField({
   placeholder,
   inputRef,
 }: {
+  id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -534,20 +620,18 @@ function TextField({
   inputRef?: React.Ref<HTMLInputElement>;
 }) {
   return (
-    <Field label={label}>
-      {id => (
-        <Input
-          id={id}
-          ref={inputRef}
-          type={type}
-          value={value}
-          placeholder={placeholder}
-          onChange={event => onChange(event.target.value)}
-          spellCheck={false}
-          autoComplete="off"
-          className={inputClassName}
-        />
-      )}
+    <Field className="gap-2">
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Input
+        id={id}
+        ref={inputRef}
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={event => onChange(event.target.value)}
+        spellCheck={false}
+        autoComplete="off"
+      />
     </Field>
   );
 }

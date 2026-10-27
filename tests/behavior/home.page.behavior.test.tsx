@@ -109,6 +109,20 @@ describe('Home page behavior', () => {
     expect(previewParams(ui).get('theme')).toBe('swiss');
   });
 
+  test('preview tabs show the card inside a link unfurl', async () => {
+    const ui = await renderHome();
+
+    await userEvent.click(ui.getByRole('tab', { name: 'Slack' }));
+    expect(ui.getByText('https://buxx.me/')).toBeTruthy();
+    expect(previewParams(ui).get('title')).toBe('Interstellar');
+
+    // A site name that is not a domain falls back to a placeholder one.
+    await userEvent.clear(ui.getByLabelText('Site'));
+    await userEvent.type(ui.getByLabelText('Site'), 'My Blog');
+    await userEvent.click(ui.getByRole('tab', { name: 'iMessage' }));
+    expect(ui.getByText('example.com')).toBeTruthy();
+  });
+
   test('copy writes the absolute URL and says so', async () => {
     const writeText = installClipboardMock();
     const ui = await renderHome();
