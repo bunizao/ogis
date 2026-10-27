@@ -1,89 +1,52 @@
-import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { NextRequest } from 'next/server';
 import { GET } from '../../app/api/debug/route';
 
 const originalDebugFlag = process.env.OG_ENABLE_DEBUG;
 
-beforeEach(() => {
+afterEach(() => {
   process.env.OG_ENABLE_DEBUG = originalDebugFlag;
 });
 
-afterEach(() => {
-  mock.restore();
-  process.env.OG_ENABLE_DEBUG = originalDebugFlag;
-});
+type Described = { url: string; host: string; accepted: boolean; rejection: string | null } | null;
 
 describe('/api/debug', () => {
-  test('returns 404 in production when debug flag is disabled', async () => {
+  test('returns 404 unless OG_ENABLE_DEBUG=true', async () => {
     process.env.OG_ENABLE_DEBUG = 'false';
-
-    const request = new NextRequest('https://example.com/api/debug?image=https://example.com/a.png');
-    const response = await GET(request);
+    const response = await GET(new NextRequest('https://example.com/api/debug?image=https://example.com/a.png'));
 
     expect(response.status).toBe(404);
-    expect(await response.text()).toBe('Not Found');
   });
 
-  test('is enabled in production when OG_ENABLE_DEBUG=true', async () => {
+  test('explains why each image param was rejected', async () => {
     process.env.OG_ENABLE_DEBUG = 'true';
-    spyOn(globalThis, 'fetch').mockImplementation((async input => {
-      const rawUrl =
-        typeof input === 'string'
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url;
-      const url = new URL(rawUrl);
-      const records = url.searchParams.get('type') === 'A' ? ['1.1.1.1'] : [];
-      return Response.json({
-        Status: 0,
-        Answer: records.map(data => ({ data })),
-      });
-    }) as typeof fetch);
-
-    const request = new NextRequest(
-      'https://example.com/api/debug?image=https://images.unsplash.com/photo-1?auto=format&crop=entropy&q=80&w=1200'
+    const response = await GET(
+      new NextRequest(
+        'https://example.com/api/debug?image=http://192.168.1.5/private.png&icon=ftp://files.example.com/icon.png'
+      )
     );
-    const response = await GET(request);
-    const body = (await response.json()) as {
-      reconstructedImage: string;
-      isValidUrl: boolean;
-      isSupportedFormat: boolean;
-      allParams: Record<string, string>;
-    };
+    const body = (await response.json()) as { image: Described; icon: Described; avatar: Described };
 
     expect(response.status).toBe(200);
-    expect(body.reconstructedImage.includes('crop=entropy')).toBeTrue();
-    expect(body.reconstructedImage.includes('q=80')).toBeTrue();
-    expect(body.reconstructedImage.includes('w=1200')).toBeTrue();
-    expect(body.isValidUrl).toBeTrue();
-    expect(body.isSupportedFormat).toBeTrue();
-    expect(body.allParams.image).toBe('https://images.unsplash.com/photo-1?auto=format');
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(body.image).toEqual({
+      url: 'http://192.168.1.5/private.png',
+      host: '',
+      accepted: false,
+      rejection: 'non-public-host',
+    });
+    expect(body.icon?.rejection).toBe('unsupported-protocol');
+    expect(body.avatar).toBeNull();
   });
 
-  test('detects invalid protocol and unsupported format', async () => {
+  test('reports the reconstructed Unsplash URL', async () => {
     process.env.OG_ENABLE_DEBUG = 'true';
+    const response = await GET(
+      new NextRequest('https://example.com/api/debug?image=http://images.unsplash.com.local/photo-1&q=80')
+    );
+    const body = (await response.json()) as { image: Described; allParams: Record<string, string> };
 
-    const request = new NextRequest('https://example.com/api/debug?image=ftp://example.com/image.webp');
-    const response = await GET(request);
-    const body = (await response.json()) as {
-      isValidUrl: boolean;
-      isSupportedFormat: boolean;
-    };
-
-    expect(body.isValidUrl).toBeFalse();
-    expect(body.isSupportedFormat).toBeFalse();
-  });
-
-  test('treats short/truncated urls as invalid', async () => {
-    process.env.OG_ENABLE_DEBUG = 'true';
-
-    const request = new NextRequest('https://example.com/api/debug?image=https://a.co/…');
-    const response = await GET(request);
-    const body = (await response.json()) as {
-      isValidUrl: boolean;
-    };
-
-    expect(body.isValidUrl).toBeFalse();
+    expect(body.image?.rejection).toBe('blocked-host');
+    expect(body.allParams.q).toBe('80');
   });
 });

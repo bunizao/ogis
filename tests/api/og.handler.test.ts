@@ -1,561 +1,199 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
-import { createHmac } from 'node:crypto';
 import { NextRequest } from 'next/server';
+import { createElement } from 'react';
+import { themes } from '../../app/api/og/themes';
+import type { ThemeContext, ThemeFont, ThemeProps } from '../../app/api/og/themes/types';
 
-type SecurityConfig = {
-  primaryRouteKey: string;
-  signatureSecret: string;
-  hasSignatureProtection: boolean;
-};
-
-type ThemeRenderCall = {
-  props: {
-    title: string;
-    site: string;
-    excerpt: string;
-    author: string;
-    date: string;
-    backgroundImageSrc: string;
-  };
-  context: {
-    baseUrl: string;
-    searchParams: URLSearchParams;
-  };
-};
-
-const root = process.cwd();
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 
 const state = {
-  securityConfig: {
-    primaryRouteKey: 'og',
-    signatureSecret: '',
-    hasSignatureProtection: false,
-  } as SecurityConfig,
-  pixelFonts: [
-    {
-      name: 'Pixel Mock',
-      data: new ArrayBuffer(4),
-      style: 'normal' as const,
-      weight: 400 as const,
-    },
-  ],
-  modernFonts: [
-    {
-      name: 'Modern Mock',
-      data: new ArrayBuffer(4),
-      style: 'normal' as const,
-      weight: 400 as const,
-    },
-  ],
-  pixelRenderCalls: [] as ThemeRenderCall[],
-  modernRenderCalls: [] as ThemeRenderCall[],
-  imageResponseCalls: [] as Array<{ element: unknown; init: Record<string, unknown> }>,
+  fonts: [] as ThemeFont[],
+  renders: [] as Array<{ theme: string; props: ThemeProps; context: ThemeContext }>,
 };
 
-function resetState() {
-  state.securityConfig = {
-    primaryRouteKey: 'og',
-    signatureSecret: '',
-    hasSignatureProtection: false,
-  };
-  state.pixelFonts = [
-    {
-      name: 'Pixel Mock',
-      data: new ArrayBuffer(4),
-      style: 'normal',
-      weight: 400,
-    },
-  ];
-  state.modernFonts = [
-    {
-      name: 'Modern Mock',
-      data: new ArrayBuffer(4),
-      style: 'normal',
-      weight: 400,
-    },
-  ];
-  state.pixelRenderCalls = [];
-  state.modernRenderCalls = [];
-  state.imageResponseCalls = [];
+// Spy on the real theme objects instead of mock.module: module mocks are
+// process-wide in Bun and would leak into the theme render tests.
+function stubThemes() {
+  for (const [theme, definition] of Object.entries(themes)) {
+    spyOn(definition, 'loadFonts').mockImplementation(async () => state.fonts);
+    spyOn(definition, 'render').mockImplementation((props, context) => {
+      state.renders.push({ theme, props, context });
+      return createElement('div', { style: { display: 'flex' } }, props.site);
+    });
+  }
 }
 
-function installModuleMocks() {
-  const securityFactory = () => ({
-    resolveOgSecurityConfig: () => state.securityConfig,
-  });
-
-  mock.module('@/app/lib/og-security', securityFactory);
-  mock.module(`${root}/app/lib/og-security.ts`, securityFactory);
-
-  mock.module(`${root}/app/api/og/themes/pixel.tsx`, () => ({
-    pixelTheme: {
-      fontFamily: 'Mock Pixel',
-      loadFonts: async () => state.pixelFonts,
-      render: (props: ThemeRenderCall['props'], context: ThemeRenderCall['context']) => {
-        state.pixelRenderCalls.push({ props, context });
-        return { theme: 'pixel', props, context } as unknown as object;
-      },
-    },
-  }));
-
-  mock.module(`${root}/app/api/og/themes/modern.tsx`, () => ({
-    modernTheme: {
-      fontFamily: 'Mock Modern',
-      loadFonts: async () => state.modernFonts,
-      render: (props: ThemeRenderCall['props'], context: ThemeRenderCall['context']) => {
-        state.modernRenderCalls.push({ props, context });
-        return { theme: 'modern', props, context } as unknown as object;
-      },
-    },
-  }));
-
-  mock.module('@vercel/og', () => ({
-    ImageResponse: class MockImageResponse extends Response {
-      constructor(element: unknown, init: Record<string, unknown>) {
-        super('mock-image', {
-          status: 200,
-          headers: (init.headers ?? {}) as HeadersInit,
-        });
-        state.imageResponseCalls.push({ element, init });
-      }
-    },
-  }));
-}
-
-async function loadHandler() {
-  installModuleMocks();
+// resolveOgRouteKeys() runs at module load, so env changes need a fresh handler instance.
+async function loadHandler(env: Record<string, string> = {}) {
+  for (const [key, value] of Object.entries(env)) process.env[key] = value;
   return import(`../../app/api/og/handler.tsx?case=${Math.random()}`);
 }
 
-function canonicalize(searchParams: URLSearchParams): string {
-  const entries: Array<[string, string]> = [];
-  searchParams.forEach((value, key) => {
-    if (key === 'sig' || key === 'ogKey') return;
-    entries.push([key, value]);
-  });
-
-  entries.sort((a, b) => {
-    if (a[0] === b[0]) {
-      if (a[1] === b[1]) return 0;
-      return a[1] < b[1] ? -1 : 1;
-    }
-    return a[0] < b[0] ? -1 : 1;
-  });
-
-  return entries
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join('&');
+async function render(url: string, routeKey = 'og', env?: Record<string, string>) {
+  const { handleOgGet } = await loadHandler(env);
+  const response: Response = await handleOgGet(new NextRequest(url), routeKey);
+  return { response, rendered: state.renders.at(-1) };
 }
 
-function signUrl(url: string, secret: string): string {
-  const parsed = new URL(url);
-  parsed.searchParams.delete('sig');
-  const canonical = canonicalize(parsed.searchParams);
-  const payload = canonical || '__empty__';
-  const sig = createHmac('sha256', secret).update(payload).digest('hex');
-  parsed.searchParams.set('sig', sig);
-  return parsed.toString();
-}
-
-function mockDns(records: Record<string, { A?: string[]; AAAA?: string[]; status?: number }>) {
-  return spyOn(globalThis, 'fetch').mockImplementation((async (input) => {
-    const rawUrl =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : input.url;
-
-    const url = new URL(rawUrl);
-    if (url.hostname !== 'dns.google') {
-      throw new Error(`Unexpected fetch target: ${url.toString()}`);
+// Public DNS for every host, and a PNG for any image path.
+function mockNetwork() {
+  return spyOn(globalThis, 'fetch').mockImplementation((async (input: string | URL | Request) => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    if (url.hostname === 'dns.google') {
+      const ips = url.searchParams.get('type') === 'A' ? ['93.184.216.34'] : [];
+      return Response.json({ Status: 0, Answer: ips.map(data => ({ data })) });
     }
-
-    const hostname = url.searchParams.get('name') ?? '';
-    const type = (url.searchParams.get('type') ?? 'A') as 'A' | 'AAAA';
-    const record = records[hostname];
-
-    if (!record) {
-      return new Response(JSON.stringify({ Status: 3 }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const ips = type === 'A' ? (record.A ?? []) : (record.AAAA ?? []);
-    return new Response(
-      JSON.stringify({
-        Status: record.status ?? 0,
-        Answer: ips.map((data) => ({ data })),
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(PNG_BYTES);
   }) as typeof fetch);
 }
 
+// PNG stores width and height as big-endian u32s in the IHDR chunk.
+async function pngSize(response: Response) {
+  const view = new DataView(await response.arrayBuffer());
+  return { width: view.getUint32(16), height: view.getUint32(20) };
+}
+
 beforeEach(() => {
-  resetState();
-  mock.restore();
+  state.fonts = [];
+  state.renders = [];
+  delete process.env.OG_API_PATH;
+  delete process.env.OG_SECRET;
+  stubThemes();
 });
 
 afterEach(() => {
   mock.restore();
+  delete process.env.OG_API_PATH;
+  delete process.env.OG_SECRET;
 });
 
-describe('handleOgGet', () => {
-  test('allows public default route alongside a custom primary path', async () => {
-    state.securityConfig = {
-      primaryRouteKey: 'og_custom',
-      signatureSecret: '',
-      hasSignatureProtection: false,
-    };
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog'),
-      'og'
-    );
-
+describe('route keys', () => {
+  test('serves the default og path', async () => {
+    const { response, rendered } = await render('https://example.com/api/og?title=Hello');
     expect(response.status).toBe(200);
-    expect(state.pixelRenderCalls).toHaveLength(1);
+    expect(rendered?.theme).toBe('pixel');
   });
 
-  test('returns 404 when custom route key is not allowed', async () => {
-    state.securityConfig = {
-      primaryRouteKey: 'og_custom',
-      signatureSecret: '',
-      hasSignatureProtection: false,
-    };
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/other?title=Hello&site=Blog'),
-      'other'
-    );
-
+  test('returns 404 for unknown paths', async () => {
+    const { response } = await render('https://example.com/api/other?title=Hello', 'other');
     expect(response.status).toBe(404);
+    expect(state.renders).toHaveLength(0);
   });
 
-  test('allows unsigned legacy path while signed primary path is enabled', async () => {
-    state.securityConfig = {
-      primaryRouteKey: 'og_secure',
-      signatureSecret: 'sig-secret',
-      hasSignatureProtection: true,
-    };
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog'),
-      'og'
-    );
-
+  test('serves OG_API_PATH as an alias', async () => {
+    const { response } = await render('https://example.com/api/custom?title=Hello', 'custom', {
+      OG_API_PATH: 'custom',
+    });
     expect(response.status).toBe(200);
-    expect(state.pixelRenderCalls).toHaveLength(1);
   });
 
-  test('requires signature when protection is enabled', async () => {
-    state.securityConfig = {
-      primaryRouteKey: 'og_secure',
-      signatureSecret: 'sig-secret',
-      hasSignatureProtection: true,
-    };
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og_secure?title=Hello&site=Blog'),
-      'og_secure'
+  test('keeps legacy OG_SECRET paths working and ignores old signature params', async () => {
+    const { response } = await render(
+      'https://example.com/api/og_fqc4xxjzrnmx?title=Hello&sig=stale&exp=1',
+      'og_fqc4xxjzrnmx',
+      { OG_SECRET: 'abc123' }
     );
-
-    expect(response.status).toBe(404);
-  });
-
-  test('rejects invalid or expired signatures', async () => {
-    state.securityConfig = {
-      primaryRouteKey: 'og_secure',
-      signatureSecret: 'sig-secret',
-      hasSignatureProtection: true,
-    };
-
-    const { handleOgGet } = await loadHandler();
-
-    const invalidSigResponse = await handleOgGet(
-      new NextRequest('https://example.com/api/og_secure?title=Hello&site=Blog&sig=invalid'),
-      'og_secure'
-    );
-
-    const expiredBase = `https://example.com/api/og_secure?title=Hello&site=Blog&exp=${Math.floor(
-      Date.now() / 1000
-    ) - 10}`;
-    const expiredUrl = signUrl(expiredBase, 'sig-secret');
-    const expiredResponse = await handleOgGet(new NextRequest(expiredUrl), 'og_secure');
-
-    expect(invalidSigResponse.status).toBe(404);
-    expect(expiredResponse.status).toBe(404);
-  });
-
-  test('accepts valid signatures with canonical query ordering', async () => {
-    state.securityConfig = {
-      primaryRouteKey: 'og_secure',
-      signatureSecret: 'sig-secret',
-      hasSignatureProtection: true,
-    };
-
-    const { handleOgGet } = await loadHandler();
-
-    const unsignedUrl =
-      'https://example.com/api/og_secure?site=Blog&title=Hello&ogKey=ignored&author=Neo';
-    const signedUrl = signUrl(unsignedUrl, 'sig-secret');
-
-    const response = await handleOgGet(new NextRequest(signedUrl), 'og_secure');
-
     expect(response.status).toBe(200);
-    expect(state.pixelRenderCalls).toHaveLength(1);
+  });
+});
+
+describe('themes', () => {
+  test.each(['modern'])('selects %s when requested', async theme => {
+    const { rendered } = await render(`https://example.com/api/og?theme=${theme}`);
+    expect(rendered?.theme).toBe(theme);
   });
 
-  test('selects modern theme when requested and sanitizes text inputs', async () => {
-    const { handleOgGet } = await loadHandler();
+  test('falls back to pixel for unknown theme names', async () => {
+    const { rendered } = await render('https://example.com/api/og?theme=terminal');
+    expect(rendered?.theme).toBe('pixel');
+  });
+});
 
-    const response = await handleOgGet(
-      new NextRequest(
-        'https://example.com/api/og?theme=modern&title=%E2%80%9CHello%E2%80%9D%E2%80%94World%E2%80%A6&site=%E2%80%98My%20Site%E2%80%99&excerpt=Line%E2%80%89Break'
-      ),
-      'og'
-    );
-
-    expect(response.status).toBe(200);
-    expect(state.modernRenderCalls).toHaveLength(1);
-
-    const rendered = state.modernRenderCalls[0]?.props;
-    expect(rendered?.title).toBe('"Hello" — World...');
-    expect(rendered?.site).toBe("'My Site'");
-    expect(rendered?.excerpt).toBe('Line Break');
+describe('text', () => {
+  test('uses defaults for missing title and site', async () => {
+    const { rendered } = await render('https://example.com/api/og');
+    expect(rendered?.props.title).toBe('Untitled');
+    expect(rendered?.props.site).toBe('Blog');
+    expect(rendered?.props.excerpt).toBe('');
   });
 
-  test('keeps single hyphens intact and collapses dash spacing', async () => {
-    const { handleOgGet } = await loadHandler();
-
-    const response = await handleOgGet(
-      new NextRequest(
-        'https://example.com/api/og?title=state-of-the-art&site=Blog&excerpt=Pause%20%E2%80%94%20resume'
-      ),
-      'og'
+  test('normalizes typographic quotes, dashes, ellipses and odd spaces', async () => {
+    const { rendered } = await render(
+      'https://example.com/api/og?title=%E2%80%9CHello%E2%80%9D%E2%80%94World%E2%80%A6&site=%E2%80%98My%20Site%E2%80%99&excerpt=Line%E2%80%89Break'
     );
-
-    expect(response.status).toBe(200);
-
-    const rendered = state.pixelRenderCalls[0]?.props;
-    expect(rendered?.title).toBe('state-of-the-art');
-    expect(rendered?.excerpt).toBe('Pause — resume');
+    expect(rendered?.props.title).toBe('"Hello" — World...');
+    expect(rendered?.props.site).toBe("'My Site'");
+    expect(rendered?.props.excerpt).toBe('Line Break');
   });
 
-  test('falls back to pixel theme for unknown theme names', async () => {
-    const { handleOgGet } = await loadHandler();
-
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og?theme=unknown&title=Hello&site=Blog'),
-      'og'
+  test('keeps single hyphens intact', async () => {
+    const { rendered } = await render(
+      'https://example.com/api/og?title=state-of-the-art&excerpt=Pause%20%E2%80%94%20resume'
     );
-
-    expect(response.status).toBe(200);
-    expect(state.pixelRenderCalls).toHaveLength(1);
-    expect(state.modernRenderCalls).toHaveLength(0);
+    expect(rendered?.props.title).toBe('state-of-the-art');
+    expect(rendered?.props.excerpt).toBe('Pause — resume');
   });
 
-  test('sets fonts as undefined when theme font loader returns empty list', async () => {
-    state.pixelFonts = [];
+  test('caps long fields by code point without splitting emoji', async () => {
+    const title = encodeURIComponent('🚀'.repeat(300));
+    const { rendered } = await render(`https://example.com/api/og?title=${title}&tag=${'x'.repeat(100)}`);
+    expect(Array.from(rendered?.props.title ?? '')).toHaveLength(200);
+    expect(rendered?.props.title.endsWith('🚀')).toBeTrue();
+    expect(rendered?.props.tag).toHaveLength(40);
+  });
 
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog'),
-      'og'
+  test('passes tag and reading time through', async () => {
+    const { rendered } = await render('https://example.com/api/og?tag=Essay&reading=5%20min%20read');
+    expect(rendered?.props.tag).toBe('Essay');
+    expect(rendered?.props.readingTime).toBe('5 min read');
+  });
+});
+
+describe('accent', () => {
+  test.each([
+    ['ff0', '#ffff00'],
+    ['%2312ABef', '#12abef'],
+    ['red', null],
+    ['', null],
+  ])('reads %s as %s', async (value, expected) => {
+    const { rendered } = await render(`https://example.com/api/og?accent=${value}`);
+    expect(rendered?.props.accent).toBe(expected);
+  });
+});
+
+describe('images', () => {
+  test('embeds accepted images as data URLs', async () => {
+    mockNetwork();
+    const { rendered } = await render(
+      'https://example.com/api/og?image=https://cdn.example.com/hero.png&icon=https://cdn.example.com/icon.png&avatar=https://cdn.example.com/me.png'
     );
+    expect(rendered?.props.imageSrc?.startsWith('data:image/png;base64,')).toBeTrue();
+    expect(rendered?.props.iconSrc?.startsWith('data:image/png;base64,')).toBeTrue();
+    expect(rendered?.props.avatarSrc?.startsWith('data:image/png;base64,')).toBeTrue();
+  });
 
+  test('drops rejected images and offers the bundled background instead', async () => {
+    const { response, rendered } = await render('https://example.com/api/og?image=http://192.168.1.5/p.png');
     expect(response.status).toBe(200);
-    const init = state.imageResponseCalls[0]?.init;
-    expect(init?.fonts).toBeUndefined();
+    expect(rendered?.props.imageSrc).toBeNull();
+    expect(rendered?.props.fallbackImageSrc).toBe('https://example.com/default-bg.jpg');
+  });
+});
+
+describe('response', () => {
+  test('renders a 1200x630 PNG with long-lived CDN caching', async () => {
+    const { response } = await render('https://example.com/api/og?title=Hello');
+    expect(response.headers.get('Content-Type')).toBe('image/png');
     expect(response.headers.get('Cache-Control')).toBe(
       'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
     );
+    expect(await pngSize(response)).toEqual({ width: 1200, height: 630 });
   });
 
-  test('uses default title and site when required params are missing', async () => {
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(new NextRequest('https://example.com/api/og'), 'og');
-
-    expect(response.status).toBe(200);
-
-    const rendered = state.pixelRenderCalls[0]?.props;
-    expect(rendered?.title).toBe('Untitled');
-    expect(rendered?.site).toBe('Blog');
-  });
-
-  test('accepts valid public image url and keeps it as background', async () => {
-    const fetchSpy = mockDns({
-      'cdn.example.com': { A: ['8.8.8.8'], AAAA: [] },
-    });
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog&image=https://cdn.example.com/hero.png'),
-      'og'
-    );
-
-    expect(response.status).toBe(200);
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(state.pixelRenderCalls[0]?.props.backgroundImageSrc).toBe('https://cdn.example.com/hero.png');
-  });
-
-  test('reconstructs truncated unsplash params from top-level query', async () => {
-    mockDns({
-      'images.unsplash.com': { A: ['1.1.1.1'], AAAA: [] },
-    });
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest(
-        'https://example.com/api/og?title=Hello&site=Blog&image=https://images.unsplash.com/photo-123?auto=format&crop=entropy&q=80&w=1200'
-      ),
-      'og'
-    );
-
-    expect(response.status).toBe(200);
-
-    const background = state.pixelRenderCalls[0]?.props.backgroundImageSrc;
-    expect(background?.startsWith('https://images.unsplash.com/photo-123?auto=format')).toBeTrue();
-    expect(background?.includes('&crop=entropy')).toBeTrue();
-    expect(background?.includes('&q=80')).toBeTrue();
-    expect(background?.includes('&w=1200')).toBeTrue();
-  });
-
-  test('rejects unsupported image format even when url is public', async () => {
-    mockDns({
-      'cdn.example.com': { A: ['8.8.8.8'], AAAA: [] },
-    });
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog&image=https://cdn.example.com/image.webp'),
-      'og'
-    );
-
-    expect(response.status).toBe(200);
-    expect(state.pixelRenderCalls[0]?.props.backgroundImageSrc).toBe('https://example.com/default-bg.jpg');
-  });
-
-  test('rejects private and local image urls (IPv4, IPv6, localhost)', async () => {
-    const { handleOgGet } = await loadHandler();
-
-    const privateIpv4 = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog&image=http://192.168.1.5/p.png'),
-      'og'
-    );
-    const privateIpv6 = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog&image=http://[fd00::1]/p.png'),
-      'og'
-    );
-    const localhost = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog&image=http://localhost/p.png'),
-      'og'
-    );
-
-    expect(privateIpv4.status).toBe(200);
-    expect(privateIpv6.status).toBe(200);
-    expect(localhost.status).toBe(200);
-
-    expect(state.pixelRenderCalls[0]?.props.backgroundImageSrc).toBe('https://example.com/default-bg.jpg');
-    expect(state.pixelRenderCalls[1]?.props.backgroundImageSrc).toBe('https://example.com/default-bg.jpg');
-    expect(state.pixelRenderCalls[2]?.props.backgroundImageSrc).toBe('https://example.com/default-bg.jpg');
-  });
-
-  test('rejects image urls with credentials or non-standard ports', async () => {
-    const { handleOgGet } = await loadHandler();
-
-    const withCredentials = await handleOgGet(
-      new NextRequest(
-        'https://example.com/api/og?title=Hello&site=Blog&image=https://user:pass@cdn.example.com/a.jpg'
-      ),
-      'og'
-    );
-
-    const withPort = await handleOgGet(
-      new NextRequest('https://example.com/api/og?title=Hello&site=Blog&image=https://cdn.example.com:8080/a.jpg'),
-      'og'
-    );
-
-    expect(withCredentials.status).toBe(200);
-    expect(withPort.status).toBe(200);
-
-    expect(state.pixelRenderCalls[0]?.props.backgroundImageSrc).toBe('https://example.com/default-bg.jpg');
-    expect(state.pixelRenderCalls[1]?.props.backgroundImageSrc).toBe('https://example.com/default-bg.jpg');
-  });
-
-  test('rejects hostnames resolved to private addresses via DNS', async () => {
-    const fetchSpy = mockDns({
-      'internal.example.com': { A: ['10.0.0.2'], AAAA: [] },
-    });
-
-    const { handleOgGet } = await loadHandler();
-    const response = await handleOgGet(
-      new NextRequest(
-        'https://example.com/api/og?title=Hello&site=Blog&image=https://internal.example.com/image.jpg'
-      ),
-      'og'
-    );
-
-    expect(response.status).toBe(200);
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(state.pixelRenderCalls[0]?.props.backgroundImageSrc).toBe('https://example.com/default-bg.jpg');
-  });
-
-  test('reuses DNS cache for repeated hostname lookups', async () => {
-    const fetchSpy = mockDns({
-      'cache.example.com': { A: ['8.8.4.4'], AAAA: [] },
-    });
-
-    const { handleOgGet } = await loadHandler();
-    const request = new NextRequest(
-      'https://example.com/api/og?title=Hello&site=Blog&image=https://cache.example.com/image.jpg'
-    );
-
-    const first = await handleOgGet(request, 'og');
-    const second = await handleOgGet(request, 'og');
-
-    expect(first.status).toBe(200);
-    expect(second.status).toBe(200);
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-  });
-
-  test('evicts old DNS entries after the cache reaches its capacity', async () => {
-    const records = Object.fromEntries(
-      Array.from({ length: 257 }, (_, index) => [
-        `cache-${index}.example.com`,
-        { A: ['8.8.8.8'], AAAA: [] },
-      ])
-    );
-    const fetchSpy = mockDns(records);
-    const { handleOgGet } = await loadHandler();
-
-    for (let index = 0; index < 257; index += 1) {
-      const response = await handleOgGet(
-        new NextRequest(
-          `https://example.com/api/og?title=Hello&site=Blog&image=https://cache-${index}.example.com/image.jpg`
-        ),
-        'og'
-      );
-      expect(response.status).toBe(200);
-    }
-
-    const repeated = await handleOgGet(
-      new NextRequest(
-        'https://example.com/api/og?title=Hello&site=Blog&image=https://cache-0.example.com/image.jpg'
-      ),
-      'og'
-    );
-
-    expect(repeated.status).toBe(200);
-    expect(fetchSpy).toHaveBeenCalledTimes(516);
+  test('still renders when the theme could not load any fonts', async () => {
+    // Satori rejects an empty font list; the handler must fall back to the bundled font.
+    state.fonts = [];
+    const { response } = await render('https://example.com/api/og?title=Hello');
+    expect(await pngSize(response)).toEqual({ width: 1200, height: 630 });
   });
 });

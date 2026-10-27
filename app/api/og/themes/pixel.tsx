@@ -1,5 +1,6 @@
 import { getPixelFontOption } from '@/app/lib/pixel-fonts';
 import { fetchFontData } from './font-data';
+import { Cover, FILL, fitFontSize, Img, metaItems } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
 async function loadFonts(context: ThemeContext): Promise<ThemeFont[]> {
@@ -10,13 +11,23 @@ async function loadFonts(context: ThemeContext): Promise<ThemeFont[]> {
   return [{ name: selectedFont.fontName, data, style: 'normal', weight: 400 }];
 }
 
-function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
-  const { title, site, excerpt, author, date, backgroundImageSrc } = props;
-  const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
+const MARGIN_X = 72;
+const MARGIN_Y = 64;
 
-  const displayTitle = title.length > 60 ? title.slice(0, 57) + '...' : title;
-  const displayExcerpt = excerpt.length > 80 ? excerpt.slice(0, 77) + '...' : excerpt;
-  const titleFontSize = displayTitle.length > 40 ? 56 : displayTitle.length > 25 ? 72 : 88;
+function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
+  const { title, site, excerpt, tag, imageSrc, fallbackImageSrc, iconSrc, avatarSrc } = props;
+  const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
+  const meta = metaItems(props);
+
+  // Pixel faces are drawn on a 12px grid; sizes that are multiples of 12 stay crisp.
+  const titleSize = fitFontSize(title, [
+    [12, 108],
+    [20, 96],
+    [30, 84],
+    [44, 72],
+    [64, 60],
+    [Infinity, 48],
+  ]);
 
   return (
     <div
@@ -25,104 +36,85 @@ function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
         height: '100%',
         display: 'flex',
         position: 'relative',
-        fontFamily: `"${selectedFont.fontName}", "Noto Sans", sans-serif`,
-        background: '#0a0a0a',
+        fontFamily: `"${selectedFont.fontName}", "Zpix", sans-serif`,
+        fontSize: 24,
+        lineHeight: 1,
+        color: '#ffffff',
+        background: '#05060a',
       }}
     >
-      <img
-        src={backgroundImageSrc}
+      <Cover src={imageSrc ?? fallbackImageSrc} />
+      <div
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'center',
+          ...FILL,
+          backgroundImage:
+            'linear-gradient(to top, rgba(5, 6, 10, 0.92) 0%, rgba(5, 6, 10, 0.78) 32%, rgba(5, 6, 10, 0.3) 62%, rgba(5, 6, 10, 0.1) 100%), linear-gradient(to bottom, rgba(5, 6, 10, 0.5) 0%, rgba(5, 6, 10, 0) 24%)',
         }}
       />
 
       <div
         style={{
           position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: '420px',
+          top: MARGIN_Y,
+          left: MARGIN_X,
+          right: MARGIN_X,
           display: 'flex',
-          background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.15) 70%, transparent 100%)',
-          backdropFilter: 'blur(16px)',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}
-      />
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {iconSrc ? <Img src={iconSrc} width={36} height={36} /> : null}
+          <span style={{ color: 'rgba(255, 255, 255, 0.88)' }}>{site}</span>
+        </div>
+        {tag ? <span style={{ color: props.accent ?? 'rgba(255, 255, 255, 0.56)' }}>{tag}</span> : null}
+      </div>
 
       <div
         style={{
           position: 'absolute',
-          left: '64px',
-          bottom: '64px',
-          right: '64px',
+          left: MARGIN_X,
+          right: MARGIN_X,
+          bottom: MARGIN_Y,
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <span
+        <div
           style={{
-            fontSize: '24px',
-            fontWeight: 400,
-            color: 'rgba(255, 255, 255, 0.9)',
-            textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
-            marginBottom: '28px',
+            display: 'block',
+            textWrap: 'pretty',
+            lineClamp: 3,
+            fontSize: titleSize,
+            lineHeight: 1.2,
+            textShadow: '0 2px 16px rgba(0, 0, 0, 0.4)',
           }}
         >
-          {site}
-        </span>
+          {title}
+        </div>
 
-        <h1
-          style={{
-            fontSize: `${titleFontSize}px`,
-            fontWeight: 400,
-            color: '#fff',
-            lineHeight: 1.15,
-            margin: 0,
-            textShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
-            marginBottom: displayExcerpt ? '32px' : (author || date) ? '28px' : '0',
-          }}
-        >
-          {displayTitle}
-        </h1>
-
-        {displayExcerpt && (
-          <p
-            style={{
-              fontSize: '26px',
-              fontWeight: 400,
-              color: 'rgba(255, 255, 255, 0.75)',
-              lineHeight: 1.5,
-              margin: 0,
-              textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
-              marginBottom: (author || date) ? '28px' : '0',
-            }}
-          >
-            {displayExcerpt}
-          </p>
-        )}
-
-        {(author || date) && (
+        {excerpt ? (
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              fontSize: '20px',
-              color: 'rgba(255, 255, 255, 0.55)',
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+              display: 'block',
+              textWrap: 'pretty',
+              lineClamp: 2,
+              marginTop: 24,
+              maxWidth: 936,
+              lineHeight: 1.5,
+              color: 'rgba(255, 255, 255, 0.7)',
             }}
           >
-            {author && <span>{author}</span>}
-            {author && date && <span style={{ opacity: 0.6 }}>·</span>}
-            {date && <span>{date}</span>}
+            {excerpt}
           </div>
-        )}
+        ) : null}
+
+        {meta.length > 0 || avatarSrc ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 40, color: 'rgba(255, 255, 255, 0.5)' }}>
+            {avatarSrc ? <Img src={avatarSrc} width={36} height={36} /> : null}
+            <span>{meta.join('  ·  ')}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

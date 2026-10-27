@@ -1,41 +1,30 @@
-import { fetchFontData } from './font-data';
+import { Cover, FILL, fitFontSize, Img, loadFontsourceFamily, metaItems } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
-// Pinned so a CDN-side "latest" bump can't silently change rendering.
-const INTER_FONT_BASE = 'https://cdn.jsdelivr.net/fontsource/fonts/inter@5.3.0';
-
-async function loadFont(url: string, weight: 400 | 700): Promise<ThemeFont | null> {
-  const data = await fetchFontData(url);
-  if (!data) return null;
-  return { name: 'Inter', data, style: 'normal', weight };
+function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
+  return loadFontsourceFamily('inter', 'Inter', [{ weight: 400 }, { weight: 500 }, { weight: 700 }]);
 }
 
-async function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
-  const [regular, bold] = await Promise.all([
-    loadFont(`${INTER_FONT_BASE}/latin-400-normal.ttf`, 400),
-    loadFont(`${INTER_FONT_BASE}/latin-700-normal.ttf`, 700),
-  ]);
-  const fonts: ThemeFont[] = [];
-  if (regular) fonts.push(regular);
-  if (bold) fonts.push(bold);
-  return fonts;
-}
-
-// Card geometry
-const CARD_W = 920;
-const CARD_H = 380;
-const CARD_R = 28;
-const CARD_PX = 64;
-const CARD_PY = 56;
-const CARD_LEFT = (1200 - CARD_W) / 2;
-const CARD_TOP = (630 - CARD_H) / 2 + 40;
+// The card hugs its content and grows upward from a fixed bottom edge. Because
+// that edge is known, the blurred copy of the backdrop inside the card can be
+// pinned to it and stay aligned with the sharp backdrop at any card height.
+const CARD_LEFT = 120;
+const CARD_BOTTOM = 64;
+const CARD_WIDTH = 1200 - CARD_LEFT * 2;
+const CARD_RADIUS = 32;
 
 function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
-  const { title, site, excerpt, author, date, backgroundImageSrc } = props;
+  const { title, site, excerpt, author, tag, imageSrc, fallbackImageSrc, iconSrc, avatarSrc } = props;
+  const backdrop = imageSrc ?? fallbackImageSrc;
+  const details = metaItems(props).filter(item => item !== author);
 
-  const displayTitle = title.length > 60 ? title.slice(0, 57) + '...' : title;
-  const displayExcerpt = excerpt.length > 80 ? excerpt.slice(0, 77) + '...' : excerpt;
-  const titleFontSize = displayTitle.length > 40 ? 52 : displayTitle.length > 25 ? 64 : 76;
+  const titleSize = fitFontSize(title, [
+    [18, 68],
+    [30, 60],
+    [48, 52],
+    [72, 46],
+    [Infinity, 40],
+  ]);
 
   return (
     <div
@@ -45,178 +34,109 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
         display: 'flex',
         position: 'relative',
         fontFamily: '"Inter", sans-serif',
-        background: '#0a0a0a',
+        color: '#ffffff',
+        background: '#0a0a0f',
       }}
     >
-      {/* Sharp background */}
-      <img
-        src={backgroundImageSrc}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'center',
-        }}
-      />
+      <Cover src={backdrop} />
+      <div style={{ ...FILL, backgroundImage: 'linear-gradient(to top, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 55%)' }} />
 
-      {/* ── Liquid Glass Card ── */}
       <div
         style={{
           position: 'absolute',
-          left: `${CARD_LEFT}px`,
-          top: `${CARD_TOP}px`,
-          width: `${CARD_W}px`,
-          height: `${CARD_H}px`,
-          borderRadius: `${CARD_R}px`,
-          overflow: 'hidden',
-          display: 'flex',
-          boxShadow: '0 16px 64px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.15)',
-        }}
-      >
-        {/* Layer 1: Blurred background */}
-        <img
-          src={backgroundImageSrc}
-          style={{
-            position: 'absolute',
-            top: `-${CARD_TOP}px`,
-            left: `-${CARD_LEFT}px`,
-            width: '1200px',
-            height: '630px',
-            objectFit: 'cover',
-            objectPosition: 'center',
-            filter: 'blur(60px) saturate(1.8) brightness(1.15)',
-          }}
-        />
-
-        {/* Layer 2: Glass material — visible blue-violet tint, dark-to-light gradient */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            background: 'linear-gradient(160deg, rgba(140, 160, 255, 0.15) 0%, rgba(100, 120, 200, 0.06) 40%, rgba(60, 70, 120, 0.1) 100%)',
-          }}
-        />
-
-        {/* Layer 3: Specular arc — curved light band across upper portion */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '-40%',
-            left: '-10%',
-            width: '120%',
-            height: '100%',
-            display: 'flex',
-            background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 40%, transparent 70%)',
-          }}
-        />
-
-        {/* Layer 4: Top rim highlight — crisp 1px light */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: '5%',
-            width: '90%',
-            height: '1px',
-            display: 'flex',
-            background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.6), transparent)',
-          }}
-        />
-
-        {/* Layer 5: Bottom darkening for depth */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            height: '45%',
-            display: 'flex',
-            background: 'linear-gradient(to top, rgba(0, 0, 0, 0.12), transparent)',
-          }}
-        />
-      </div>
-
-      {/* Card text content */}
-      <div
-        style={{
-          position: 'absolute',
-          left: `${CARD_LEFT}px`,
-          top: `${CARD_TOP}px`,
-          width: `${CARD_W}px`,
+          left: CARD_LEFT,
+          bottom: CARD_BOTTOM,
+          width: CARD_WIDTH,
           display: 'flex',
           flexDirection: 'column',
-          padding: `${CARD_PY}px ${CARD_PX}px`,
+          padding: '40px 52px 44px',
+          borderRadius: CARD_RADIUS,
+          overflow: 'hidden',
+          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.16)',
         }}
       >
-        <span
+        {/* Glass: the backdrop blurred in place, a dark tint, a faint top sheen and a hairline rim. */}
+        <Img
+          src={backdrop}
+          width={1200}
+          height={630}
+          style={{ position: 'absolute', left: -CARD_LEFT, bottom: -CARD_BOTTOM, filter: 'blur(32px) saturate(1.5)' }}
+        />
+        <div
           style={{
-            fontSize: '13px',
+            ...FILL,
+            width: CARD_WIDTH,
+            height: '100%',
+            backgroundColor: 'rgba(14, 16, 24, 0.4)',
+            backgroundImage: 'linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 45%)',
+            borderRadius: CARD_RADIUS,
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.1)',
+          }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 22, fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {iconSrc ? (
+              <Img
+                src={iconSrc}
+                width={30}
+                height={30}
+                style={{ borderRadius: 8, boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.16)' }}
+              />
+            ) : null}
+            <span style={{ color: 'rgba(255, 255, 255, 0.88)' }}>{site}</span>
+          </div>
+          {tag ? <span style={{ color: props.accent ?? 'rgba(255, 255, 255, 0.56)' }}>{tag}</span> : null}
+        </div>
+
+        <div
+          style={{
+            display: 'block',
+            textWrap: 'pretty',
+            lineClamp: 3,
+            marginTop: 24,
+            fontSize: titleSize,
             fontWeight: 700,
-            color: 'rgba(255, 255, 255, 0.9)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-            marginBottom: '20px',
-            textShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+            lineHeight: 1.1,
+            letterSpacing: '-0.025em',
           }}
         >
-          {site}
-        </span>
+          {title}
+        </div>
 
-        <h1
-          style={{
-            fontSize: `${titleFontSize}px`,
-            fontWeight: 700,
-            color: '#ffffff',
-            lineHeight: 1.15,
-            margin: 0,
-            textShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
-            marginBottom: displayExcerpt ? '24px' : (author || date) ? '24px' : '0',
-          }}
-        >
-          {displayTitle}
-        </h1>
-
-        {displayExcerpt && (
-          <p
-            style={{
-              fontSize: '20px',
-              fontWeight: 400,
-              color: 'rgba(255, 255, 255, 0.88)',
-              lineHeight: 1.6,
-              margin: 0,
-              textShadow: '0 1px 6px rgba(0, 0, 0, 0.4)',
-              marginBottom: (author || date) ? '28px' : '0',
-            }}
-          >
-            {displayExcerpt}
-          </p>
-        )}
-
-        {(author || date) && (
+        {excerpt ? (
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              fontSize: '14px',
-              fontWeight: 400,
-              color: 'rgba(255, 255, 255, 0.7)',
-              textShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+              display: 'block',
+              textWrap: 'pretty',
+              lineClamp: 2,
+              marginTop: 16,
+              fontSize: 24,
+              lineHeight: 1.45,
+              color: 'rgba(255, 255, 255, 0.72)',
             }}
           >
-            {author && <span>{author}</span>}
-            {author && date && <span style={{ opacity: 0.5 }}>·</span>}
-            {date && <span>{date}</span>}
+            {excerpt}
           </div>
-        )}
+        ) : null}
+
+        {author || details.length > 0 || avatarSrc ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 28, fontSize: 20 }}>
+            {avatarSrc ? (
+              <Img
+                src={avatarSrc}
+                width={34}
+                height={34}
+                style={{ borderRadius: 999, boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.16)' }}
+              />
+            ) : null}
+            {author ? <span style={{ fontWeight: 500, color: 'rgba(255, 255, 255, 0.92)' }}>{author}</span> : null}
+            {author && details.length > 0 ? <span style={{ color: 'rgba(255, 255, 255, 0.32)' }}>·</span> : null}
+            {details.length > 0 ? (
+              <span style={{ color: 'rgba(255, 255, 255, 0.56)' }}>{details.join('  ·  ')}</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );
