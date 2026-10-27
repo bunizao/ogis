@@ -12,6 +12,16 @@ export const OG_THEMES = [
     label: 'Modern',
     description: 'A frosted glass card over your cover image.',
   },
+  {
+    key: 'editorial',
+    label: 'Editorial',
+    description: 'A serif headline on warm paper, set like a magazine page.',
+  },
+  {
+    key: 'swiss',
+    label: 'Swiss',
+    description: 'Heavy grotesk on a strict grid. Purely typographic.',
+  },
 ] as const;
 
 export type OgThemeOption = (typeof OG_THEMES)[number];

@@ -98,7 +98,7 @@ describe('route keys', () => {
 });
 
 describe('themes', () => {
-  test.each(['modern'])('selects %s when requested', async theme => {
+  test.each(['modern', 'editorial', 'swiss'])('selects %s when requested', async theme => {
     const { rendered } = await render(`https://example.com/api/og?theme=${theme}`);
     expect(rendered?.theme).toBe(theme);
   });

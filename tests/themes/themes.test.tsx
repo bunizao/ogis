@@ -92,6 +92,23 @@ describe('font loading', () => {
 
     expect(requested).toHaveLength(3);
   });
+
+  test('fontsource cuts are pinned TTFs and missing cuts are skipped', async () => {
+    const requested = mockFontFetch(url =>
+      url.includes('italic') ? new Response('missing', { status: 404 }) : new Response(new ArrayBuffer(8))
+    );
+    const fonts = await themes.editorial.loadFonts(context());
+
+    expect(requested.sort()).toEqual([
+      'https://cdn.jsdelivr.net/fontsource/fonts/geist-mono@5.3.0/latin-500-normal.ttf',
+      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@5.3.0/latin-400-italic.ttf',
+      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@5.3.0/latin-400-normal.ttf',
+    ]);
+    expect(fonts.map(font => `${font.name} ${font.weight} ${font.style}`)).toEqual([
+      'Instrument Serif 400 normal',
+      'Geist Mono 500 normal',
+    ]);
+  });
 });
 
 describe('rendering', () => {
