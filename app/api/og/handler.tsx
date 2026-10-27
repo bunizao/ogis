@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og';
 import { NextRequest } from 'next/server';
+import { ogCacheControl } from '@/app/lib/og-cache-control';
 import { resolveOgBackgroundImage } from '@/app/lib/og-background-image';
 import { DEFAULT_OG_API_PATH } from '@/app/lib/og-api-path';
 import { resolveOgSecurityConfig } from '@/app/lib/og-security';
@@ -198,7 +199,10 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
       height: 630,
       fonts: fonts.length > 0 ? fonts : undefined,
       headers: {
-        'Cache-Control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
+        'Cache-Control': ogCacheControl(
+          searchParams,
+          fonts.length > 0 && backgroundImage.rejectionReason !== 'unresolvable-host'
+        ),
       },
     }
   );
