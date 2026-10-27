@@ -198,6 +198,8 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
       width: 1200,
       height: 630,
       fonts: fonts.length > 0 ? fonts : undefined,
+      // Also the library default; pinned so emoji keep rendering as images, not tofu.
+      emoji: 'twemoji',
       headers: {
         'Cache-Control': ogCacheControl(
           searchParams,

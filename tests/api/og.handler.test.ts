@@ -380,6 +380,13 @@ describe('handleOgGet', () => {
     expect(response.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=300');
   });
 
+  test('renders emoji as twemoji images', async () => {
+    const { handleOgGet } = await loadHandler();
+    await handleOgGet(new NextRequest('https://example.com/api/og?title=Launch%20%F0%9F%9A%80'), 'og');
+
+    expect(state.imageResponseCalls[0]?.init.emoji).toBe('twemoji');
+  });
+
   test('caches ts-versioned urls as immutable', async () => {
     const { handleOgGet } = await loadHandler();
     const response = await handleOgGet(
