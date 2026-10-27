@@ -16,18 +16,20 @@ export function ShortcutKeys({
   dividerClassName?: string;
   iconClassName?: string;
 }) {
+  // A `/` between two keys separates alternatives; on its own it is the slash key.
+  const isDivider = (index: number) => keys[index] === '/' && index > 0 && index < keys.length - 1;
+
   return (
     <span className={cn('inline-flex items-center gap-1', className)}>
       {keys.map((key, index) => {
-        const previousKey = keys[index - 1];
-        const showPlus = index > 0 && key !== '/' && previousKey !== '/';
+        const showPlus = index > 0 && !isDivider(index) && !isDivider(index - 1);
 
         return (
           <span key={`${key}-${index}`} className="inline-flex items-center gap-1">
             {showPlus ? (
               <span className={cn('text-current/55', separatorClassName)}>+</span>
             ) : null}
-            {key === '/' ? (
+            {isDivider(index) ? (
               <span className={cn('mx-0.5 text-[10px] opacity-30', dividerClassName)}>
                 /
               </span>
