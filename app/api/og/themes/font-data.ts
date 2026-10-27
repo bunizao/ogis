@@ -52,28 +52,32 @@ function zpixChunkIndex(codePoint: number): number | undefined {
   return zpixChunkByCodePoint.get(codePoint);
 }
 
-// Zpix chunks covering the query text; chunk 0 (Latin) is always included.
-export function zpixChunksForQuery(searchParams: URLSearchParams): number[] {
-  const chunks = new Set<number>([0]);
+// Zpix chunks covering the query text. Zpix renders always need chunk 0 (Latin);
+// Geist Pixel fonts cover ASCII themselves and only need Zpix for the rest (CJK etc.).
+export function zpixChunksForQuery(searchParams: URLSearchParams, includeAscii: boolean): number[] {
+  const chunks = new Set<number>(includeAscii ? [0] : []);
   searchParams.forEach(value => {
     let scanned = 0;
     for (const char of value) {
       if (++scanned > MAX_SCANNED_CHARS_PER_PARAM) break;
-      const index = zpixChunkIndex(char.codePointAt(0)!);
+      const codePoint = char.codePointAt(0)!;
+      if (!includeAscii && codePoint < 0x80) continue;
+      const index = zpixChunkIndex(codePoint);
       if (index !== undefined) chunks.add(index);
     }
   });
   return [...chunks].sort((a, b) => a - b);
 }
 
-// Zpix loads only the chunks the query needs; other pixel fonts load whole.
+// Selected pixel font first, then the Zpix chunks it needs as glyph fallbacks.
+// Satori falls back across every loaded font, so CJK in a Geist title renders in Zpix.
 export async function loadPixelFonts(context: ThemeContext): Promise<ThemeFont[]> {
   const selected = getPixelFontOption(context.searchParams.get('pixelFont'));
   const isZpix = selected.key === ZPIX.key;
 
   const sources: Array<{ path: string; name: string }> = [];
   if (!isZpix) sources.push({ path: selected.filePath, name: selected.fontName });
-  for (const index of isZpix ? zpixChunksForQuery(context.searchParams) : []) {
+  for (const index of zpixChunksForQuery(context.searchParams, isZpix)) {
     // Chunk 0 carries the family name themes reference; the rest only need unique names.
     sources.push({
       path: ZPIX_CHUNKS[index].file,

@@ -32,21 +32,26 @@ afterEach(() => {
 
 describe('zpixChunksForQuery', () => {
   test('latin text needs only the base chunk', () => {
-    expect(zpixChunksForQuery(new URLSearchParams('title=Hello world&site=Blog'))).toEqual([0]);
+    expect(zpixChunksForQuery(new URLSearchParams('title=Hello world&site=Blog'), true)).toEqual([0]);
   });
 
   test('CJK text adds the chunks that hold its characters', () => {
-    const chunks = zpixChunksForQuery(new URLSearchParams('title=你好，鬱'));
+    const chunks = zpixChunksForQuery(new URLSearchParams('title=你好，鬱'), true);
     expect(chunks).toEqual([...new Set([0, chunkOf('你'), chunkOf('，'), chunkOf('鬱')])].sort((a, b) => a - b));
+  });
+
+  test('skips ASCII when the primary font already covers it', () => {
+    expect(zpixChunksForQuery(new URLSearchParams('title=Hello'), false)).toEqual([]);
+    expect(zpixChunksForQuery(new URLSearchParams('title=Hello 你好'), false)).toEqual([chunkOf('你')]);
   });
 
   test('ignores characters past the per-param scan limit', () => {
     const query = new URLSearchParams({ excerpt: 'a'.repeat(200) + '鬱' });
-    expect(zpixChunksForQuery(query)).toEqual([0]);
+    expect(zpixChunksForQuery(query, true)).toEqual([0]);
   });
 
   test('ignores characters zpix does not have', () => {
-    expect(zpixChunksForQuery(new URLSearchParams('title=🚀한'))).toEqual([0]);
+    expect(zpixChunksForQuery(new URLSearchParams('title=🚀한'), false)).toEqual([]);
   });
 });
 
@@ -64,6 +69,17 @@ describe('loadPixelFonts', () => {
     const fonts = await loadPixelFonts(context('title=你好'));
 
     expect(fonts.map(font => font.name)).toEqual(['Zpix', `Zpix ${chunkOf('你')}`]);
+  });
+
+  test('geist with a CJK title falls back to zpix after the selected font', async () => {
+    const fetchSpy = mockFontFetch();
+    const fonts = await loadPixelFonts(context('pixelFont=geist-line&title=Hi 你好'));
+
+    expect(fonts.map(font => font.name)).toEqual(['Geist Pixel Line', `Zpix ${chunkOf('你')}`]);
+    expect(fetchSpy.mock.calls.map(call => String(call[0]))).toEqual([
+      'https://example.com/fonts/geist-pixel/GeistPixel-Line.ttf',
+      `https://example.com${ZPIX_CHUNKS[chunkOf('你')].file}`,
+    ]);
   });
 
   test('keeps the fonts that loaded when one chunk fails', async () => {
