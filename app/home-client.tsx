@@ -1,638 +1,553 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import {
-  DEFAULT_PIXEL_FONT,
-  PIXEL_FONT_OPTIONS,
-  type PixelFontKey,
-} from '@/app/lib/pixel-fonts';
+import { DEFAULT_OG_THEME, OG_THEMES, type OgThemeKey } from '@/app/lib/og-themes';
+import { DEFAULT_PIXEL_FONT, PIXEL_FONT_OPTIONS, type PixelFontKey } from '@/app/lib/pixel-fonts';
+import { ShortcutKeys } from '@/components/shortcut-keys';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ShortcutKeys } from '@/components/shortcut-keys';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-const ShortcutsDialog = dynamic(() => import('@/components/shortcuts-dialog'), {
-  ssr: false,
-});
+const ShortcutsDialog = dynamic(() => import('@/components/shortcuts-dialog'), { ssr: false });
 
 function preloadShortcutsDialog() {
   void import('@/components/shortcuts-dialog');
 }
 
-const SHORTCUTS = {
-  focusTitle: { key: '/', label: '/' },
-  pixelTheme: { key: '1', label: '1' },
-  modernTheme: { key: '2', label: '2' },
-  generate: { key: 'Enter', label: 'Enter' },
-  copy: { key: 'c', label: 'C' },
-  toggleHelp: { key: '?', label: '?' },
-  close: { key: 'Escape', label: 'Esc' },
-} as const;
+// Every render is a round trip to the edge, so wait for typing to pause.
+const PREVIEW_DEBOUNCE_MS = 450;
+
+const GITHUB_URL = 'https://github.com/bunizao/ogis';
+const DEPLOY_URL = 'https://vercel.com/new/clone?repository-url=https://github.com/bunizao/ogis';
+
+type Fields = {
+  title: string;
+  site: string;
+  excerpt: string;
+  author: string;
+  date: string;
+  reading: string;
+  tag: string;
+  image: string;
+  icon: string;
+  avatar: string;
+  accent: string;
+};
+
+const SAMPLE: Fields = {
+  title: 'Interstellar',
+  site: 'buxx.me',
+  excerpt: 'Do not go gentle into that good night.',
+  author: 'bunizao',
+  date: 'Jan 5, 2026',
+  reading: '5 min read',
+  tag: 'Essay',
+  image: '',
+  icon: '',
+  avatar: '',
+  accent: '',
+};
+
+// Keys follow the Fields order so generated URLs read naturally.
+function buildQuery(fields: Fields, theme: OgThemeKey, pixelFont: PixelFontKey): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(fields)) {
+    const trimmed = value.trim();
+    if (trimmed) params.set(key, key === 'accent' ? trimmed.replace(/^#/, '') : trimmed);
+  }
+  if (theme !== DEFAULT_OG_THEME) params.set('theme', theme);
+  if (theme === 'pixel' && pixelFont !== DEFAULT_PIXEL_FONT) params.set('pixelFont', pixelFont);
+  return params;
+}
+
+// Mirrors the handler: 3- or 6-digit hex, with or without `#`.
+function parseHex(value: string): string | null {
+  const hex = value.trim().replace(/^#/, '');
+  if (/^[0-9a-f]{6}$/i.test(hex)) return `#${hex}`;
+  if (/^[0-9a-f]{3}$/i.test(hex)) return `#${hex.replace(/./g, digit => digit + digit)}`;
+  return null;
+}
 
 export default function HomeClient({ children }: { children: React.ReactNode }) {
-  const [title, setTitle] = useState('Interstellar');
-  const [site, setSite] = useState('buxx.me');
-  const [excerpt, setExcerpt] = useState(
-    'Do not go gentle into that good night.',
-  );
-  const [author, setAuthor] = useState('bunizao');
-  const [date, setDate] = useState('2026-01-05');
-  const [image, setImage] = useState('');
-  const [theme, setTheme] = useState<'pixel' | 'modern'>('pixel');
+  const [fields, setFields] = useState<Fields>(SAMPLE);
+  const [theme, setTheme] = useState<OgThemeKey>(DEFAULT_OG_THEME);
   const [pixelFont, setPixelFont] = useState<PixelFontKey>(DEFAULT_PIXEL_FONT);
-  const [previewUrl, setPreviewUrl] = useState('/preview.png');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  const endpointPath = `/api/og?${buildQuery(fields, theme, pixelFont)}`;
+
+  const [previewUrl, setPreviewUrl] = useState(endpointPath);
+  const [settledUrl, setSettledUrl] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const isRendering = settledUrl !== previewUrl;
+
+  const [origin, setOrigin] = useState('');
   const [isMac, setIsMac] = useState(false);
-  const [isNavOnDark, setIsNavOnDark] = useState(false);
-  const [copyFeedback, setCopyFeedback] = useState({ id: 0, message: '' });
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [copyMessage, setCopyMessage] = useState('');
 
   const titleRef = useRef<HTMLInputElement>(null);
-  const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewRef = useRef<HTMLImageElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const buildParams = (withTimestamp = false) => {
-    const params = new URLSearchParams();
-    if (title) params.set('title', title);
-    if (site) params.set('site', site);
-    if (excerpt) params.set('excerpt', excerpt);
-    if (author) params.set('author', author);
-    if (date) params.set('date', date);
-    if (image) params.set('image', image);
-    if (theme !== 'pixel') params.set('theme', theme);
-    if (theme === 'pixel' && pixelFont !== DEFAULT_PIXEL_FONT)
-      params.set('pixelFont', pixelFont);
-    if (withTimestamp) params.set('t', Date.now().toString());
-    return params;
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => setPreviewUrl(endpointPath), PREVIEW_DEBOUNCE_MS);
+    return () => clearTimeout(debounceRef.current);
+  }, [endpointPath]);
+
+  const setField = (key: keyof Fields, value: string) => {
+    setFields(current => ({ ...current, [key]: value }));
   };
 
-  const generateUrl = () => `/api/og?${buildParams().toString()}`;
+  // Discrete choices re-render at once; only typing is debounced.
+  const showNow = (nextTheme: OgThemeKey, nextFont: PixelFontKey) => {
+    clearTimeout(debounceRef.current);
+    setPreviewUrl(`/api/og?${buildQuery(fields, nextTheme, nextFont)}`);
+  };
 
-  const handleGenerate = () => {
-    if (isGenerating) return;
-    setIsGenerating(true);
-    setPreviewUrl(`/api/og?${buildParams(true).toString()}`);
+  const selectTheme = (next: OgThemeKey) => {
+    setTheme(next);
+    showNow(next, pixelFont);
+  };
+
+  const selectPixelFont = (next: PixelFontKey) => {
+    setPixelFont(next);
+    showNow(theme, next);
+  };
+
+  // The timestamp skips the browser and CDN caches.
+  const refresh = () => {
+    clearTimeout(debounceRef.current);
+    const params = buildQuery(fields, theme, pixelFont);
+    params.set('t', Date.now().toString());
+    setPreviewUrl(`/api/og?${params}`);
   };
 
   const copyUrl = async () => {
-    const fullUrl = window.location.origin + generateUrl();
-    await navigator.clipboard.writeText(fullUrl);
-    setCopyFeedback((current) => ({
-      id: current.id + 1,
-      message: 'Copied to clipboard',
-    }));
-
-    if (copyFeedbackTimerRef.current) {
-      clearTimeout(copyFeedbackTimerRef.current);
-    }
-    copyFeedbackTimerRef.current = setTimeout(() => {
-      setCopyFeedback((current) => ({ ...current, message: '' }));
-      copyFeedbackTimerRef.current = null;
-    }, 2000);
+    await navigator.clipboard.writeText(window.location.origin + endpointPath);
+    setCopyMessage('Copied');
+    clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopyMessage(''), 2000);
   };
 
-  const handleGenerateRef = useRef(handleGenerate);
-  handleGenerateRef.current = handleGenerate;
-  const copyUrlRef = useRef(copyUrl);
-  copyUrlRef.current = copyUrl;
-
-  const selectedPixelFont =
-    PIXEL_FONT_OPTIONS.find((o) => o.key === pixelFont) ??
-    PIXEL_FONT_OPTIONS[0];
+  // The global key handler is bound once; read the latest closures through a ref.
+  const actionsRef = useRef({ refresh, copyUrl, selectTheme });
+  actionsRef.current = { refresh, copyUrl, selectTheme };
 
   useEffect(() => {
+    setOrigin(window.location.origin);
     setIsMac(navigator.platform?.toLowerCase().includes('mac') ?? false);
 
-    return () => {
-      if (copyFeedbackTimerRef.current) {
-        clearTimeout(copyFeedbackTimerRef.current);
-      }
-    };
-  }, []);
+    // The server-rendered preview can finish loading before React attaches onLoad.
+    const image = previewRef.current;
+    if (image?.complete && image.naturalWidth > 0) setSettledUrl(image.getAttribute('src'));
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      const inInput =
-        document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA' ||
-        document.activeElement?.tagName === 'SELECT';
+    const onKeyDown = (event: KeyboardEvent) => {
+      const mod = event.metaKey || event.ctrlKey;
+      const tag = document.activeElement?.tagName;
+      const inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 
-      if (mod && e.key === SHORTCUTS.generate.key) {
-        e.preventDefault();
-        handleGenerateRef.current();
+      if (mod && event.key === 'Enter') {
+        event.preventDefault();
+        actionsRef.current.refresh();
         return;
       }
-      if (mod && e.shiftKey && e.key.toLowerCase() === SHORTCUTS.copy.key) {
-        e.preventDefault();
-        copyUrlRef.current();
+      if (mod && event.shiftKey && event.key.toLowerCase() === 'c') {
+        event.preventDefault();
+        void actionsRef.current.copyUrl();
         return;
       }
-      if (e.key === SHORTCUTS.close.key) {
+      if (event.key === 'Escape') {
         setShowShortcuts(false);
-        (document.activeElement as HTMLElement)?.blur();
+        (document.activeElement as HTMLElement | null)?.blur();
         return;
       }
+      if (inField || mod) return;
 
-      if (inInput) return;
-
-      switch (e.key) {
-        case SHORTCUTS.focusTitle.key:
-          e.preventDefault();
-          titleRef.current?.focus();
-          break;
-        case SHORTCUTS.toggleHelp.key:
-          e.preventDefault();
-          setShowShortcuts((s) => !s);
-          break;
-        case SHORTCUTS.pixelTheme.key:
-          setTheme('pixel');
-          break;
-        case SHORTCUTS.modernTheme.key:
-          setTheme('modern');
-          break;
+      if (event.key === '/') {
+        event.preventDefault();
+        titleRef.current?.focus();
+      } else if (event.key === '?') {
+        event.preventDefault();
+        setShowShortcuts(open => !open);
+      } else {
+        const option = OG_THEMES[Number(event.key) - 1];
+        if (option) actionsRef.current.selectTheme(option.key);
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const navProbeY = 28;
-    const darkSections = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-nav-theme="dark"]')
-    );
-    const intersectingSections = new Set<Element>();
-    let observer: IntersectionObserver | null = null;
-
-    const observeDarkSections = () => {
-      observer?.disconnect();
-      intersectingSections.clear();
-
-      const bottomMargin = Math.max(window.innerHeight - navProbeY - 1, 0);
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              intersectingSections.add(entry.target);
-            } else {
-              intersectingSections.delete(entry.target);
-            }
-          }
-          setIsNavOnDark(intersectingSections.size > 0);
-        },
-        {
-          rootMargin: `-${navProbeY}px 0px -${bottomMargin}px 0px`,
-        }
-      );
-
-      for (const section of darkSections) {
-        observer.observe(section);
-      }
-    };
-
-    observeDarkSections();
-    window.addEventListener('resize', observeDarkSections);
-
     return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', observeDarkSections);
+      window.removeEventListener('keydown', onKeyDown);
+      clearTimeout(copyTimerRef.current);
     };
   }, []);
 
   const modKey = isMac ? 'Cmd' : 'Ctrl';
-  const generateKeys = [modKey, SHORTCUTS.generate.label];
-  const copyKeys = [modKey, 'Shift', SHORTCUTS.copy.label];
+  const refreshKeys = [modKey, 'Enter'];
+  const copyKeys = [modKey, 'Shift', 'C'];
   const shortcuts = [
-    { label: 'Focus title', keys: [SHORTCUTS.focusTitle.label] },
-    {
-      label: 'Switch theme',
-      keys: [
-        SHORTCUTS.pixelTheme.label,
-        '/',
-        SHORTCUTS.modernTheme.label,
-      ],
-    },
-    { label: 'Generate preview', keys: generateKeys },
-    { label: 'Copy endpoint URL', keys: copyKeys },
-    { label: 'Toggle shortcuts', keys: [SHORTCUTS.toggleHelp.label] },
-    { label: 'Close / unfocus', keys: [SHORTCUTS.close.label] },
+    { label: 'Focus title', keys: ['/'] },
+    { label: 'Switch theme', keys: OG_THEMES.flatMap((_, index) => (index ? ['/', `${index + 1}`] : ['1'])) },
+    { label: 'Refresh preview', keys: refreshKeys },
+    { label: 'Copy image URL', keys: copyKeys },
+    { label: 'Toggle shortcuts', keys: ['?'] },
+    { label: 'Close / unfocus', keys: ['Esc'] },
   ];
+
+  const accentHex = parseHex(fields.accent);
+  const kbdClassName = 'min-w-[18px] h-[18px] px-1 rounded-[4px] border-[var(--border-1)] bg-[var(--bg-2)] text-[10px] text-[var(--text-1)]';
 
   return (
     <>
-      <div className="grain" aria-hidden="true" />
-      <div className="scan-line" aria-hidden="true" />
+      {showShortcuts ? <ShortcutsDialog shortcuts={shortcuts} onOpenChange={setShowShortcuts} /> : null}
 
-      {showShortcuts ? (
-        <ShortcutsDialog shortcuts={shortcuts} onOpenChange={setShowShortcuts} />
-      ) : null}
-
-      {/* ── Navigation ── */}
-      <TooltipProvider delayDuration={300}>
-        <nav
-        className={cn(
-          'fixed top-0 left-0 right-0 z-50 backdrop-blur-xl backdrop-saturate-150 animate-[fade-up_0.5s_var(--ease)_both]',
-          isNavOnDark
-            ? 'border-b border-white/10 bg-[#07070a]/92 supports-[backdrop-filter]:bg-[#07070a]/80'
-            : 'border-b border-[var(--border-0)] bg-[color-mix(in_srgb,var(--bg-0)_88%,transparent)]',
-        )}
-      >
-        <div className="max-w-[var(--max-w)] mx-auto px-6 h-14 flex items-center justify-between">
-          <span
-            className={cn(
-              'font-[var(--font-pixel)] text-xs font-semibold tracking-wide cursor-default',
-              isNavOnDark ? 'text-[#eef0f8]' : 'text-[var(--text-0)]',
-            )}
-          >
-            OGIS/
-          </span>
-          <div className="flex items-center gap-1.5">
-            <a
-              href="#preview"
-              className={cn(
-                'hidden md:inline-flex text-[13px] px-3 py-2 rounded-md transition-colors',
-                isNavOnDark
-                  ? 'text-[#9396ab] hover:text-[#f2f3fa] hover:bg-white/[0.08]'
-                  : 'text-[var(--text-2)] hover:text-[var(--text-0)] hover:bg-[var(--border-0)]',
-              )}
-            >
-              Preview
-            </a>
-            <a
-              href="#api"
-              className={cn(
-                'hidden md:inline-flex text-[13px] px-3 py-2 rounded-md transition-colors',
-                isNavOnDark
-                  ? 'text-[#9396ab] hover:text-[#f2f3fa] hover:bg-white/[0.08]'
-                  : 'text-[var(--text-2)] hover:text-[var(--text-0)] hover:bg-[var(--border-0)]',
-              )}
-            >
-              API
-            </a>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className={cn(
-                    'text-sm hidden sm:inline-flex',
-                    isNavOnDark
-                      ? 'text-[#a4a7bb] border-white/16 bg-white/[0.02] hover:text-[#f2f3fa] hover:border-white/28 hover:bg-white/[0.08]'
-                      : 'text-[var(--text-2)] border-[var(--border-1)] bg-transparent hover:text-[var(--text-0)] hover:border-[var(--border-2)] hover:bg-[var(--border-0)]',
-                  )}
-                  onClick={() => setShowShortcuts((s) => !s)}
-                  onFocus={preloadShortcutsDialog}
-                  onMouseEnter={preloadShortcutsDialog}
-                  aria-label="Show keyboard shortcuts"
-                >
-                  ?
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Keyboard shortcuts</TooltipContent>
-            </Tooltip>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(
-                'text-[13px]',
-                isNavOnDark
-                  ? 'text-[#edf0fa] border-white/20 bg-white/[0.03] hover:bg-white/[0.12] hover:text-white hover:border-white/32'
-                  : 'text-[var(--text-0)] border-[var(--border-2)] bg-transparent hover:bg-[var(--text-0)] hover:text-[var(--bg-0)] hover:border-[var(--text-0)]',
-              )}
-              asChild
-            >
+      <header className="sticky top-0 z-40 border-b border-[var(--border-0)] bg-[color-mix(in_srgb,var(--bg-0)_86%,transparent)] backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-[var(--max-w)] items-center justify-between px-4 sm:px-6">
+          <a href="#top" className="font-pixel text-[15px] tracking-[0.02em] text-[var(--text-0)]">
+            OGIS
+          </a>
+          <nav className="flex items-center gap-1 text-[14px]">
+            {[
+              ['#themes', 'Themes'],
+              ['#playground', 'Playground'],
+              ['#api', 'API'],
+            ].map(([href, label]) => (
               <a
-                href="https://github.com/bunizao/ogis"
-                target="_blank"
-                rel="noopener noreferrer"
+                key={href}
+                href={href}
+                className="hidden rounded-md px-3 py-2 text-[var(--text-1)] transition-colors hover:text-[var(--text-0)] sm:inline-flex"
               >
-                GitHub ↗
+                {label}
+              </a>
+            ))}
+            <button
+              type="button"
+              onClick={() => setShowShortcuts(open => !open)}
+              onFocus={preloadShortcutsDialog}
+              onMouseEnter={preloadShortcutsDialog}
+              aria-label="Show keyboard shortcuts"
+              className="hidden size-9 items-center justify-center rounded-md font-mono text-[13px] text-[var(--text-1)] transition-colors hover:text-[var(--text-0)] md:inline-flex"
+            >
+              ?
+            </button>
+            <Button asChild variant="outline" size="sm" className="ml-2 border-[var(--border-1)] bg-transparent shadow-none">
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                GitHub
               </a>
             </Button>
-          </div>
-        </div>
-        </nav>
-      </TooltipProvider>
-
-      {/* ── Hero ── */}
-      <header className="relative z-[1] max-w-[var(--max-w)] mx-auto pt-24 md:pt-28 pb-12 md:pb-14 px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8 lg:gap-16 items-end">
-          <div>
-            <p className="font-[var(--font-pixel)] text-[11px] tracking-[0.12em] uppercase text-[var(--text-2)] mb-4 animate-[fade-up_0.6s_var(--ease)_0.1s_both]">
-              Open Graph Image Service
-            </p>
-            <h1 className="font-[var(--font-pixel)] text-[clamp(32px,6vw,56px)] font-normal leading-[1.1] tracking-[0.01em] animate-[fade-up_0.6s_var(--ease)_0.2s_both]">
-              <span className="hero-title-expand" aria-label="Dynamic">
-                <span className="hero-title-short" aria-hidden="true">
-                  OGIS
-                </span>
-                <span className="hero-title-full" aria-hidden="true">
-                  Dynamic
-                </span>
-              </span>
-              <br />
-              <span className="hero-title-accent-reveal">Social</span>
-              <br />
-              <span className="italic font-normal hero-title-accent-reveal" style={{ animationDelay: '1.1s' }}>
-                Images
-              </span>
-            </h1>
-          </div>
-          <div className="lg:border-l lg:border-[var(--border-1)] lg:pl-10 border-t lg:border-t-0 border-[var(--border-1)] pt-7 lg:pt-0 animate-[fade-up_0.6s_var(--ease)_0.4s_both]">
-            <p className="text-base text-[var(--text-1)] leading-relaxed max-w-[400px]">
-              A dynamic Open Graph image generation service with multiple visual
-              themes. Built on Next.js and Vercel Edge Runtime for fast, globally
-              distributed generation.
-            </p>
-          </div>
+          </nav>
         </div>
       </header>
 
-      {/* ── Workspace ── */}
-      <main className="relative z-[1] max-w-[var(--max-w)] mx-auto py-16 md:py-20 px-6" id="preview">
-        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-12 lg:gap-20 animate-[fade-up_0.6s_var(--ease)_0.3s_both]">
-          {/* Form Panel */}
-          <div>
-            <div className="form-card lg:sticky lg:top-20">
-              <h2 className="text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)] mb-8">
-                Parameters
-              </h2>
-
-              {/* Theme Toggle */}
-              <Tabs
-                value={theme}
-                onValueChange={(v) => setTheme(v as 'pixel' | 'modern')}
-                className="mb-7"
-              >
-                <TabsList className="grid h-10 w-full grid-cols-2 gap-2 bg-transparent p-0">
-                  <TabsTrigger
-                    value="pixel"
-                    className="h-full rounded-lg border border-[var(--border-1)] bg-[var(--bg-1)] font-mono text-[11px] tracking-[0.12em] uppercase gap-2 text-[var(--text-2)] transition-[color,background-color,border-color] hover:text-[var(--text-1)] data-[state=active]:bg-[var(--bg-0)] data-[state=active]:text-[var(--text-0)] data-[state=active]:border-[var(--border-2)] data-[state=active]:shadow-none group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none"
-                  >
-                    pixel
-                    <span className="text-[9px] text-current/55">1</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="modern"
-                    className="h-full rounded-lg border border-[var(--border-1)] bg-[var(--bg-1)] font-mono text-[11px] tracking-[0.12em] uppercase gap-2 text-[var(--text-2)] transition-[color,background-color,border-color] hover:text-[var(--text-1)] data-[state=active]:bg-[var(--bg-0)] data-[state=active]:text-[var(--text-0)] data-[state=active]:border-[var(--border-2)] data-[state=active]:shadow-none group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none"
-                  >
-                    modern
-                    <span className="text-[9px] text-current/55">2</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              {/* Pixel Font Selector */}
-              {theme === 'pixel' && (
-                <div className="mb-5">
-                  <label className="flex items-center gap-2 text-[12px] font-medium tracking-wide uppercase text-[var(--text-1)] mb-2">
-                    Pixel Font
-                  </label>
-                  <Select
-                    value={pixelFont}
-                    onValueChange={(v) => setPixelFont(v as PixelFontKey)}
-                  >
-                    <SelectTrigger
-                      className="w-full text-sm bg-[var(--bg-1)] border-[var(--border-1)]"
-                      style={{ fontFamily: `'${selectedPixelFont.fontName}', monospace` }}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[var(--bg-2)] border-[var(--border-1)]">
-                      {PIXEL_FONT_OPTIONS.map((option) => (
-                        <SelectItem
-                          key={option.key}
-                          value={option.key}
-                          className="text-sm"
-                          style={{ fontFamily: `'${option.fontName}', monospace` }}
-                        >
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Form Fields */}
-              <div className="space-y-5">
-                <FormField label="Title" required>
-                  <Input
-                    ref={titleRef}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="bg-transparent border-0 border-b border-[var(--border-1)] rounded-none px-0 py-3 text-[15px] font-[var(--font-body)] focus-visible:ring-0 focus-visible:border-[var(--text-0)] shadow-none"
-                  />
-                </FormField>
-                <FormField label="Site" required>
-                  <Input
-                    value={site}
-                    onChange={(e) => setSite(e.target.value)}
-                    className="bg-transparent border-0 border-b border-[var(--border-1)] rounded-none px-0 py-3 text-[15px] font-[var(--font-body)] focus-visible:ring-0 focus-visible:border-[var(--text-0)] shadow-none"
-                  />
-                </FormField>
-                <FormField label="Excerpt">
-                  <Input
-                    value={excerpt}
-                    onChange={(e) => setExcerpt(e.target.value)}
-                    className="bg-transparent border-0 border-b border-[var(--border-1)] rounded-none px-0 py-3 text-[15px] font-[var(--font-body)] focus-visible:ring-0 focus-visible:border-[var(--text-0)] shadow-none"
-                  />
-                </FormField>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField label="Author">
-                    <Input
-                      value={author}
-                      onChange={(e) => setAuthor(e.target.value)}
-                      className="bg-transparent border-0 border-b border-[var(--border-1)] rounded-none px-0 py-3 text-[15px] font-[var(--font-body)] focus-visible:ring-0 focus-visible:border-[var(--text-0)] shadow-none"
-                    />
-                  </FormField>
-                  <FormField label="Date">
-                    <Input
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="bg-transparent border-0 border-b border-[var(--border-1)] rounded-none px-0 py-3 text-[15px] font-[var(--font-body)] focus-visible:ring-0 focus-visible:border-[var(--text-0)] shadow-none"
-                    />
-                  </FormField>
-                </div>
-                <FormField label="Image URL">
-                  <Input
-                    value={image}
-                    onChange={(e) => setImage(e.target.value)}
-                    className="bg-transparent border-0 border-b border-[var(--border-1)] rounded-none px-0 py-3 text-[15px] font-[var(--font-body)] focus-visible:ring-0 focus-visible:border-[var(--text-0)] shadow-none"
-                  />
-                </FormField>
-              </div>
-            </div>
-          </div>
-
-          {/* Preview Panel */}
-          <div className="animate-[fade-up_0.6s_var(--ease)_0.45s_both]">
-            <h2 className="text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)] mb-6">
-              Preview
-            </h2>
-
-            <p className="mb-5 text-[13px] text-[var(--text-2)] leading-relaxed">
-              Fill in the form, then hit{' '}
-              <ShortcutKeys
-                keys={generateKeys}
-                className="text-[10px] font-mono text-[var(--text-1)]"
-                kbdClassName="min-w-[24px] px-1.5 py-0.5 bg-[var(--bg-2)] border border-[var(--border-2)] rounded-md text-[11px] text-[var(--text-0)]"
-                separatorClassName="text-[var(--text-2)]"
-              />{' '}
-              to generate.{' '}
-              <button
-                onClick={() => setShowShortcuts(true)}
-                onFocus={preloadShortcutsDialog}
-                onMouseEnter={preloadShortcutsDialog}
-                className="text-[var(--text-1)] underline underline-offset-2 decoration-[var(--border-2)] hover:text-[var(--text-0)] transition-colors cursor-pointer"
-              >
-                More shortcuts
-              </button>
-            </p>
-
-            {/* Preview Frame */}
-            <div
-              className={`preview-frame relative rounded-lg overflow-hidden${isGenerating ? ' preview-loading' : ''}`}
+      <main>
+        <section id="top" className="mx-auto max-w-[var(--max-w)] px-4 pt-20 pb-16 sm:px-6 md:pt-28 md:pb-20">
+          <h1 className="max-w-[15ch] text-[clamp(40px,6vw,68px)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance">
+            Open Graph images from a single URL.
+          </h1>
+          <p className="mt-6 max-w-[52ch] text-[17px] leading-[1.6] text-pretty text-[var(--text-1)]">
+            Put a title and a few details in the query string. OGIS renders a 1200{' × '}630 card at the
+            edge, and your CDN keeps it.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild size="lg" className="active:scale-[0.97] transition-[background-color,scale]">
+              <a href="#playground">Open the playground</a>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="border-[var(--border-1)] bg-transparent shadow-none active:scale-[0.97] transition-[background-color,scale]"
             >
-              <div className="preview-frame-inner relative rounded-[7px] overflow-hidden bg-[var(--bg-0)] aspect-[1200/630] border border-[var(--border-2)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="w-full h-full block object-cover"
-                  src={previewUrl}
-                  alt="OG Preview"
-                  onLoad={() => setIsGenerating(false)}
-                  onError={() => setIsGenerating(false)}
-                />
-              </div>
-            </div>
+              <a href={DEPLOY_URL} target="_blank" rel="noopener noreferrer">
+                Deploy your own
+              </a>
+            </Button>
+          </div>
+        </section>
 
-            {/* Actions below preview */}
-            <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <span className="font-mono text-[11px] text-[var(--text-2)]">
-                1200 × 630
-              </span>
-              <div className="flex gap-2.5 flex-wrap">
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="font-mono text-xs gap-2 bg-[var(--text-0)] text-[var(--bg-0)] hover:bg-[var(--text-1)] border-0 shadow-[0_0_0_1px_var(--border-2)]"
-                >
-                  {isGenerating ? (
-                    <>
-                      <span className="animate-pulse">generating</span>
-                      <span className="animate-[blink_1.2s_step-end_infinite]">_</span>
-                    </>
-                  ) : (
-                    <>
-                      Generate
-                      <ShortcutKeys
-                        keys={generateKeys}
-                        className="text-[9px] font-mono text-current/70"
-                        kbdClassName="min-w-[18px] px-1 py-0.5 border border-current/45 bg-current/10 rounded-sm text-current"
-                        separatorClassName="text-current/50"
-                        iconClassName="size-3"
-                      />
-                    </>
+        <section id="themes" className="mx-auto max-w-[var(--max-w)] scroll-mt-14 px-4 pb-20 sm:px-6 md:pb-28">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <h2 className="text-[22px] font-semibold tracking-[-0.02em]">Four themes</h2>
+            <p className="text-[14px] text-[var(--text-2)]">The same post, set four ways. Pick one to try it.</p>
+          </div>
+          <div className="mt-8 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+            {OG_THEMES.map((option, index) => (
+              <button
+                key={option.key}
+                type="button"
+                aria-pressed={theme === option.key}
+                onClick={() => {
+                  selectTheme(option.key);
+                  document.getElementById('playground')?.scrollIntoView({ block: 'start' });
+                }}
+                className="group rounded-xl text-left outline-none"
+              >
+                <span
+                  className={cn(
+                    'block overflow-hidden rounded-xl bg-[var(--bg-2)] shadow-[0_0_0_1px_var(--image-outline)] transition-shadow',
+                    'group-hover:shadow-[0_0_0_1px_var(--border-2)] group-focus-visible:shadow-[0_0_0_2px_var(--text-0)]',
+                    theme === option.key && 'shadow-[0_0_0_2px_var(--text-0)] group-hover:shadow-[0_0_0_2px_var(--text-0)]'
                   )}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="font-mono text-xs border-[var(--border-2)] bg-transparent hover:bg-[var(--accent-muted)] hover:border-[var(--text-1)]"
-                  asChild
                 >
-                  <a
-                    href={previewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Open Full Size ↗
-                  </a>
-                </Button>
-              </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/og?${buildQuery(SAMPLE, option.key, DEFAULT_PIXEL_FONT)}`}
+                    alt={`${option.label} theme example`}
+                    width={1200}
+                    height={630}
+                    className="block aspect-[1200/630] w-full object-cover"
+                  />
+                </span>
+                <span className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-[15px] font-medium">{option.label}</span>
+                  <kbd className={cn('inline-flex items-center justify-center border font-mono pointer-coarse:hidden', kbdClassName)}>
+                    {index + 1}
+                  </kbd>
+                </span>
+                <span className="mt-1.5 block text-[14px] leading-[1.5] text-pretty text-[var(--text-2)]">
+                  {option.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section id="playground" className="scroll-mt-14 border-t border-[var(--border-0)]">
+          <div className="mx-auto max-w-[var(--max-w)] px-4 py-20 sm:px-6 md:py-28">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+              <h2 className="text-[22px] font-semibold tracking-[-0.02em]">Playground</h2>
+              <p className="text-[14px] text-[var(--text-2)]">Edit any field. The preview follows as you type.</p>
             </div>
 
-            {/* Endpoint URL */}
-            <div className="mt-10">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-medium tracking-[0.14em] uppercase text-[var(--text-2)]">
-                  Endpoint
-                </span>
-                <div className="flex items-center gap-2">
-                  <span
-                    role="status"
-                    aria-live="polite"
-                    aria-atomic="true"
-                    className="min-w-[112px] text-right font-mono text-[11px] text-[var(--text-2)]"
-                  >
-                    <span key={copyFeedback.id}>{copyFeedback.message}</span>
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="font-mono text-[11px] text-[var(--text-1)] h-auto py-1 px-2 gap-1.5 hover:text-[var(--text-0)]"
-                    onClick={copyUrl}
-                  >
-                    Copy
-                    <ShortcutKeys
-                      keys={copyKeys}
-                      className="text-[10px] font-mono text-current"
-                      kbdClassName="min-w-[18px] px-1 py-0.5 border border-[var(--border-2)] bg-[var(--bg-1)] rounded-sm text-current"
-                      separatorClassName="text-current/55"
-                      iconClassName="size-3"
-                    />
-                  </Button>
+            <div className="mt-8 grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-16">
+              <div className="lg:sticky lg:top-20">
+                <div className="overflow-hidden rounded-xl bg-[var(--bg-2)] shadow-[0_0_0_1px_var(--image-outline),0_12px_40px_-12px_rgba(0,0,0,0.35)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    ref={previewRef}
+                    src={previewUrl}
+                    alt="OG Preview"
+                    width={1200}
+                    height={630}
+                    onLoad={() => {
+                      setSettledUrl(previewUrl);
+                      setPreviewFailed(false);
+                    }}
+                    onError={() => {
+                      setSettledUrl(previewUrl);
+                      setPreviewFailed(true);
+                    }}
+                    className={cn(
+                      'block aspect-[1200/630] w-full object-cover transition-opacity duration-200',
+                      isRendering && 'opacity-60'
+                    )}
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[13px] text-[var(--text-2)]" aria-live="polite">
+                    {previewFailed && !isRendering ? 'Render failed. Try refreshing.' : isRendering ? 'Rendering…' : '1200 × 630 PNG'}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={refresh}
+                      className="border-[var(--border-1)] bg-transparent shadow-none"
+                    >
+                      Refresh
+                      <ShortcutKeys keys={refreshKeys} className="gap-0.5 pointer-coarse:hidden" kbdClassName={kbdClassName} separatorClassName="hidden" iconClassName="size-2.5" />
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="border-[var(--border-1)] bg-transparent shadow-none">
+                      <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                        Open image
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-xl border border-[var(--border-1)] bg-[var(--bg-1)]">
+                  <div className="flex h-11 items-center justify-between gap-3 border-b border-[var(--border-0)] pr-1.5 pl-4">
+                    <span className="text-[13px] font-medium text-[var(--text-1)]">Image URL</span>
+                    <div className="flex items-center gap-2">
+                      <span role="status" aria-live="polite" className="text-[13px] text-[var(--text-2)]">
+                        {copyMessage}
+                      </span>
+                      <Button variant="ghost" size="sm" onClick={copyUrl} className="text-[13px]">
+                        Copy
+                        <ShortcutKeys keys={copyKeys} className="gap-0.5 pointer-coarse:hidden" kbdClassName={kbdClassName} separatorClassName="hidden" iconClassName="size-2.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <code className="block px-4 py-3.5 font-mono text-[12.5px] leading-[1.65] break-all text-[var(--text-1)]">
+                    {origin}
+                    {endpointPath}
+                  </code>
                 </div>
               </div>
-              <div className="endpoint-box font-mono text-xs text-[var(--text-1)] p-4 bg-[var(--bg-1)] border border-[var(--border-1)] rounded break-all leading-relaxed">
-                {generateUrl()}
-                <span className="endpoint-cursor" />
-              </div>
+
+              <form className="grid gap-9" onSubmit={event => event.preventDefault()}>
+                <Group title="Theme">
+                  <div role="radiogroup" aria-label="Theme" className="grid grid-cols-4 gap-1 rounded-[10px] bg-[var(--bg-2)] p-1">
+                    {OG_THEMES.map(option => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        role="radio"
+                        aria-checked={theme === option.key}
+                        onClick={() => selectTheme(option.key)}
+                        className={cn(
+                          'h-8 rounded-[6px] text-[13px] font-medium transition-[color,background-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-2)]',
+                          theme === option.key
+                            ? 'bg-[var(--bg-0)] text-[var(--text-0)] shadow-[0_0_0_1px_var(--border-1),0_1px_2px_rgba(0,0,0,0.12)]'
+                            : 'text-[var(--text-2)] hover:text-[var(--text-0)]'
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  {theme === 'pixel' ? (
+                    <Field label="Pixel font">
+                      {id => (
+                        <Select value={pixelFont} onValueChange={value => selectPixelFont(value as PixelFontKey)}>
+                          <SelectTrigger id={id} className={cn(inputClassName, 'w-full')}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-[var(--border-1)] bg-[var(--bg-1)]">
+                            {PIXEL_FONT_OPTIONS.map(option => (
+                              <SelectItem
+                                key={option.key}
+                                value={option.key}
+                                style={{ fontFamily: `'${option.fontName}', monospace` }}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </Field>
+                  ) : null}
+                </Group>
+
+                <Group title="Text">
+                  <TextField label="Title" value={fields.title} onChange={value => setField('title', value)} inputRef={titleRef} />
+                  <TextField label="Site" value={fields.site} onChange={value => setField('site', value)} />
+                  <TextField label="Excerpt" value={fields.excerpt} onChange={value => setField('excerpt', value)} />
+                </Group>
+
+                <Group title="Details">
+                  <div className="grid grid-cols-2 gap-3">
+                    <TextField label="Author" value={fields.author} onChange={value => setField('author', value)} />
+                    <TextField label="Date" value={fields.date} onChange={value => setField('date', value)} />
+                    <TextField label="Tag" value={fields.tag} onChange={value => setField('tag', value)} />
+                    <TextField label="Reading time" value={fields.reading} onChange={value => setField('reading', value)} />
+                  </div>
+                </Group>
+
+                <Group title="Images" hint="PNG, JPEG, GIF or SVG from a public host. Anything else is left out.">
+                  <TextField label="Cover image" type="url" placeholder="https://" value={fields.image} onChange={value => setField('image', value)} />
+                  <TextField label="Site icon" type="url" placeholder="https://" value={fields.icon} onChange={value => setField('icon', value)} />
+                  <TextField label="Author avatar" type="url" placeholder="https://" value={fields.avatar} onChange={value => setField('avatar', value)} />
+                </Group>
+
+                <Group title="Accent" hint="Colours the tag. Empty uses the theme default.">
+                  <div className="flex gap-2">
+                    <label
+                      className="relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-md shadow-[inset_0_0_0_1px_var(--border-1)]"
+                      style={{
+                        background:
+                          accentHex ??
+                          'linear-gradient(to top right, transparent calc(50% - 0.5px), var(--border-2) 50%, transparent calc(50% + 0.5px)), var(--bg-1)',
+                      }}
+                    >
+                      <span className="sr-only">Pick accent colour</span>
+                      <input
+                        type="color"
+                        value={accentHex ?? '#888888'}
+                        onChange={event => setField('accent', event.target.value)}
+                        className="absolute inset-0 size-full cursor-pointer opacity-0"
+                      />
+                    </label>
+                    <Input
+                      aria-label="Accent hex"
+                      placeholder="Theme default"
+                      value={fields.accent}
+                      onChange={event => setField('accent', event.target.value)}
+                      spellCheck={false}
+                      className={cn(inputClassName, 'font-mono')}
+                    />
+                  </div>
+                </Group>
+              </form>
             </div>
           </div>
-        </div>
-      </main>
+        </section>
 
-      {children}
+        {children}
+      </main>
     </>
   );
 }
 
-function FormField({
+const inputClassName =
+  'h-9 border-[var(--border-1)] bg-[var(--bg-1)] text-base shadow-none placeholder:text-[var(--text-2)] focus-visible:border-[var(--border-2)] focus-visible:ring-[3px] focus-visible:ring-[var(--border-0)] md:text-[14px]';
+
+function Group({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="grid gap-3">
+      <legend className="mb-3 text-[13px] font-medium text-[var(--text-0)]">{title}</legend>
+      {children}
+      {hint ? <p className="text-[13px] leading-[1.5] text-pretty text-[var(--text-2)]">{hint}</p> : null}
+    </fieldset>
+  );
+}
+
+function Field({ label, children }: { label: string; children: (id: string) => React.ReactNode }) {
+  const id = useId();
+  return (
+    <div className="grid gap-1.5">
+      <label htmlFor={id} className="text-[13px] text-[var(--text-1)]">
+        {label}
+      </label>
+      {children(id)}
+    </div>
+  );
+}
+
+function TextField({
   label,
-  required,
-  children,
+  value,
+  onChange,
+  type = 'text',
+  placeholder,
+  inputRef,
 }: {
   label: string;
-  required?: boolean;
-  children: React.ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+  type?: 'text' | 'url';
+  placeholder?: string;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   return (
-    <div>
-      <label className="flex items-center gap-2 text-[12px] font-medium tracking-wide text-[var(--text-1)] mb-1.5 uppercase">
-        {label}
-        {required && (
-          <span className="inline-flex items-center rounded-sm border border-[var(--border-1)] bg-[var(--bg-1)] px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-[0.03em] text-[var(--text-1)] leading-none">
-            required
-          </span>
-        )}
-      </label>
-      {children}
-    </div>
+    <Field label={label}>
+      {id => (
+        <Input
+          id={id}
+          ref={inputRef}
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          onChange={event => onChange(event.target.value)}
+          spellCheck={false}
+          autoComplete="off"
+          className={inputClassName}
+        />
+      )}
+    </Field>
   );
 }

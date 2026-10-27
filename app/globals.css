@@ -4,10 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ═══════════════════════════════════════════════
-   OGIS — Elevated Monochrome Terminal Design
-   ═══════════════════════════════════════════════ */
-
+/* Pixel fonts: Zpix sets the wordmark, and the font picker previews every option. */
 @font-face {
   font-family: 'Geist Pixel Square';
   src: url('/fonts/geist-pixel/GeistPixel-Square.ttf') format('truetype');
@@ -56,38 +53,28 @@
   font-display: swap;
 }
 
-/* ── Design Tokens ──────────────────────────── */
+/* ── Tokens ──────────────────────────────────── */
 :root {
-  --bg-0: #09090b;
-  --bg-1: #111113;
-  --bg-2: #1a1a1e;
-  --bg-3: #242428;
+  color-scheme: dark;
 
-  --text-0: #ececef;
-  --text-1: #7e7e8a;
-  --text-2: #4a4a54;
+  --bg-0: #0b0b0c;
+  --bg-1: #121214;
+  --bg-2: #19191c;
 
-  --accent-muted: rgba(255, 255, 255, 0.06);
+  --text-0: #ededef;
+  --text-1: #a1a1aa;
+  --text-2: #74747d;
 
-  --border-0: rgba(255, 255, 255, 0.04);
-  --border-1: rgba(255, 255, 255, 0.08);
-  --border-2: rgba(255, 255, 255, 0.14);
+  --border-0: rgba(255, 255, 255, 0.07);
+  --border-1: rgba(255, 255, 255, 0.11);
+  --border-2: rgba(255, 255, 255, 0.18);
 
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --dur: 250ms;
-  --dur-fast: 150ms;
-  --dur-slow: 500ms;
+  /* Hairline drawn inside images so they hold an edge on any surface. */
+  --image-outline: rgba(255, 255, 255, 0.1);
 
-  --max-w: 1400px;
-  --nav-h: 56px;
+  --max-w: 1200px;
 
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-pixel: 'Zpix', 'JetBrains Mono', 'Fira Code', monospace;
-
-  /* shadcn tokens — dark by default (terminal aesthetic) */
+  /* shadcn tokens, mapped to the same neutrals */
   --radius: 0.625rem;
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
@@ -124,17 +111,21 @@
 
 @media (prefers-color-scheme: light) {
   :root {
+    color-scheme: light;
+
     --bg-0: #fafaf9;
     --bg-1: #ffffff;
-    --bg-2: #f4f4f2;
-    --bg-3: #e8e8e4;
-    --text-0: #141418;
-    --text-1: #5c5c6a;
-    --text-2: #8a8a96;
-    --accent-muted: rgba(0, 0, 0, 0.04);
-    --border-0: rgba(0, 0, 0, 0.05);
-    --border-1: rgba(0, 0, 0, 0.10);
-    --border-2: rgba(0, 0, 0, 0.16);
+    --bg-2: #f1f1ef;
+
+    --text-0: #141416;
+    --text-1: #56565f;
+    --text-2: #82828b;
+
+    --border-0: rgba(0, 0, 0, 0.07);
+    --border-1: rgba(0, 0, 0, 0.11);
+    --border-2: rgba(0, 0, 0, 0.18);
+
+    --image-outline: rgba(0, 0, 0, 0.1);
 
     --background: oklch(1 0 0);
     --foreground: oklch(0.141 0.005 285.823);
@@ -167,227 +158,20 @@ html {
 body {
   background: var(--bg-0);
   color: var(--text-0);
-  font-family: var(--font-body);
-  overflow-x: hidden;
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
-::selection { background: var(--text-0); color: var(--bg-0); }
-
-/* ── Dot Background ──────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image: radial-gradient(circle, var(--border-1) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-/* ── Grain Overlay ───────────────────────────── */
-.grain {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9998;
-  opacity: 0.028;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)' opacity='.08'/%3E%3C/svg%3E");
-}
-
-@media (prefers-color-scheme: light) {
-  .grain { opacity: 0.015; filter: invert(1); }
-}
-
-/* ── Scan Line ───────────────────────────────── */
-.scan-line {
-  position: fixed;
-  left: 0;
-  right: 0;
-  height: 1px;
-  pointer-events: none;
-  z-index: 9999;
-  background: linear-gradient(90deg, transparent 20%, var(--text-2) 50%, transparent 80%);
-  opacity: 0.08;
-  animation: scan 8s linear infinite;
-}
-
-/* ── Keyframes ───────────────────────────────── */
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scan {
-  from { transform: translateY(-2px); }
-  to   { transform: translateY(100vh); }
-}
-
-@keyframes glitch {
-  0%, 93%, 100% { transform: translate(0); text-shadow: none; }
-  94% { transform: translate(-2px, 1px); text-shadow: 2px 0 var(--bg-0), -2px 0 var(--text-2); }
-  96% { transform: translate(2px, -1px); text-shadow: -2px 0 var(--text-2), 2px 0 var(--bg-0); }
-  98% { transform: translate(0); text-shadow: none; }
-}
-
-@keyframes shimmer {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(200%); }
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0; }
-}
-
-@keyframes hero-title-expand {
-  from { width: 4ch; }
-  to   { width: 7ch; }
-}
-
-@keyframes hero-title-short-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
-@keyframes hero-title-full-in {
-  from { opacity: 0; transform: translateX(10px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes hero-accent-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Hero Animation Classes ──────────────────── */
-.hero-title-expand {
-  position: relative;
-  display: inline-block;
-  width: 7ch;
-  min-height: 1em;
-  white-space: nowrap;
-  overflow: hidden;
-  animation: hero-title-expand 850ms var(--ease) 250ms both;
-}
-
-.hero-title-short {
-  display: inline-block;
-  animation: hero-title-short-out 220ms linear 760ms forwards;
-}
-
-.hero-title-full {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  white-space: nowrap;
-  transform: translateX(10px);
-  animation: hero-title-full-in 420ms var(--ease) 760ms forwards;
-}
-
-.hero-title-accent-reveal {
-  display: inline-block;
-  opacity: 0;
-  transform: translateY(8px);
-  animation: hero-accent-in 420ms var(--ease) 980ms forwards;
-}
-
-/* ── Preview Loading Shimmer ─────────────────── */
-.preview-loading .preview-frame-inner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-/* ── Preview Frame Glow ──────────────────────── */
-.preview-frame {
-  position: relative;
-}
-
-.preview-frame::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, var(--border-2), transparent 40%, transparent 60%, var(--border-2));
-  opacity: 0;
-  transition: opacity var(--dur) var(--ease);
-  z-index: -1;
-}
-
-.preview-frame:hover::before {
-  opacity: 1;
-}
-
-/* ── Endpoint Cursor ─────────────────────────── */
-.endpoint-cursor {
-  display: inline-block;
-  width: 7px;
-  height: 14px;
+::selection {
   background: var(--text-0);
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  animation: blink 1.2s step-end infinite;
+  color: var(--bg-0);
 }
 
-/* ── Endpoint Box Accent ─────────────────────── */
-.endpoint-box {
-  position: relative;
-  overflow: hidden;
-}
-
-.endpoint-box::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--text-2);
-  opacity: 0.6;
-}
-
-/* ── Section Divider (gradient fade) ─────────── */
-.section-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--text-2) 20%, var(--text-0) 50%, var(--text-2) 80%, transparent);
-}
-
-/* ── Form Panel Card ─────────────────────────── */
-.form-card {
-  background: var(--bg-1);
-  border: 1px solid var(--border-1);
-  border-radius: 8px;
-  padding: 28px;
-}
-
-@media (prefers-color-scheme: light) {
-  .form-card {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
-  }
-}
-
-/* ── Reduced Motion ──────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
-  .hero-title-expand { width: auto; }
-  .hero-title-short { display: none; }
-  .hero-title-full {
-    position: static;
-    opacity: 1;
-    transform: none;
-  }
-  .hero-title-accent-reveal {
-    opacity: 1;
-    transform: none;
-  }
-  .scan-line { display: none; }
 }
 
 /* ── shadcn Theme Mappings ───────────────────── */
@@ -432,6 +216,7 @@ body::before {
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: var(--font-body);
   --font-mono: var(--font-mono);
+  --font-pixel: 'Zpix', monospace;
 }
 
 @layer base {

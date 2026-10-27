@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({
@@ -14,15 +14,9 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-});
-
 export const metadata: Metadata = {
   title: 'OGIS - Open Graph Image Service',
-  description: 'A dynamic Open Graph image generation service built with Next.js and deployed on Vercel Edge Runtime. Creates customized social media preview images with pixel-font and liquid-glass themes.',
+  description: 'Open Graph images from a single URL. Four themes, your own images, rendered at the edge.',
   keywords: ['og image', 'open graph', 'social media', 'preview', 'image generation', 'edge runtime', 'next.js', 'vercel', 'zpix'],
   authors: [{ name: 'bunizao', url: 'https://github.com/bunizao' }],
   icons: {
@@ -30,7 +24,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'OGIS - Open Graph Image Service',
-    description: 'Dynamic OG image generation with pixel-style typography and frosted glass effects',
+    description: 'Open Graph images from a single URL. Four themes, rendered at the edge.',
     type: 'website',
     url: 'https://og.tutuis.me',
     images: [
@@ -45,7 +39,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'OGIS - Open Graph Image Service',
-    description: 'Dynamic OG image generation with pixel-style typography and frosted glass effects',
+    description: 'Open Graph images from a single URL. Four themes, rendered at the edge.',
     images: ['https://og.tutuis.me/preview.png'],
   },
 };
@@ -61,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body>
         {children}
       </body>

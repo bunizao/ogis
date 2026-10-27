@@ -17,25 +17,24 @@ export default function ShortcutsDialog({
 }) {
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-[var(--bg-2)] border-[var(--border-1)]">
-        <DialogHeader>
-          <DialogTitle className="font-mono text-sm tracking-wide">
-            Keyboard Shortcuts
-          </DialogTitle>
+      <DialogContent className="gap-0 sm:max-w-sm border-[var(--border-1)] bg-[var(--bg-1)] p-0">
+        <DialogHeader className="px-5 pt-5 pb-3">
+          <DialogTitle className="text-[15px] font-semibold tracking-[-0.01em]">Keyboard shortcuts</DialogTitle>
         </DialogHeader>
-        <div className="space-y-1 -mx-6 px-0">
-          {shortcuts.map((shortcut) => (
+        <div className="px-5 pb-3">
+          {shortcuts.map(shortcut => (
             <div
               key={shortcut.label}
-              className="flex items-center justify-between px-6 py-2.5"
+              className="flex items-center justify-between border-t border-[var(--border-0)] py-2.5"
             >
-              <span className="text-sm text-[var(--text-1)]">{shortcut.label}</span>
+              <span className="text-[14px] text-[var(--text-1)]">{shortcut.label}</span>
               <ShortcutKeys
                 keys={shortcut.keys}
-                kbdClassName="min-w-[28px] px-2 py-1 bg-[var(--bg-1)] border border-[var(--border-2)] rounded-md text-[10px] leading-none text-[var(--text-0)]"
-                separatorClassName="text-[10px] opacity-45"
-                dividerClassName="text-[10px] opacity-30 mx-0.5"
-                iconClassName="size-3.5"
+                className="gap-0.5"
+                kbdClassName="h-[22px] min-w-[22px] px-1.5 rounded-[5px] border-[var(--border-1)] bg-[var(--bg-2)] text-[11px] text-[var(--text-1)]"
+                separatorClassName="hidden"
+                dividerClassName="mx-0.5 text-[11px] text-[var(--text-2)] opacity-100"
+                iconClassName="size-3"
               />
             </div>
           ))}
