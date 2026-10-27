@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Next.js-based Open Graph image generation service for the Attegi Ghost theme. Generates 1200x630px social media preview images with Zpix pixel font, frosted glass effects, and customizable backgrounds. Deployed on Vercel Edge Runtime.
+Next.js-based Open Graph image generation service, originally for the Attegi Ghost theme. Renders 1200x630 social preview images in four themes (`pixel`, `modern`, `editorial`, `swiss`) on the Vercel Edge Runtime.
 
 ## Development Commands
 
@@ -16,7 +16,7 @@ bun run start        # Start production server
 bun test             # Run full Bun test suite
 ```
 
-**Test URL**: `http://localhost:3000/api/og?title=Hello&site=Blog` (default path; in single-secret mode the primary path is derived from `OG_SECRET`)
+**Test URL**: `http://localhost:3000/api/og?title=Hello&site=Blog`
 
 ## Architecture
 
@@ -24,51 +24,56 @@ bun test             # Run full Bun test suite
 
 ### Key Files
 
-- `app/api/og/handler.tsx` — Main OG image handler (route-key allow-list, HMAC signature validation, text sanitization, theme dispatch).
-- `app/api/og/themes/` — Theme definitions (`pixel.tsx`, `modern.tsx`, shared `font-data.ts` fetch cache, `types.ts`).
-- `app/api/og/route.tsx` — Legacy/default route wrapper (`/api/og`) that delegates to the shared handler.
-- `app/api/[ogKey]/route.tsx` — Configurable API-path route wrapper (`/api/<OG_API_PATH>`).
-- `app/api/og-config/route.ts` — Runtime endpoint metadata (`endpoint`, `signatureRequired`) for UI/tooling.
-- `app/api/debug/route.ts` — Debug endpoint returning JSON diagnostics for URL reconstruction/validation.
-- `app/lib/og-background-image.ts` — SSRF protection and background image admission (URL validation, DNS resolution, public-IP checks, format filtering).
-- `app/lib/og-security.ts` — Security config from env (`OG_SECRET`, `OG_API_PATH`, `OG_SIGNATURE_SECRET`); derives the primary route key.
+- `app/api/og/handler.tsx` — Main OG handler: route-key check, text sanitization and caps, accent parsing, image prefetch, theme dispatch.
+- `app/api/og/themes/` — One file per theme (`pixel`, `modern`, `editorial`, `swiss`), each exporting `loadFonts` + `render`. `index.ts` is the registry, `shared.tsx` holds `Img`, `Cover`, `FILL`, `fitFontSize` and the Fontsource loader, `font-data.ts` the per-isolate font fetch cache.
+- `app/api/og/route.tsx` — `/api/og` wrapper around the shared handler.
+- `app/api/[ogKey]/route.tsx` — `/api/<key>` wrapper for the `OG_API_PATH` alias and the legacy `OG_SECRET` path.
+- `app/api/debug/route.ts` — `OG_ENABLE_DEBUG=true` only: reports why `image`/`icon`/`avatar` were accepted or rejected.
+- `app/lib/og-remote-image.ts` — Server-side image loader with SSRF checks, size/time limits and format sniffing.
+- `app/lib/og-route-keys.ts` — Which `/api/<key>` segments are served. `og` is always public.
+- `app/lib/og-themes.ts` — Theme keys, labels and descriptions shared by the handler and the landing page.
 - `app/lib/pixel-fonts.ts` — Pixel font registry shared by the landing page and the pixel theme.
-- `app/page.tsx` — Interactive landing page with live preview form, dark/light mode support, and API reference section.
-- `app/layout.tsx` — Root layout with metadata and OpenGraph tags.
+- `app/page.tsx` — Interactive landing page with live preview form and API reference.
 - `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
-- `public/default-bg.jpg` — Default starry sky background when no image URL is provided.
+- `public/default-bg.jpg` — Starfield used by `pixel`/`modern` when no image is given.
 - `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants) served locally.
 
 ### Image Generation Flow
 
-1. **GET `/api/og` or `/api/<derived-path>`** receives URL parameters (`title`, `site`, `excerpt`, `author`, `date`, `image`, `theme`, `pixelFont`, optional `sig`/`exp`)
-2. **Route-key + signature check** — Non-default paths require a valid HMAC-SHA256 `sig` over the canonicalized query when a signature secret is configured
-3. **SSRF validation** — Image URLs go through `resolveOgBackgroundImage()` in `app/lib/og-background-image.ts`: protocol check, hostname blocking, DNS resolution via Google DNS (`dns.google/resolve`), IPv4/IPv6 public IP validation
-4. **Unsplash URL reconstruction** — Truncated Unsplash query params are recovered from the top-level search params
-5. **Format filtering** — Only PNG/JPG/JPEG/GIF allowed; WebP/AVIF/SVG rejected (Satori limitation)
-6. **Font loading** — Pixel fonts served from `public/fonts/`; the modern theme fetches pinned Inter TTFs from jsdelivr (must be TTF/OTF, not woff2). Fetches are cached per edge isolate in `themes/font-data.ts`
-7. **Text sanitization** — Typographic dashes, smart quotes, Unicode whitespace normalized
-8. **Satori rendering** — Theme JSX rendered to PNG with responsive font sizing based on title length
-9. **Caching** — `s-maxage=86400, stale-while-revalidate=604800`
+1. **GET `/api/og` or `/api/<alias>`** with `title`, `site`, `excerpt`, `author`, `date`, `reading`, `tag`, `accent`, `image`, `icon`, `avatar`, `theme`, `pixelFont`
+2. **Route key** — unknown keys return 404. No signatures: they were removed because `/api/og` is public anyway; stale `sig`/`exp` params are ignored
+3. **Images** — `loadRemoteImage()` fetches each URL server-side and inlines it as a data URL, so Satori never fetches user URLs itself. Rejected images become `null` and the theme lays out without them
+4. **Fonts** — Pixel fonts from `public/fonts/`; other themes load pinned Fontsource TTFs from jsdelivr (`https://cdn.jsdelivr.net/fontsource/fonts/<id>@5.3.0/latin-<weight>-<style>.ttf`). Satori needs TTF/OTF, not woff2
+5. **Text** — Typographic dashes, smart quotes and Unicode spaces normalized; fields capped by code point
+6. **Render** — Satori → PNG, cached with `s-maxage=86400, stale-while-revalidate=604800`
 
-### SSRF Protection Layer
+### Remote Image Rules (`og-remote-image.ts`)
 
-`app/lib/og-background-image.ts` implements defense against Server-Side Request Forgery:
+- http(s) only, default ports, no credentials; rejects `localhost`, `.localhost`, `.local` and truncated URLs (`…`, `...`, under 20 chars)
+- Hostnames resolved via `dns.google/resolve` (2s timeout, 10-minute bounded cache); every resolved IP must be public (IPv4 and IPv6, IPv4-mapped delegated to IPv4)
+- Redirects followed manually, at most 3, re-checking every hop
+- 4s timeout, 6 MB cap, format sniffed from bytes: PNG/JPEG/GIF/SVG pass, WebP/AVIF are rejected (Satori can't decode them)
 
-- **DNS resolution** via `dns.google/resolve` API with 2s timeout and a bounded 10-minute LRU cache
-- **IPv4 validation** — Blocks RFC 1918, loopback, link-local, and all non-routable ranges
-- **IPv6 validation** — Blocks `::1`, ULA (`fc00::/7`), link-local (`fe80::/10`), multicast, documentation ranges, and IPv4-mapped addresses (delegates to IPv4 check)
-- **Hostname blocking** — Rejects `localhost`, `.localhost`, `.local`
-- **URL sanitization** — Rejects non-http(s) protocols, URLs with credentials, non-standard ports, truncated URLs (`…`/`...`), and URLs shorter than 20 chars
+### Satori Gotchas
 
-### Design System
+These cost real debugging time; the theme render tests in `tests/themes/` catch most of them.
 
-- **Themes**: `pixel` (default; frosted-glass bottom gradient, selectable pixel fonts) and `modern` (liquid-glass centered card, Inter)
-- **Layout**: 1200x630 with bottom- or center-aligned content — site name, title (responsive sizing), optional excerpt, author/date metadata
+- A `div` with more than one child needs `display: flex` (or `none`/`contents`). There is no inline text flow: text plus a `<span>` become flex items.
+- `inset` is ignored. Use explicit `top/left/width/height` (`FILL` in `shared.tsx`). `top: 'auto'` logs a warning and `top: undefined` crashes, so omit the key entirely when anchoring to `bottom`.
+- `lineClamp` needs `display: 'block'` and a single string child.
+- `textWrap: 'balance'` combined with `lineClamp` ellipsizes too early. Use `textWrap: 'pretty'`.
+- `<img>` needs `width`/`height` props (use `Img`/`Cover`).
+- CJK falls back to dynamically loaded Noto at weight 400, so bold CJK titles render regular in non-pixel themes.
+- `@vercel/og` sets its own lowercase `cache-control`; pass ours lowercase too or the two get comma-joined.
 
 ### Edge Runtime Constraints
 
-No Node.js APIs (fs, path, etc.), no native modules. All external resources (fonts, images) must be fetched at runtime via `fetch()`. Images are passed as URLs directly to `<img src>` in the JSX — Satori/`@vercel/og` handles fetching them during rendering.
+No Node.js APIs (fs, path, etc.), no native modules. Fonts and images are fetched at runtime via `fetch()`.
+
+### Testing
+
+- Bun's `mock.module` is process-wide and outlives `mock.restore()`, so it leaks into later test files. Prefer `spyOn` on real objects (see `tests/api/og.handler.test.ts`).
+- `resolveOgRouteKeys()` runs at module load; tests that change env re-import the handler with a `?case=` query.
 
 ### API-Only Mode
 
