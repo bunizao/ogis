@@ -45,7 +45,7 @@ const PARAM_GROUPS: Array<{ title: string; params: Param[] }> = [
       {
         name: 'image',
         description:
-          'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, gallery frames it, postcard makes it the stamp, bauhaus and blueprint crop it into a circle. Terminal leaves it out.',
+          'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, gallery hangs it beside the label, postcard makes it the stamp, bauhaus cuts it into a quarter circle, blueprint prints it as a cyanotype. Terminal leaves it out.',
       },
       { name: 'icon', description: 'Site icon beside the site name.' },
       { name: 'avatar', description: 'Author photo beside the byline.' },

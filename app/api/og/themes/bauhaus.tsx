@@ -35,6 +35,9 @@ function seededRandom(text: string): () => number {
   };
 }
 
+// A cover takes a 2x2 block, cut to a quarter circle on one of these corners.
+const CORNERS = ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'] as const;
+
 type Shape = 'circle' | 'quarter' | 'half' | 'leaf' | 'stripes' | 'dot' | 'ring' | 'triangle' | 'plain';
 const SHAPES: Shape[] = ['circle', 'quarter', 'quarter', 'half', 'half', 'leaf', 'stripes', 'dot', 'ring', 'triangle', 'plain'];
 
@@ -78,7 +81,9 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
     const foreground = pick(colors.filter(color => color !== background));
     return { index, background, foreground, shape: pick(SHAPES), turn: Math.floor(random() * 4) * 90 };
   });
-  const photoTile = imageSrc ? Math.floor(random() * tiles.length) : -1;
+  const photo = imageSrc
+    ? { column: Math.floor(random() * (COLUMNS - 1)), row: Math.floor(random() * 3), corner: pick([...CORNERS]), background: pick(palette) }
+    : null;
 
   const titleSize = fitFontSize(title, [
     [10, 112],
@@ -151,15 +156,26 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
               background: tile.background,
             }}
           >
-            {tile.index === photoTile && imageSrc ? (
-              <Img src={imageSrc} width={TILE} height={TILE} style={{ borderRadius: TILE, filter: 'grayscale(1) contrast(1.1)' }} />
-            ) : (
-              <div style={{ display: 'flex', width: TILE, height: TILE, transform: `rotate(${tile.turn}deg)` }}>
-                <div style={shapeStyle(tile.shape, tile.foreground)} />
-              </div>
-            )}
+            <div style={{ display: 'flex', width: TILE, height: TILE, transform: `rotate(${tile.turn}deg)` }}>
+              <div style={shapeStyle(tile.shape, tile.foreground)} />
+            </div>
           </div>
         ))}
+        {photo && imageSrc ? (
+          <div
+            style={{
+              position: 'absolute',
+              top: photo.row * TILE,
+              left: photo.column * TILE,
+              display: 'flex',
+              width: TILE * 2,
+              height: TILE * 2,
+              background: photo.background,
+            }}
+          >
+            <Img src={imageSrc} width={TILE * 2} height={TILE * 2} style={{ [photo.corner]: TILE * 2 }} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

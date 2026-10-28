@@ -9,21 +9,14 @@ function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
   ]);
 }
 
-// The cover hangs framed and matted on a lit wall; the post is its wall label:
-// artist (author), title in italic, date, a line of description (excerpt), and
-// the collection it belongs to (site). The accent repaints the wall, and the
-// label lettering flips to light on a dark wall.
+// The cover printed edge to edge on the gallery wall, with no frame, and the
+// post as its wall label: artist (author), title in italic, date, a line of
+// description (excerpt) and the collection it belongs to (site). The accent
+// repaints the wall, and the lettering flips to light on a dark wall.
 const WALL = '#e7e6e2';
-const FRAME = '#1c1a17';
-const MAT = '#f8f7f3';
-const FRAME_WIDTH = 600;
-const FRAME_HEIGHT = 470;
-const MOULDING = 12;
-const MAT_WIDTH = 44;
-const PHOTO_WIDTH = FRAME_WIDTH - (MOULDING + MAT_WIDTH) * 2;
-const PHOTO_HEIGHT = FRAME_HEIGHT - (MOULDING + MAT_WIDTH) * 2;
-const LEFT = 80;
-const TOP = (630 - FRAME_HEIGHT) / 2;
+const PRINT_WIDTH = 640;
+const LABEL_LEFT = PRINT_WIDTH + 64;
+const LABEL_WIDTH = 1200 - LABEL_LEFT - 64;
 
 function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
   const { title, site, excerpt, author, date, tag, readingTime, imageSrc, fallbackImageSrc, iconSrc } = props;
@@ -34,10 +27,11 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
   const notes = [tag, readingTime].filter(Boolean);
 
   const titleSize = fitFontSize(title, [
-    [12, 64],
-    [22, 52],
-    [40, 42],
-    [Infinity, 36],
+    [10, 80],
+    [16, 68],
+    [30, 54],
+    [48, 44],
+    [Infinity, 38],
   ]);
 
   return (
@@ -52,48 +46,33 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
         background: wall,
       }}
     >
-      {/* Track lighting: a soft pool of light above the work. */}
+      {/* Track lighting: a soft pool of light on the wall above the label. */}
       <div
         style={{
           position: 'absolute',
           top: 0,
-          left: 0,
-          width: 1200,
+          left: PRINT_WIDTH,
+          width: 1200 - PRINT_WIDTH,
           height: 630,
-          backgroundImage: `radial-gradient(circle at 32% -20%, rgba(255, 255, 255, ${dark ? 0.16 : 0.55}), rgba(255, 255, 255, 0) 62%)`,
+          backgroundImage: `radial-gradient(circle at 50% -30%, rgba(255, 255, 255, ${dark ? 0.14 : 0.6}), rgba(255, 255, 255, 0) 70%)`,
         }}
       />
 
-      <div
-        style={{
-          position: 'absolute',
-          top: TOP,
-          left: LEFT,
-          display: 'flex',
-          width: FRAME_WIDTH,
-          height: FRAME_HEIGHT,
-          padding: MOULDING,
-          background: FRAME,
-          boxShadow: '0 28px 44px -18px rgba(0, 0, 0, 0.45), 0 3px 8px rgba(0, 0, 0, 0.18)',
-        }}
-      >
-        <div style={{ display: 'flex', flexGrow: 1, padding: MAT_WIDTH, background: MAT, boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.18)' }}>
-          <Img src={imageSrc ?? fallbackImageSrc} width={PHOTO_WIDTH} height={PHOTO_HEIGHT} />
-        </div>
-      </div>
+      <Img src={imageSrc ?? fallbackImageSrc} width={PRINT_WIDTH} height={630} />
 
-      {/* The label hangs beside the work, its last line level with the frame's bottom edge. */}
       <div
         style={{
           position: 'absolute',
-          left: LEFT + FRAME_WIDTH + 72,
-          bottom: TOP,
-          width: 1200 - (LEFT + FRAME_WIDTH + 72) - 72,
+          top: 0,
+          left: LABEL_LEFT,
+          width: LABEL_WIDTH,
+          height: 630,
           display: 'flex',
           flexDirection: 'column',
+          justifyContent: 'center',
         }}
       >
-        {author ? <span style={{ marginBottom: 14, fontSize: 26, fontWeight: 600 }}>{author}</span> : null}
+        {author ? <span style={{ marginBottom: 16, fontSize: 26, fontWeight: 600 }}>{author}</span> : null}
         <div
           style={{
             display: 'block',
@@ -101,15 +80,15 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
             lineClamp: 4,
             fontSize: titleSize,
             fontStyle: 'italic',
-            lineHeight: 1.08,
+            lineHeight: 1.06,
             letterSpacing: '-0.02em',
           }}
         >
           {title}
         </div>
-        {date ? <span style={{ marginTop: 12, fontSize: 24 }}>{date}</span> : null}
+        {date ? <span style={{ marginTop: 14, fontSize: 24 }}>{date}</span> : null}
         {excerpt ? (
-          <div style={{ display: 'block', textWrap: 'pretty', lineClamp: 3, marginTop: 24, fontSize: 21, lineHeight: 1.45, color: muted }}>
+          <div style={{ display: 'block', textWrap: 'pretty', lineClamp: 3, marginTop: 28, fontSize: 21, lineHeight: 1.45, color: muted }}>
             {excerpt}
           </div>
         ) : null}

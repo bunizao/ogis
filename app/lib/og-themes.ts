@@ -30,7 +30,7 @@ export const OG_THEMES = [
   {
     key: 'gallery',
     label: 'Gallery',
-    description: 'Your cover framed on a gallery wall, with the post as its museum label.',
+    description: 'Your cover printed edge to edge on a gallery wall, with the post as its museum label.',
   },
   {
     key: 'postcard',

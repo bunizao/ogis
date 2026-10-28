@@ -42,10 +42,10 @@ This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fo
 | `editorial` | A centred serif opener, like a magazine feature; with `image` it becomes a two-page spread | `image`, `icon`, `avatar`, `tag`, `accent` |
 | `swiss` | Heavy grotesk headline over a ruled colophon, on a strict four-column grid | `image` (one column), `tag`, `accent` |
 | `terminal` | A shell session with a tmux-style status line | `tag`, `accent` |
-| `gallery` | Your cover framed on a wall, with the post as its museum label | `image`, `icon`, `tag`, `accent` (the wall) |
+| `gallery` | Your cover printed edge to edge on a gallery wall, with the post as its museum label | `image`, `icon`, `tag`, `accent` (the wall) |
 | `postcard` | The back of a postcard: printed caption, a note in pen, your cover as the stamp | `image`, `icon`, `tag`, `accent` (the ink) |
-| `bauhaus` | Flat geometric tiles generated from the title, so every post gets its own pattern | `image` (one tile), `tag`, `accent` (the lead colour) |
-| `blueprint` | A drawing sheet with zone markers and a title block; `image` becomes a detail callout | `image`, `icon`, `tag`, `accent` (the sheet) |
+| `bauhaus` | Flat geometric tiles generated from the title, so every post gets its own pattern | `image` (a quarter circle across four tiles), `tag`, `accent` (the lead colour) |
+| `blueprint` | A drawing sheet with zone markers and a title block; `image` becomes a cyanotype detail callout | `image`, `icon`, `tag`, `accent` (the sheet) |
 
 `pixel`, `modern` and `gallery` fall back to a bundled starfield when no `image` is given. `postcard` prints a red stamp with the site's initial instead, the others simply lay out without one, and `terminal` never shows images.
 

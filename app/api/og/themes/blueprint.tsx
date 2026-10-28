@@ -16,7 +16,7 @@ const AREA_WIDTH = 1200 - INNER * 2;
 const AREA_HEIGHT = 630 - INNER * 2;
 const COLUMNS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 const ROWS = ['A', 'B', 'C', 'D'];
-const DETAIL = 280;
+const DETAIL = 300;
 
 function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
   const { title, site, excerpt, author, date, tag, readingTime, imageSrc, iconSrc } = props;
@@ -178,7 +178,7 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
         ) : null}
 
         {imageSrc ? (
-          <div style={{ position: 'absolute', top: 40, right: 64, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{ position: 'absolute', top: 28, right: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             <div
               style={{
                 display: 'flex',
@@ -190,9 +190,13 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
                 overflow: 'hidden',
               }}
             >
-              <Img src={imageSrc} width={DETAIL} height={DETAIL} style={{ filter: 'grayscale(1) contrast(1.15)' }} />
-              {/* Washing the grey photo with the sheet colour gives a cyanotype print. */}
-              <div style={{ position: 'absolute', top: 0, left: 0, width: DETAIL, height: DETAIL, background: sheet, opacity: 0.5 }} />
+              {/* Toned like a cyanotype: shadows go Prussian blue, highlights stay pale. */}
+              <Img
+                src={imageSrc}
+                width={DETAIL}
+                height={DETAIL}
+                style={{ filter: 'grayscale(1) sepia(1) hue-rotate(180deg) saturate(2.4) contrast(1.15) brightness(1.05)' }}
+              />
             </div>
             <span style={{ fontSize: 15, color: tint(0.75) }}>Detail A</span>
           </div>

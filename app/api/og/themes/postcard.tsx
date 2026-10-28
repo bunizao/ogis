@@ -23,8 +23,8 @@ const SERIF = '"Libre Caslon Text", serif';
 const HAND = '"Nanum Pen Script", cursive';
 
 const DIVIDER = 640;
-const STAMP_WIDTH = 140;
-const STAMP_HEIGHT = 168;
+const STAMP_WIDTH = 200;
+const STAMP_HEIGHT = 240;
 const HOLE = 10;
 
 // Five wavy cancellation lines, the machine kind that runs beside a postmark.
@@ -32,7 +32,7 @@ function cancellation(color: string): string {
   const waves = [12, 26, 40, 54, 68]
     .map(y => `<path d="M0 ${y} q15 -9 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0"/>`)
     .join('');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="210" height="80" viewBox="0 0 210 80"><g fill="none" stroke="${color}" stroke-width="2.4">${waves}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><g fill="none" stroke="${color}" stroke-width="2.4">${waves}</g></svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
@@ -123,7 +123,7 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
                 justifyContent: 'center',
                 width: STAMP_WIDTH - 20,
                 height: STAMP_HEIGHT - 20,
-                fontSize: 72,
+                fontSize: 104,
                 color: '#ffffff',
                 background: STAMP_RED,
               }}
@@ -131,15 +131,15 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
               {Array.from(site)[0]?.toUpperCase()}
             </div>
           )}
-          {holes(11, { top: -HOLE / 2, left: 0, width: STAMP_WIDTH, height: HOLE })}
-          {holes(11, { top: STAMP_HEIGHT - HOLE / 2, left: 0, width: STAMP_WIDTH, height: HOLE })}
-          {holes(13, { top: 0, left: -HOLE / 2, width: HOLE, height: STAMP_HEIGHT, flexDirection: 'column' })}
-          {holes(13, { top: 0, left: STAMP_WIDTH - HOLE / 2, width: HOLE, height: STAMP_HEIGHT, flexDirection: 'column' })}
+          {holes(12, { top: -HOLE / 2, left: 0, width: STAMP_WIDTH, height: HOLE })}
+          {holes(12, { top: STAMP_HEIGHT - HOLE / 2, left: 0, width: STAMP_WIDTH, height: HOLE })}
+          {holes(14, { top: 0, left: -HOLE / 2, width: HOLE, height: STAMP_HEIGHT, flexDirection: 'column' })}
+          {holes(14, { top: 0, left: STAMP_WIDTH - HOLE / 2, width: HOLE, height: STAMP_HEIGHT, flexDirection: 'column' })}
         </div>
 
-        {/* The postmark lands on the stamp's corner, cancelling it. */}
-        <div style={{ position: 'absolute', top: 128, right: 184, display: 'flex', alignItems: 'center', transform: 'rotate(-8deg)' }}>
-          <Img src={cancellation(POSTMARK)} width={210} height={80} style={{ marginRight: -6 }} />
+        {/* The postmark clips the stamp's edge, cancelling it without covering the picture. */}
+        <div style={{ position: 'absolute', top: 160, right: 236, display: 'flex', alignItems: 'center', transform: 'rotate(-8deg)' }}>
+          <Img src={cancellation(POSTMARK)} width={120} height={80} style={{ marginRight: -6 }} />
           <div
             style={{
               display: 'flex',
@@ -164,9 +164,9 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
 
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', fontFamily: HAND, color: pen }}>
           {excerpt ? (
-            <div style={{ display: 'block', textWrap: 'pretty', lineClamp: 3, fontSize: 52, lineHeight: 1.02 }}>{excerpt}</div>
+            <div style={{ display: 'block', textWrap: 'pretty', lineClamp: 3, fontSize: 48, lineHeight: 1.02 }}>{excerpt}</div>
           ) : null}
-          {author ? <span style={{ marginTop: excerpt ? 14 : 0, fontSize: 58 }}>{`— ${author}`}</span> : null}
+          {author ? <span style={{ marginTop: excerpt ? 10 : 0, fontSize: 54 }}>{`— ${author}`}</span> : null}
         </div>
       </div>
     </div>
