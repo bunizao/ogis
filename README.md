@@ -13,7 +13,7 @@ Open Graph images for blogs, from a single URL. Built with Next.js 16 on the Ver
 
 ## Features
 
-- **Five themes**: `pixel`, `modern`, `editorial`, `swiss` and `terminal`, each built on typography and layout rather than decoration
+- **Nine themes**: `pixel`, `modern`, `editorial`, `swiss`, `terminal`, `gallery`, `postcard`, `bauhaus` and `blueprint`, each modelled on something real (a magazine, a museum label, a drawing sheet) rather than decoration
 - **Your images**: cover image, site icon and author avatar, fetched and checked server-side
 - **Six pixel fonts**: Zpix plus five Geist Pixel cuts, bundled in `public/fonts`
 - **Fitted titles**: font size steps down with title length, and CJK counts as wide
@@ -42,8 +42,12 @@ This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fo
 | `editorial` | A centred serif opener, like a magazine feature; with `image` it becomes a two-page spread | `image`, `icon`, `avatar`, `tag`, `accent` |
 | `swiss` | Heavy grotesk headline over a ruled colophon, on a strict four-column grid | `image` (one column), `tag`, `accent` |
 | `terminal` | A shell session with a tmux-style status line | `tag`, `accent` |
+| `gallery` | Your cover framed on a wall, with the post as its museum label | `image`, `icon`, `tag`, `accent` (the wall) |
+| `postcard` | The back of a postcard: printed caption, a note in pen, your cover as the stamp | `image`, `icon`, `tag`, `accent` (the ink) |
+| `bauhaus` | Flat geometric tiles generated from the title, so every post gets its own pattern | `image` (one tile), `tag`, `accent` (the lead colour) |
+| `blueprint` | A drawing sheet with zone markers and a title block; `image` becomes a detail callout | `image`, `icon`, `tag`, `accent` (the sheet) |
 
-`pixel` and `modern` fall back to a bundled starfield when no `image` is given. `editorial` and `swiss` are purely typographic without one, and `terminal` never shows images.
+`pixel`, `modern` and `gallery` fall back to a bundled starfield when no `image` is given. `postcard` prints a red stamp with the site's initial instead, the others simply lay out without one, and `terminal` never shows images.
 
 ## Parameters
 
@@ -51,13 +55,13 @@ This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fo
 |-------|-----------|-------|
 | `title` | 200 | Defaults to `Untitled` |
 | `site` | 80 | Defaults to `Blog` |
-| `excerpt` | 300 | Clamped to two lines |
+| `excerpt` | 300 | Clamped to two or three lines, depending on the theme |
 | `author` | 80 | |
 | `date` | 40 | Free text, shown as given |
 | `reading` | 40 | Reading time, e.g. `5 min read` |
 | `tag` | 40 | Category or kicker |
-| `accent` | | Hex colour (`#e4002b` or `e4002b`); invalid values use the theme default |
-| `theme` | | `pixel`, `modern`, `editorial`, `swiss` or `terminal`; anything else uses `pixel` |
+| `accent` | | Hex colour (`#e4002b` or `e4002b`). Colours the tag, or what the theme is built around (see the table above); invalid values use the theme default |
+| `theme` | | `pixel`, `modern`, `editorial`, `swiss`, `terminal`, `gallery`, `postcard`, `bauhaus` or `blueprint`; anything else uses `pixel` |
 | `pixelFont` | | `zpix`, `geist-square`, `geist-circle`, `geist-line`, `geist-triangle`, `geist-grid` |
 | `image` | | Cover image URL |
 | `icon` | | Site icon URL |
@@ -184,4 +188,4 @@ MIT
 - Playground sample covers, all on Unsplash: [Carina Nebula](https://unsplash.com/photos/nebula--hI5dX2ObAs) and [Earth at night](https://unsplash.com/photos/photo-of-outer-space-Q1p7bh3SHj8) by NASA, [Launch at dusk](https://unsplash.com/photos/rocket-launch-light-trail-at-dusk--p-KCm6xB9I) by SpaceX, [Snow mountain under stars](https://unsplash.com/photos/snow-mountain-under-stars-phIFdC6lA4E) by Benjamin Voros, [Desert at night](https://unsplash.com/photos/desert-at-night-dSeQCOh_q7o) by Akhil Lincoln
 - Zpix pixel font by [SolidZORO](https://github.com/SolidZORO/zpix-pixel-font)
 - Geist Pixel by [Vercel](https://vercel.com/font)
-- Geist, Geist Mono, Inter Tight, Instrument Serif and Instrument Sans via [Fontsource](https://fontsource.org)
+- Geist, Geist Mono, Inter Tight, Instrument Serif, Instrument Sans, Hanken Grotesk, Libre Caslon Text, Nanum Pen Script, Jost and B612 via [Fontsource](https://fontsource.org)
