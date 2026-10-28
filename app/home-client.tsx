@@ -233,7 +233,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   const copyKeys = [modKey, 'Shift', 'C'];
   const shortcuts = [
     { label: 'Focus title', keys: ['/'] },
-    { label: 'Switch theme', keys: OG_THEMES.flatMap((_, index) => (index ? ['/', `${index + 1}`] : ['1'])) },
+    { label: 'Switch theme', keys: ['1', '–', `${OG_THEMES.length}`] },
     { label: 'Refresh preview', keys: refreshKeys },
     { label: 'Copy image URL', keys: copyKeys },
     { label: 'Toggle shortcuts', keys: ['?'] },
@@ -320,32 +320,30 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
       </header>
 
       <main>
-        <section
-          id="top"
-          className="mx-auto grid max-w-6xl gap-12 px-4 pt-16 pb-20 sm:px-6 md:pt-24 md:pb-28 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:gap-16"
-        >
-          <div>
+        <section id="top" className="mx-auto max-w-6xl px-4 pt-16 pb-20 sm:px-6 md:pt-24 md:pb-28">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-end lg:gap-16">
             <h1 className="font-pixel text-[clamp(44px,6.4vw,76px)] leading-[0.95] text-balance">
               Social cards from a URL.
             </h1>
-            <p className="mt-6 max-w-[44ch] text-lg leading-relaxed text-pretty text-muted-foreground">
-              Put a title and a few details in the query string. OGIS renders a 1200{' × '}630 card at the
-              edge, and your CDN keeps it.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <a href="#playground">Try the playground</a>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <a href={DEPLOY_URL} target="_blank" rel="noopener noreferrer">
-                  Deploy to Vercel
-                </a>
-              </Button>
+            <div>
+              <p className="max-w-[44ch] text-lg leading-relaxed text-pretty text-muted-foreground">
+                Put a title and a few details in the query string. OGIS renders a 1200{' × '}630 card at the
+                edge, and your CDN keeps it.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button asChild size="lg">
+                  <a href="#playground">Try the playground</a>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <a href={DEPLOY_URL} target="_blank" rel="noopener noreferrer">
+                    Deploy to Vercel
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* The two cover-image themes get the top row, the three typographic ones share the second. */}
-          <div className="grid grid-cols-6 gap-x-4 gap-y-5">
+          <div className="mt-14 grid grid-cols-2 gap-x-4 gap-y-6 md:mt-20 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8">
             {OG_THEMES.map((option, index) => (
               <button
                 key={option.key}
@@ -355,7 +353,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                   selectTheme(option.key);
                   document.getElementById('playground')?.scrollIntoView({ block: 'start' });
                 }}
-                className={cn('group rounded-lg text-left outline-none', index < 2 ? 'col-span-3' : 'col-span-2')}
+                className="group rounded-lg text-left outline-none"
               >
                 <span
                   className={cn(
@@ -489,10 +487,11 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                       value={theme}
                       onValueChange={value => value && selectTheme(value as OgThemeKey)}
                       aria-label="Theme"
-                      className="w-full"
+                      spacing={1}
+                      className="grid w-full grid-cols-3"
                     >
                       {OG_THEMES.map(option => (
-                        <ToggleGroupItem key={option.key} value={option.key} className="flex-auto px-2">
+                        <ToggleGroupItem key={option.key} value={option.key} className="w-full px-2">
                           {option.label}
                         </ToggleGroupItem>
                       ))}
@@ -593,7 +592,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                     <TextField id="icon" label="Site icon" type="url" placeholder="https://" value={fields.icon} onChange={value => setField('icon', value)} />
                     <TextField id="avatar" label="Author avatar" type="url" placeholder="https://" value={fields.avatar} onChange={value => setField('avatar', value)} />
                     <FieldDescription>
-                      PNG, JPEG, GIF or SVG from a public host. Anything else is left out. Without a cover, Pixel and Modern use a starfield.
+                      PNG, JPEG, GIF or SVG from a public host. Anything else is left out. Without a cover, Pixel, Modern and Gallery use a starfield.
                     </FieldDescription>
                   </FieldSet>
 
@@ -630,7 +629,10 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                         className="font-mono"
                       />
                     </InputGroup>
-                    <FieldDescription>Colours the tag. Leave empty for the theme default.</FieldDescription>
+                    <FieldDescription>
+                      Colours the tag, or what the theme is built around: the pen in Postcard, the wall in Gallery,
+                      the sheet in Blueprint. Leave empty for the theme default.
+                    </FieldDescription>
                   </Field>
                 </FieldGroup>
               </form>

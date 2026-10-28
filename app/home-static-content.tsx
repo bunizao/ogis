@@ -28,15 +28,25 @@ const PARAM_GROUPS: Array<{ title: string; params: Param[] }> = [
   {
     title: 'Appearance',
     params: [
-      { name: 'theme', description: 'pixel, modern, editorial, swiss or terminal. Anything else falls back to pixel.' },
-      { name: 'accent', description: 'Hex colour for the tag, with or without #.' },
+      {
+        name: 'theme',
+        description: 'pixel, modern, editorial, swiss, terminal, gallery, postcard, bauhaus or blueprint. Anything else falls back to pixel.',
+      },
+      {
+        name: 'accent',
+        description: 'Hex colour, with or without #. Colours the tag, or the wall, ink, sheet or lead colour in the themes built around one.',
+      },
       { name: 'pixelFont', description: 'zpix, or geist-square, -circle, -line, -triangle, -grid. Pixel theme only.' },
     ],
   },
   {
     title: 'Images',
     params: [
-      { name: 'image', description: 'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, terminal leaves it out.' },
+      {
+        name: 'image',
+        description:
+          'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, gallery frames it, postcard makes it the stamp, bauhaus and blueprint crop it into a circle. Terminal leaves it out.',
+      },
       { name: 'icon', description: 'Site icon beside the site name.' },
       { name: 'avatar', description: 'Author photo beside the byline.' },
     ],
