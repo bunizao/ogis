@@ -109,6 +109,24 @@ describe('Home page behavior', () => {
     expect(previewParams(ui).get('theme')).toBe('swiss');
   });
 
+  test('sample covers set the image at once, credit it, and None clears it', async () => {
+    const ui = await renderHome();
+    const covers = ui.getByRole('group', { name: 'Sample covers' });
+    const none = within(covers).getByRole('button', { name: 'No cover' });
+    expect(none.getAttribute('aria-pressed')).toBe('true');
+
+    await userEvent.click(within(covers).getByRole('button', { name: 'Carina Nebula' }));
+
+    expect(previewParams(ui).get('image')).toStartWith('https://images.unsplash.com/');
+    expect(previewParams(ui).get('image')).toContain('fm=jpg');
+    expect(ui.getByRole('link', { name: 'NASA' }).getAttribute('href')).toContain('unsplash.com/photos/');
+
+    await userEvent.click(none);
+
+    expect(previewParams(ui).get('image')).toBeNull();
+    expect(none.getAttribute('aria-pressed')).toBe('true');
+  });
+
   test('preview tabs show the card inside a link unfurl', async () => {
     const ui = await renderHome();
 

@@ -181,6 +181,7 @@ MIT
 ## Credits
 
 - Default background: [Cluster of Stars](https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c) by [Paul Lichtblau](https://unsplash.com/@paullichtblau) on Unsplash
+- Playground sample covers, all on Unsplash: [Carina Nebula](https://unsplash.com/photos/nebula--hI5dX2ObAs) and [Earth at night](https://unsplash.com/photos/photo-of-outer-space-Q1p7bh3SHj8) by NASA, [Launch at dusk](https://unsplash.com/photos/rocket-launch-light-trail-at-dusk--p-KCm6xB9I) by SpaceX, [Snow mountain under stars](https://unsplash.com/photos/snow-mountain-under-stars-phIFdC6lA4E) by Benjamin Voros, [Desert at night](https://unsplash.com/photos/desert-at-night-dSeQCOh_q7o) by Akhil Lincoln
 - Zpix pixel font by [SolidZORO](https://github.com/SolidZORO/zpix-pixel-font)
 - Geist Pixel by [Vercel](https://vercel.com/font)
 - Geist, Geist Mono, Inter Tight, Instrument Serif and Instrument Sans via [Fontsource](https://fontsource.org)

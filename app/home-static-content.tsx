@@ -1,6 +1,14 @@
+import { Fragment } from 'react';
+import { COVER_PHOTOS } from '@/app/lib/cover-photos';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const GITHUB_URL = 'https://github.com/bunizao/ogis';
+
+// The bundled starfield first, then the playground's sample covers.
+const PHOTOS = [
+  { label: 'Starfield', author: 'Paul Lichtblau', page: 'https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c' },
+  ...COVER_PHOTOS,
+];
 
 type Param = { name: string; description: string; limit?: string };
 
@@ -122,25 +130,27 @@ export default function HomeStaticContent() {
       </section>
 
       <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 pt-10 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p className="flex items-center gap-3">
             <span className="font-pixel text-base leading-none text-foreground">OGIS</span>
             <span>MIT licensed. Built on Next.js and @vercel/og.</span>
           </p>
-          <p className="flex gap-5">
-            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
-              GitHub
-            </a>
-            <a
-              href="https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition-colors hover:text-foreground"
-            >
-              Starfield by Paul Lichtblau
-            </a>
-          </p>
+          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
+            GitHub
+          </a>
         </div>
+        <p className="mx-auto max-w-6xl px-4 pt-4 pb-10 text-xs leading-relaxed text-pretty text-muted-foreground sm:px-6">
+          Photos from Unsplash:{' '}
+          {PHOTOS.map((photo, index) => (
+            <Fragment key={photo.page}>
+              {index ? ', ' : null}
+              <a href={photo.page} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
+                {photo.label} by {photo.author}
+              </a>
+            </Fragment>
+          ))}
+          .
+        </p>
       </footer>
     </>
   );

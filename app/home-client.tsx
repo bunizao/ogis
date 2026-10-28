@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Check, Copy, ExternalLink, Keyboard, RotateCw } from 'lucide-react';
+import { COVER_PHOTOS } from '@/app/lib/cover-photos';
 import { DEFAULT_OG_THEME, OG_THEMES, type OgThemeKey } from '@/app/lib/og-themes';
 import { DEFAULT_PIXEL_FONT, PIXEL_FONT_OPTIONS, type PixelFontKey } from '@/app/lib/pixel-fonts';
 import { ChatUnfurl, FeedPost, MessageBubble } from '@/app/link-previews';
@@ -138,19 +139,25 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   };
 
   // Discrete choices re-render at once; only typing is debounced.
-  const showNow = (nextTheme: OgThemeKey, nextFont: PixelFontKey) => {
+  const showNow = (nextFields: Fields, nextTheme: OgThemeKey, nextFont: PixelFontKey) => {
     clearTimeout(debounceRef.current);
-    setPreviewUrl(`/api/og?${buildQuery(fields, nextTheme, nextFont)}`);
+    setPreviewUrl(`/api/og?${buildQuery(nextFields, nextTheme, nextFont)}`);
   };
 
   const selectTheme = (next: OgThemeKey) => {
     setTheme(next);
-    showNow(next, pixelFont);
+    showNow(fields, next, pixelFont);
   };
 
   const selectPixelFont = (next: PixelFontKey) => {
     setPixelFont(next);
-    showNow(theme, next);
+    showNow(fields, theme, next);
+  };
+
+  const selectCover = (image: string) => {
+    const next = { ...fields, image };
+    setFields(next);
+    showNow(next, theme, pixelFont);
   };
 
   // The timestamp skips the browser and CDN caches.
@@ -235,6 +242,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
 
   const accentHex = parseHex(fields.accent);
   const themeOption = OG_THEMES.find(option => option.key === theme) ?? OG_THEMES[0];
+  const coverPhoto = COVER_PHOTOS.find(photo => photo.src === fields.image.trim());
   const status = previewFailed && !isRendering ? 'Render failed. Try refreshing.' : isRendering ? 'Rendering…' : '1200 × 630 PNG';
 
   const previewImage = (className?: string) => (
@@ -550,10 +558,43 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                     <FieldLegend variant="label" className="mb-3 text-muted-foreground">
                       Images
                     </FieldLegend>
-                    <TextField id="image" label="Cover image" type="url" placeholder="https://" value={fields.image} onChange={value => setField('image', value)} />
+                    <Field className="gap-2">
+                      <FieldLabel htmlFor="image">Cover image</FieldLabel>
+                      <div role="group" aria-label="Sample covers" className="grid grid-cols-3 gap-2">
+                        <CoverTile label="No cover" selected={!fields.image.trim()} onSelect={() => selectCover('')}>
+                          <span className="flex size-full items-center justify-center bg-muted text-xs text-muted-foreground">None</span>
+                        </CoverTile>
+                        {COVER_PHOTOS.map(photo => (
+                          <CoverTile key={photo.src} label={photo.label} selected={photo === coverPhoto} onSelect={() => selectCover(photo.src)}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={photo.thumb} alt="" width={240} height={126} loading="lazy" className="block size-full object-cover" />
+                          </CoverTile>
+                        ))}
+                      </div>
+                      <Input
+                        id="image"
+                        type="url"
+                        value={fields.image}
+                        placeholder="Or paste an image URL"
+                        onChange={event => setField('image', event.target.value)}
+                        spellCheck={false}
+                        autoComplete="off"
+                      />
+                      {coverPhoto ? (
+                        <FieldDescription>
+                          {coverPhoto.label} by{' '}
+                          <a href={coverPhoto.page} target="_blank" rel="noopener noreferrer">
+                            {coverPhoto.author}
+                          </a>{' '}
+                          on Unsplash.
+                        </FieldDescription>
+                      ) : null}
+                    </Field>
                     <TextField id="icon" label="Site icon" type="url" placeholder="https://" value={fields.icon} onChange={value => setField('icon', value)} />
                     <TextField id="avatar" label="Author avatar" type="url" placeholder="https://" value={fields.avatar} onChange={value => setField('avatar', value)} />
-                    <FieldDescription>PNG, JPEG, GIF or SVG from a public host. Anything else is left out.</FieldDescription>
+                    <FieldDescription>
+                      PNG, JPEG, GIF or SVG from a public host. Anything else is left out. Without a cover, Pixel and Modern use a starfield.
+                    </FieldDescription>
                   </FieldSet>
 
                   <FieldSeparator />
@@ -600,6 +641,32 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
         {children}
       </main>
     </TooltipProvider>
+  );
+}
+
+function CoverTile({
+  label,
+  selected,
+  onSelect,
+  children,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button type="button" aria-label={label} aria-pressed={selected} onClick={onSelect} className="group rounded-md outline-none">
+      <span
+        className={cn(
+          'block aspect-[1200/630] overflow-hidden rounded-md ring-1 ring-foreground/10 transition-shadow',
+          'group-hover:ring-foreground/25 group-focus-visible:ring-2 group-focus-visible:ring-ring',
+          selected && 'ring-2 ring-foreground group-hover:ring-foreground'
+        )}
+      >
+        {children}
+      </span>
+    </button>
   );
 }
 
