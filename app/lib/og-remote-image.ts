@@ -5,6 +5,7 @@
 // back to "no image" instead of failing the whole render.
 
 const DNS_TIMEOUT_MS = 2000;
+const DNS_ATTEMPTS = 2;
 const DNS_CACHE_TTL_MS = 10 * 60 * 1000;
 const DNS_CACHE_MAX_ENTRIES = 256;
 const FETCH_TIMEOUT_MS = 4000;
@@ -161,40 +162,45 @@ function isBlockedHostname(hostname: string): boolean {
 }
 
 async function fetchDnsRecords(hostname: string, recordType: 'A' | 'AAAA'): Promise<string[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DNS_TIMEOUT_MS);
+  // A cold connection to dns.google can overrun the timeout, so a lookup that
+  // fails gets another try. An answer without records is final.
+  for (let attempt = 1; attempt <= DNS_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), DNS_TIMEOUT_MS);
 
-  try {
-    const response = await fetch(
-      `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=${recordType}`,
-      {
-        headers: { accept: 'application/dns-json' },
-        cache: 'no-store',
-        signal: controller.signal,
-      }
-    );
-    if (!response.ok) return [];
+    try {
+      const response = await fetch(
+        `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=${recordType}`,
+        {
+          headers: { accept: 'application/dns-json' },
+          cache: 'no-store',
+          signal: controller.signal,
+        }
+      );
+      if (!response.ok) continue;
 
-    const data = (await response.json()) as {
-      Status?: number;
-      Answer?: { data?: string }[];
-    };
-    if (data.Status !== 0 || !Array.isArray(data.Answer)) return [];
+      const data = (await response.json()) as {
+        Status?: number;
+        Answer?: { data?: string }[];
+      };
+      if (data.Status !== 0 || !Array.isArray(data.Answer)) return [];
 
-    const entries = data.Answer
-      .map(answer => answer.data)
-      .filter((value): value is string => typeof value === 'string');
-    return recordType === 'A'
-      ? entries.filter(entry => parseIpv4(entry))
-      : entries.filter(entry => parseIpv6(entry));
-  } catch {
-    return [];
-  } finally {
-    clearTimeout(timeout);
+      const entries = data.Answer
+        .map(answer => answer.data)
+        .filter((value): value is string => typeof value === 'string');
+      return recordType === 'A'
+        ? entries.filter(entry => parseIpv4(entry))
+        : entries.filter(entry => parseIpv6(entry));
+    } catch {
+      // Timed out or unreachable; try again.
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  return [];
 }
 
-async function resolveHostnameWithGoogleDns(hostname: string): Promise<string[]> {
+export async function resolveHostnameWithGoogleDns(hostname: string): Promise<string[]> {
   const now = Date.now();
   const cached = dnsCache.get(hostname);
   if (cached && cached.expiresAt > now) {

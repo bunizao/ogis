@@ -1,8 +1,9 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import {
   checkPublicImageUrl,
   loadRemoteImage,
   reconstructImageUrl,
+  resolveHostnameWithGoogleDns,
   sniffImageType,
   type RemoteImageDeps,
 } from '../../app/lib/og-remote-image';
@@ -132,6 +133,34 @@ describe('loadRemoteImage', () => {
 
     expect(notFound.rejection).toBe('fetch-failed');
     expect(thrown.rejection).toBe('fetch-failed');
+  });
+});
+
+describe('resolveHostnameWithGoogleDns', () => {
+  afterEach(() => mock.restore());
+
+  // Answers each record type from `answers`, failing the first `failures` calls.
+  function mockDns(answers: Record<string, string[]>, failures: number) {
+    const calls: string[] = [];
+    spyOn(globalThis, 'fetch').mockImplementation((async (input: string | URL | Request) => {
+      const type = new URL(String(input)).searchParams.get('type') ?? '';
+      calls.push(type);
+      if (calls.length <= failures) throw new DOMException('timed out', 'AbortError');
+      return Response.json({ Status: 0, Answer: (answers[type] ?? []).map(data => ({ data })) });
+    }) as typeof fetch);
+    return calls;
+  }
+
+  test('retries a lookup that times out', async () => {
+    const calls = mockDns({ A: ['93.184.216.34'] }, 1);
+    expect(await resolveHostnameWithGoogleDns('retry.example.com')).toEqual(['93.184.216.34']);
+    expect(calls).toHaveLength(3);
+  });
+
+  test('does not retry an answer without records', async () => {
+    const calls = mockDns({}, 0);
+    expect(await resolveHostnameWithGoogleDns('empty.example.com')).toEqual([]);
+    expect(calls.sort()).toEqual(['A', 'AAAA']);
   });
 });
 
