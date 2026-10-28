@@ -27,6 +27,26 @@ export const OG_THEMES = [
     label: 'Terminal',
     description: 'A shell session with a status line. Monospace, monochrome.',
   },
+  {
+    key: 'gallery',
+    label: 'Gallery',
+    description: 'Your cover framed on a gallery wall, with the post as its museum label.',
+  },
+  {
+    key: 'postcard',
+    label: 'Postcard',
+    description: 'The back of a postcard: printed caption, a note in pen, and your cover as the stamp.',
+  },
+  {
+    key: 'bauhaus',
+    label: 'Bauhaus',
+    description: 'Flat geometric tiles drawn from the title, so every post gets its own pattern.',
+  },
+  {
+    key: 'blueprint',
+    label: 'Blueprint',
+    description: 'A sheet from a drawing set, with a title block. A cover image becomes a detail callout.',
+  },
 ] as const;
 
 export type OgThemeOption = (typeof OG_THEMES)[number];

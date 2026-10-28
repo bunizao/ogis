@@ -82,6 +82,19 @@ describe('terminal file name', () => {
   });
 });
 
+describe('bauhaus pattern', () => {
+  test('is stable for a post and changes with the title', () => {
+    // The tile column only, so the title text itself can't make two renders differ.
+    const tiles = (title: string) => {
+      const card = themes.bauhaus.render({ ...minimal, title }, context()) as React.ReactElement<{ children: React.ReactNode[] }>;
+      return card.props.children[1];
+    };
+
+    expect(tiles('Interstellar')).toEqual(tiles('Interstellar'));
+    expect(tiles('Interstellar')).not.toEqual(tiles('Gravity'));
+  });
+});
+
 describe('font loading', () => {
   test('pixel loads the selected bundled font from the deployment origin', async () => {
     const requested = mockFontFetch(() => new Response(new ArrayBuffer(8)));
