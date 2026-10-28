@@ -40,7 +40,7 @@ This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fo
 | `pixel` (default) | Bitmap type over your cover image | `image`, `pixelFont`, `icon`, `avatar`, `tag`, `accent` |
 | `modern` | Headline set straight on your cover image, like a magazine cover | `image`, `icon`, `avatar`, `tag`, `accent` |
 | `editorial` | A centred serif opener, like a magazine feature; with `image` it becomes a two-page spread | `image`, `icon`, `avatar`, `tag`, `accent` |
-| `swiss` | Heavy grotesk on a strict four-column grid | `image` (one column), `tag`, `accent` |
+| `swiss` | Heavy grotesk headline over a ruled colophon, on a strict four-column grid | `image` (one column), `tag`, `accent` |
 | `terminal` | A shell session with a tmux-style status line | `tag`, `accent` |
 
 `pixel` and `modern` fall back to a bundled starfield when no `image` is given. `editorial` and `swiss` are purely typographic without one, and `terminal` never shows images.

@@ -15,12 +15,12 @@ export const OG_THEMES = [
   {
     key: 'editorial',
     label: 'Editorial',
-    description: 'A serif headline on warm paper, set like a magazine page.',
+    description: 'A centred serif opener, like a magazine feature. A cover image turns it into a spread.',
   },
   {
     key: 'swiss',
     label: 'Swiss',
-    description: 'Heavy grotesk on a strict grid. Purely typographic.',
+    description: 'Heavy grotesk on a four-column grid. A cover image takes the last column.',
   },
   {
     key: 'terminal',
