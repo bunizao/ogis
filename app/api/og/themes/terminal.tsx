@@ -1,4 +1,4 @@
-import { fitFontSize, loadFontsourceFamily } from './shared';
+import { brightness, fitFontSize, loadFontsourceFamily } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
 function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
@@ -29,8 +29,7 @@ export function fileName(title: string): string {
 
 // Dark or light text, whichever reads on the tag block (accent is `#rrggbb`).
 function inkOn(background: string): string {
-  const [r, g, b] = [1, 3, 5].map(i => parseInt(background.slice(i, i + 2), 16));
-  return r * 0.299 + g * 0.587 + b * 0.114 > 140 ? SCREEN : '#ffffff';
+  return brightness(background) > 140 ? SCREEN : '#ffffff';
 }
 
 function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {

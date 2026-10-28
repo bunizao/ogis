@@ -44,6 +44,12 @@ export function fitFontSize(text: string, steps: Array<[maxLength: number, size:
   return steps[steps.length - 1][1];
 }
 
+// Perceived brightness of a `#rrggbb` colour, 0 (black) to 255 (white).
+export function brightness(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  return r * 0.299 + g * 0.587 + b * 0.114;
+}
+
 export function metaItems({ author, date, readingTime }: ThemeProps): string[] {
   return [author, date, readingTime].filter(Boolean);
 }
