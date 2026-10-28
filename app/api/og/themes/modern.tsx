@@ -1,29 +1,26 @@
-import { Cover, FILL, fitFontSize, Img, loadFontsourceFamily, metaItems } from './shared';
+import { Cover, FILL, fitFontSize, Img, loadFontsourceFamily } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
 function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
-  return loadFontsourceFamily('inter', 'Inter', [{ weight: 400 }, { weight: 500 }, { weight: 700 }]);
+  return loadFontsourceFamily('geist', 'Geist', [{ weight: 400 }, { weight: 500 }, { weight: 600 }]);
 }
 
-// The card hugs its content and grows upward from a fixed bottom edge. Because
-// that edge is known, the blurred copy of the backdrop inside the card can be
-// pinned to it and stay aligned with the sharp backdrop at any card height.
-const CARD_LEFT = 120;
-const CARD_BOTTOM = 64;
-const CARD_WIDTH = 1200 - CARD_LEFT * 2;
-const CARD_RADIUS = 32;
+// Set like a magazine cover: the headline sits straight on the photo at the top,
+// the byline runs along the bottom edge. No panel, so the photo stays whole.
+const MARGIN = 64;
+const WHITE = '#ffffff';
+const SOFT = 'rgba(255, 255, 255, 0.72)';
 
 function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
-  const { title, site, excerpt, author, tag, imageSrc, fallbackImageSrc, iconSrc, avatarSrc } = props;
-  const backdrop = imageSrc ?? fallbackImageSrc;
-  const details = metaItems(props).filter(item => item !== author);
+  const { title, site, excerpt, author, date, readingTime, tag, imageSrc, fallbackImageSrc, iconSrc, avatarSrc } = props;
+  const details = [date, readingTime].filter(Boolean);
 
   const titleSize = fitFontSize(title, [
-    [18, 68],
-    [30, 60],
-    [48, 52],
-    [72, 46],
-    [Infinity, 40],
+    [14, 120],
+    [24, 92],
+    [40, 76],
+    [64, 64],
+    [Infinity, 54],
   ]);
 
   return (
@@ -33,110 +30,84 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
         height: '100%',
         display: 'flex',
         position: 'relative',
-        fontFamily: '"Inter", sans-serif',
-        color: '#ffffff',
-        background: '#0a0a0f',
+        fontFamily: '"Geist", sans-serif',
+        color: WHITE,
+        background: '#000000',
       }}
     >
-      <Cover src={backdrop} />
-      <div style={{ ...FILL, backgroundImage: 'linear-gradient(to top, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 55%)' }} />
+      <Cover src={imageSrc ?? fallbackImageSrc} />
+      {/* Darken only where text sits: a deep wash under the headline, a light one under the byline. */}
+      <div
+        style={{
+          ...FILL,
+          backgroundImage:
+            'linear-gradient(180deg, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.3) 42%, rgba(0, 0, 0, 0) 64%, rgba(0, 0, 0, 0.5) 100%)',
+        }}
+      />
 
       <div
         style={{
-          position: 'absolute',
-          left: CARD_LEFT,
-          bottom: CARD_BOTTOM,
-          width: CARD_WIDTH,
-          display: 'flex',
+          ...FILL,
           flexDirection: 'column',
-          padding: '40px 52px 44px',
-          borderRadius: CARD_RADIUS,
-          overflow: 'hidden',
-          boxShadow: '0 24px 64px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.16)',
+          justifyContent: 'space-between',
+          padding: `60px ${MARGIN}px 56px`,
         }}
       >
-        {/* Glass: the backdrop blurred in place, a dark tint, a faint top sheen and a hairline rim. */}
-        <Img
-          src={backdrop}
-          width={1200}
-          height={630}
-          style={{ position: 'absolute', left: -CARD_LEFT, bottom: -CARD_BOTTOM, filter: 'blur(32px) saturate(1.5)' }}
-        />
-        <div
-          style={{
-            ...FILL,
-            width: CARD_WIDTH,
-            height: '100%',
-            backgroundColor: 'rgba(14, 16, 24, 0.4)',
-            backgroundImage: 'linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 45%)',
-            borderRadius: CARD_RADIUS,
-            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.1)',
-          }}
-        />
-
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 22, fontWeight: 500 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {iconSrc ? (
-              <Img
-                src={iconSrc}
-                width={30}
-                height={30}
-                style={{ borderRadius: 8, boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.16)' }}
-              />
-            ) : null}
-            <span style={{ color: 'rgba(255, 255, 255, 0.88)' }}>{site}</span>
-          </div>
-          {tag ? <span style={{ color: props.accent ?? 'rgba(255, 255, 255, 0.56)' }}>{tag}</span> : null}
-        </div>
-
-        <div
-          style={{
-            display: 'block',
-            textWrap: 'pretty',
-            lineClamp: 3,
-            marginTop: 24,
-            fontSize: titleSize,
-            fontWeight: 700,
-            lineHeight: 1.1,
-            letterSpacing: '-0.025em',
-          }}
-        >
-          {title}
-        </div>
-
-        {excerpt ? (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div
             style={{
               display: 'block',
               textWrap: 'pretty',
-              lineClamp: 2,
-              marginTop: 16,
-              fontSize: 24,
-              lineHeight: 1.45,
-              color: 'rgba(255, 255, 255, 0.72)',
+              lineClamp: 3,
+              maxWidth: 1000,
+              fontSize: titleSize,
+              fontWeight: 600,
+              lineHeight: 1.02,
+              letterSpacing: '-0.045em',
             }}
           >
-            {excerpt}
+            {title}
           </div>
-        ) : null}
+          {excerpt ? (
+            <div
+              style={{
+                display: 'block',
+                textWrap: 'pretty',
+                lineClamp: 2,
+                maxWidth: 820,
+                marginTop: 24,
+                fontSize: 28,
+                lineHeight: 1.36,
+                letterSpacing: '-0.01em',
+                color: SOFT,
+              }}
+            >
+              {excerpt}
+            </div>
+          ) : null}
+        </div>
 
-        {author || details.length > 0 || avatarSrc ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 28, fontSize: 20 }}>
-            {avatarSrc ? (
-              <Img
-                src={avatarSrc}
-                width={34}
-                height={34}
-                style={{ borderRadius: 999, boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.16)' }}
-              />
-            ) : null}
-            {author ? <span style={{ fontWeight: 500, color: 'rgba(255, 255, 255, 0.92)' }}>{author}</span> : null}
-            {author && details.length > 0 ? <span style={{ color: 'rgba(255, 255, 255, 0.32)' }}>·</span> : null}
-            {details.length > 0 ? (
-              <span style={{ color: 'rgba(255, 255, 255, 0.56)' }}>{details.join('  ·  ')}</span>
-            ) : null}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {iconSrc ? <Img src={iconSrc} width={32} height={32} style={{ borderRadius: 8 }} /> : null}
+            <span style={{ fontWeight: 500 }}>{site}</span>
+            {tag ? <span style={{ color: 'rgba(255, 255, 255, 0.4)' }}>/</span> : null}
+            {tag ? <span style={{ color: props.accent ?? SOFT }}>{tag}</span> : null}
           </div>
-        ) : null}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            {author || avatarSrc ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {avatarSrc ? <Img src={avatarSrc} width={36} height={36} style={{ borderRadius: 999 }} /> : null}
+                {author ? <span style={{ fontWeight: 500 }}>{author}</span> : null}
+              </div>
+            ) : null}
+            {details.map(item => (
+              <span key={item} style={{ color: SOFT }}>
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -145,5 +116,5 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
 export const modernTheme: ThemeDefinition = {
   loadFonts,
   render,
-  fontFamily: '"Inter", sans-serif',
+  fontFamily: '"Geist", sans-serif',
 };

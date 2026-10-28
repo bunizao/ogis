@@ -3,6 +3,7 @@ import { editorialTheme } from './editorial';
 import { modernTheme } from './modern';
 import { pixelTheme } from './pixel';
 import { swissTheme } from './swiss';
+import { terminalTheme } from './terminal';
 import type { ThemeDefinition } from './types';
 
 export const themes: Record<OgThemeKey, ThemeDefinition> = {
@@ -10,4 +11,5 @@ export const themes: Record<OgThemeKey, ThemeDefinition> = {
   modern: modernTheme,
   editorial: editorialTheme,
   swiss: swissTheme,
+  terminal: terminalTheme,
 };

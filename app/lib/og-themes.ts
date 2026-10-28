@@ -10,7 +10,7 @@ export const OG_THEMES = [
   {
     key: 'modern',
     label: 'Modern',
-    description: 'A frosted glass card over your cover image.',
+    description: 'Headline set straight on your cover image, like a magazine cover.',
   },
   {
     key: 'editorial',
@@ -21,6 +21,11 @@ export const OG_THEMES = [
     key: 'swiss',
     label: 'Swiss',
     description: 'Heavy grotesk on a strict grid. Purely typographic.',
+  },
+  {
+    key: 'terminal',
+    label: 'Terminal',
+    description: 'A shell session with a status line. Monospace, monochrome.',
   },
 ] as const;
 

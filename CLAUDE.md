@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Next.js-based Open Graph image generation service, originally for the Attegi Ghost theme. Renders 1200x630 social preview images in four themes (`pixel`, `modern`, `editorial`, `swiss`) on the Vercel Edge Runtime.
+Next.js-based Open Graph image generation service, originally for the Attegi Ghost theme. Renders 1200x630 social preview images in five themes (`pixel`, `modern`, `editorial`, `swiss`, `terminal`) on the Vercel Edge Runtime.
 
 ## Development Commands
 
@@ -25,7 +25,7 @@ bun test             # Run full Bun test suite
 ### Key Files
 
 - `app/api/og/handler.tsx` — Main OG handler: route-key check, text sanitization and caps, accent parsing, image prefetch, theme dispatch.
-- `app/api/og/themes/` — One file per theme (`pixel`, `modern`, `editorial`, `swiss`), each exporting `loadFonts` + `render`. `index.ts` is the registry, `shared.tsx` holds `Img`, `Cover`, `FILL`, `fitFontSize` and the Fontsource loader, `font-data.ts` the per-isolate font fetch cache.
+- `app/api/og/themes/` — One file per theme (`pixel`, `modern`, `editorial`, `swiss`, `terminal`), each exporting `loadFonts` + `render`. `index.ts` is the registry, `shared.tsx` holds `Img`, `Cover`, `FILL`, `fitFontSize` and the Fontsource loader, `font-data.ts` the per-isolate font fetch cache.
 - `app/api/og/route.tsx` — `/api/og` wrapper around the shared handler.
 - `app/api/[ogKey]/route.tsx` — `/api/<key>` wrapper for the `OG_API_PATH` alias and the legacy `OG_SECRET` path.
 - `app/api/debug/route.ts` — `OG_ENABLE_DEBUG=true` only: reports why `image`/`icon`/`avatar` were accepted or rejected.

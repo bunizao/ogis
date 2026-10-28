@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { ImageResponse } from '@vercel/og';
 import { clearFontDataCache } from '../../app/api/og/themes/font-data';
 import { themes } from '../../app/api/og/themes';
+import { fileName } from '../../app/api/og/themes/terminal';
 import type { ThemeContext, ThemeFont, ThemeProps } from '../../app/api/og/themes/types';
 import { OG_THEMES } from '../../app/lib/og-themes';
 
@@ -69,6 +70,18 @@ describe('theme registry', () => {
   });
 });
 
+describe('terminal file name', () => {
+  test.each([
+    ['Interstellar', 'interstellar.md'],
+    ['How we rebuilt our image pipeline on the edge', 'how-we-rebuilt-our-image.md'],
+    ['Next.js 16: what changed?', 'next-js-16-what-changed.md'],
+    ['如何在边缘重建图片管线', '如何在边缘重建图片管线.md'],
+    ['!!!', 'post.md'],
+  ])('%s -> %s', (title, expected) => {
+    expect(fileName(title)).toBe(expected);
+  });
+});
+
 describe('font loading', () => {
   test('pixel loads the selected bundled font from the deployment origin', async () => {
     const requested = mockFontFetch(() => new Response(new ArrayBuffer(8)));
@@ -100,13 +113,15 @@ describe('font loading', () => {
     const fonts = await themes.editorial.loadFonts(context());
 
     expect(requested.sort()).toEqual([
-      'https://cdn.jsdelivr.net/fontsource/fonts/geist-mono@5.3.0/latin-500-normal.ttf',
+      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-sans@5.3.0/latin-400-normal.ttf',
+      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-sans@5.3.0/latin-500-normal.ttf',
       'https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@5.3.0/latin-400-italic.ttf',
       'https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@5.3.0/latin-400-normal.ttf',
     ]);
     expect(fonts.map(font => `${font.name} ${font.weight} ${font.style}`)).toEqual([
       'Instrument Serif 400 normal',
-      'Geist Mono 500 normal',
+      'Instrument Sans 400 normal',
+      'Instrument Sans 500 normal',
     ]);
   });
 });

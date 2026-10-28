@@ -20,7 +20,7 @@ const PARAM_GROUPS: Array<{ title: string; params: Param[] }> = [
   {
     title: 'Appearance',
     params: [
-      { name: 'theme', description: 'pixel, modern, editorial or swiss. Anything else falls back to pixel.' },
+      { name: 'theme', description: 'pixel, modern, editorial, swiss or terminal. Anything else falls back to pixel.' },
       { name: 'accent', description: 'Hex colour for the tag, with or without #.' },
       { name: 'pixelFont', description: 'zpix, or geist-square, -circle, -line, -triangle, -grid. Pixel theme only.' },
     ],
@@ -28,7 +28,7 @@ const PARAM_GROUPS: Array<{ title: string; params: Param[] }> = [
   {
     title: 'Images',
     params: [
-      { name: 'image', description: 'Cover image. Pixel and modern sit on it; editorial and swiss inset it.' },
+      { name: 'image', description: 'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, terminal leaves it out.' },
       { name: 'icon', description: 'Site icon beside the site name.' },
       { name: 'avatar', description: 'Author photo beside the byline.' },
     ],

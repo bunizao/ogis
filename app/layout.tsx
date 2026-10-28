@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'OGIS - Open Graph Image Service',
-  description: 'Open Graph images from a single URL. Four themes, your own images, rendered at the edge.',
+  description: 'Open Graph images from a single URL. Five themes, your own images, rendered at the edge.',
   keywords: ['og image', 'open graph', 'social media', 'preview', 'image generation', 'edge runtime', 'next.js', 'vercel', 'zpix'],
   authors: [{ name: 'bunizao', url: 'https://github.com/bunizao' }],
   icons: {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'OGIS - Open Graph Image Service',
-    description: 'Open Graph images from a single URL. Four themes, rendered at the edge.',
+    description: 'Open Graph images from a single URL. Five themes, rendered at the edge.',
     type: 'website',
     url: 'https://og.tutuis.me',
     images: [
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'OGIS - Open Graph Image Service',
-    description: 'Open Graph images from a single URL. Four themes, rendered at the edge.',
+    description: 'Open Graph images from a single URL. Five themes, rendered at the edge.',
     images: ['https://og.tutuis.me/preview.png'],
   },
 };

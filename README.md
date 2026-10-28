@@ -13,7 +13,7 @@ Open Graph images for blogs, from a single URL. Built with Next.js 16 on the Ver
 
 ## Features
 
-- **Four themes**: `pixel`, `modern`, `editorial` and `swiss`, each built on typography and layout rather than decoration
+- **Five themes**: `pixel`, `modern`, `editorial`, `swiss` and `terminal`, each built on typography and layout rather than decoration
 - **Your images**: cover image, site icon and author avatar, fetched and checked server-side
 - **Six pixel fonts**: Zpix plus five Geist Pixel cuts, bundled in `public/fonts`
 - **Fitted titles**: font size steps down with title length, and CJK counts as wide
@@ -38,11 +38,12 @@ This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fo
 | Theme | Look | Uses |
 |-------|------|------|
 | `pixel` (default) | Bitmap type over your cover image | `image`, `pixelFont`, `icon`, `avatar`, `tag`, `accent` |
-| `modern` | A frosted glass card over your cover image | `image`, `icon`, `avatar`, `tag`, `accent` |
-| `editorial` | A serif headline on warm paper, set like a magazine page | `image` (inset), `icon`, `avatar`, `tag`, `accent` |
-| `swiss` | Heavy grotesk on a strict three-column grid | `image` (inset), `tag`, `accent` |
+| `modern` | Headline set straight on your cover image, like a magazine cover | `image`, `icon`, `avatar`, `tag`, `accent` |
+| `editorial` | A centred serif opener, like a magazine feature; with `image` it becomes a two-page spread | `image`, `icon`, `avatar`, `tag`, `accent` |
+| `swiss` | Heavy grotesk on a strict four-column grid | `image` (one column), `tag`, `accent` |
+| `terminal` | A shell session with a tmux-style status line | `tag`, `accent` |
 
-`pixel` and `modern` fall back to a bundled starfield when no `image` is given. `editorial` and `swiss` are purely typographic without one.
+`pixel` and `modern` fall back to a bundled starfield when no `image` is given. `editorial` and `swiss` are purely typographic without one, and `terminal` never shows images.
 
 ## Parameters
 
@@ -56,7 +57,7 @@ This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fo
 | `reading` | 40 | Reading time, e.g. `5 min read` |
 | `tag` | 40 | Category or kicker |
 | `accent` | | Hex colour (`#e4002b` or `e4002b`); invalid values use the theme default |
-| `theme` | | `pixel`, `modern`, `editorial` or `swiss`; anything else uses `pixel` |
+| `theme` | | `pixel`, `modern`, `editorial`, `swiss` or `terminal`; anything else uses `pixel` |
 | `pixelFont` | | `zpix`, `geist-square`, `geist-circle`, `geist-line`, `geist-triangle`, `geist-grid` |
 | `image` | | Cover image URL |
 | `icon` | | Site icon URL |
@@ -182,4 +183,4 @@ MIT
 - Default background: [Cluster of Stars](https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c) by [Paul Lichtblau](https://unsplash.com/@paullichtblau) on Unsplash
 - Zpix pixel font by [SolidZORO](https://github.com/SolidZORO/zpix-pixel-font)
 - Geist Pixel by [Vercel](https://vercel.com/font)
-- Inter, Inter Tight, Instrument Serif and Geist Mono via [Fontsource](https://fontsource.org)
+- Geist, Geist Mono, Inter Tight, Instrument Serif and Instrument Sans via [Fontsource](https://fontsource.org)

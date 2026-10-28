@@ -98,13 +98,13 @@ describe('route keys', () => {
 });
 
 describe('themes', () => {
-  test.each(['modern', 'editorial', 'swiss'])('selects %s when requested', async theme => {
+  test.each(['modern', 'editorial', 'swiss', 'terminal'])('selects %s when requested', async theme => {
     const { rendered } = await render(`https://example.com/api/og?theme=${theme}`);
     expect(rendered?.theme).toBe(theme);
   });
 
   test('falls back to pixel for unknown theme names', async () => {
-    const { rendered } = await render('https://example.com/api/og?theme=terminal');
+    const { rendered } = await render('https://example.com/api/og?theme=vaporwave');
     expect(rendered?.theme).toBe('pixel');
   });
 });

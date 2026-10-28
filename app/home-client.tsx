@@ -336,7 +336,8 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+          {/* The two cover-image themes get the top row, the three typographic ones share the second. */}
+          <div className="grid grid-cols-6 gap-x-4 gap-y-5">
             {OG_THEMES.map((option, index) => (
               <button
                 key={option.key}
@@ -346,7 +347,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                   selectTheme(option.key);
                   document.getElementById('playground')?.scrollIntoView({ block: 'start' });
                 }}
-                className="group rounded-lg text-left outline-none"
+                className={cn('group rounded-lg text-left outline-none', index < 2 ? 'col-span-3' : 'col-span-2')}
               >
                 <span
                   className={cn(
@@ -483,7 +484,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                       className="w-full"
                     >
                       {OG_THEMES.map(option => (
-                        <ToggleGroupItem key={option.key} value={option.key} className="flex-1 px-2">
+                        <ToggleGroupItem key={option.key} value={option.key} className="flex-auto px-2">
                           {option.label}
                         </ToggleGroupItem>
                       ))}
