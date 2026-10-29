@@ -3,7 +3,7 @@ import {
   checkPublicImageUrl,
   loadRemoteImage,
   reconstructImageUrl,
-  resolveHostnameWithGoogleDns,
+  resolveHostnameOverHttps,
   sniffImageType,
   type RemoteImageDeps,
 } from '../../app/lib/og-remote-image';
@@ -136,31 +136,64 @@ describe('loadRemoteImage', () => {
   });
 });
 
-describe('resolveHostnameWithGoogleDns', () => {
+describe('resolveHostnameOverHttps', () => {
   afterEach(() => mock.restore());
 
-  // Answers each record type from `answers`, failing the first `failures` calls.
-  function mockDns(answers: Record<string, string[]>, failures: number) {
+  type Provider = (type: string, signal: AbortSignal) => Response | Promise<Response>;
+
+  // Routes each DoH request to its provider by hostname; a provider that isn't
+  // listed is unreachable. Returns the providers asked, in order.
+  function mockDns(providers: Record<string, Provider>) {
     const calls: string[] = [];
-    spyOn(globalThis, 'fetch').mockImplementation((async (input: string | URL | Request) => {
-      const type = new URL(String(input)).searchParams.get('type') ?? '';
-      calls.push(type);
-      if (calls.length <= failures) throw new DOMException('timed out', 'AbortError');
-      return Response.json({ Status: 0, Answer: (answers[type] ?? []).map(data => ({ data })) });
+    spyOn(globalThis, 'fetch').mockImplementation((async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      calls.push(url.hostname);
+      const provider = providers[url.hostname];
+      if (!provider) throw new TypeError('fetch failed');
+      return provider(url.searchParams.get('type') ?? '', init!.signal!);
     }) as typeof fetch);
-    return calls;
+    return () => [...new Set(calls)];
   }
 
-  test('retries a lookup that times out', async () => {
-    const calls = mockDns({ A: ['93.184.216.34'] }, 1);
-    expect(await resolveHostnameWithGoogleDns('retry.example.com')).toEqual(['93.184.216.34']);
-    expect(calls).toHaveLength(3);
+  const answers: Provider = type =>
+    Response.json({ Status: 0, Answer: type === 'A' ? [{ data: '93.184.216.34' }] : [] });
+
+  test('falls through failing providers to the next one at once', async () => {
+    const asked = mockDns({
+      'cloudflare-dns.com': () => new Response('busy', { status: 503 }),
+      'dns.alidns.com': () => Response.json({ Status: 2 }),
+      'doh.pub': answers,
+    });
+    expect(await resolveHostnameOverHttps('fallback.example.com')).toEqual(['93.184.216.34']);
+    expect(asked()).toEqual(['dns.google', 'cloudflare-dns.com', 'dns.alidns.com', 'doh.pub']);
   });
 
-  test('does not retry an answer without records', async () => {
-    const calls = mockDns({}, 0);
-    expect(await resolveHostnameWithGoogleDns('empty.example.com')).toEqual([]);
-    expect(calls.sort()).toEqual(['A', 'AAAA']);
+  test('asks the next provider while a slow one is still pending', async () => {
+    let abandoned = 0;
+    const asked = mockDns({
+      'dns.google': (_type, signal) =>
+        new Promise((_resolve, reject) =>
+          signal.addEventListener('abort', () => {
+            abandoned += 1;
+            reject(signal.reason);
+          })
+        ),
+      'cloudflare-dns.com': answers,
+    });
+    expect(await resolveHostnameOverHttps('slow.example.com')).toEqual(['93.184.216.34']);
+    expect(asked()).toEqual(['dns.google', 'cloudflare-dns.com']);
+    expect(abandoned).toBe(2);
+  });
+
+  test('takes NXDOMAIN as the answer', async () => {
+    const asked = mockDns({ 'dns.google': () => Response.json({ Status: 3 }) });
+    expect(await resolveHostnameOverHttps('missing.example.com')).toEqual([]);
+    expect(asked()).toEqual(['dns.google']);
+  });
+
+  test('resolves nothing when no provider answers', async () => {
+    mockDns({});
+    expect(await resolveHostnameOverHttps('offline.example.com')).toEqual([]);
   });
 });
 

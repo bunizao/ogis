@@ -55,7 +55,7 @@ bun test             # Run full Bun test suite
 ### Remote Image Rules (`og-remote-image.ts`)
 
 - http(s) only, default ports, no credentials; rejects `localhost`, `.localhost`, `.local` and truncated URLs (`…`, `...`, under 20 chars)
-- Hostnames resolved via `dns.google/resolve` (2s timeout, 10-minute bounded cache); every resolved IP must be public (IPv4 and IPv6, IPv4-mapped delegated to IPv4)
+- Hostnames resolved over DoH JSON: `dns.google`, then Cloudflare, AliDNS and DNSPod (`doh.pub`) for hosts in mainland China. Each provider gets 300ms before the next joins, failures hand over at once, first answer wins; 2s timeout, 10-minute bounded cache. Every resolved IP must be public (IPv4 and IPv6, IPv4-mapped delegated to IPv4)
 - Redirects followed manually, at most 3, re-checking every hop
 - 4s timeout, 6 MB cap, format sniffed from bytes: PNG/JPEG/GIF/SVG pass, WebP/AVIF are rejected (Satori can't decode them)
 

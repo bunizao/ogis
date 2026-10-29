@@ -70,7 +70,7 @@ If you only need the API (no landing page), set `OG_API_ONLY=true`. Every path o
 ### On your own server
 
 - **Put a cache in front.** Responses carry `s-maxage=86400, stale-while-revalidate=604800`. Vercel's CDN honours that on its own; elsewhere, a CDN (Cloudflare, Bunny) or a caching proxy (nginx `proxy_cache`, Caddy, Varnish) does the same job. Without one, every crawler hit renders the image again.
-- **Outbound access.** Theme fonts come from `cdn.jsdelivr.net`, CJK glyphs from Google Fonts, and image hosts are checked with Google Public DNS (`dns.google`) before they are downloaded. A server that can't reach `dns.google` renders cards without remote images.
+- **Outbound access.** Theme fonts come from `cdn.jsdelivr.net`, CJK glyphs from Google Fonts, and image hosts are checked over DNS-over-HTTPS before they are downloaded: `dns.google` first, then Cloudflare, AliDNS and DNSPod, so servers in mainland China resolve them too. A server that reaches none of them renders cards without remote images.
 - Bundled fonts and images are read from disk, so the server never requests its own URL. Port mappings and reverse proxies need no extra configuration.
 
 ## Themes
