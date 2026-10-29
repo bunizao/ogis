@@ -44,8 +44,7 @@ const PARAM_GROUPS: Array<{ title: string; params: Param[] }> = [
     params: [
       {
         name: 'image',
-        description:
-          'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, gallery hangs it beside the label, postcard makes it the stamp, bauhaus cuts it into a quarter circle, blueprint prints it as a cyanotype, oil paints it onto canvas. Terminal leaves it out.',
+        description: 'Cover image. Every theme uses it its own way, from a full-bleed background to a postcard stamp.',
       },
       { name: 'icon', description: 'Site icon beside the site name.' },
       { name: 'avatar', description: 'Author photo beside the byline.' },

@@ -41,14 +41,14 @@ This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fo
 | `modern` | Headline set straight on your cover image, like a magazine cover | `image`, `icon`, `avatar`, `tag`, `accent` |
 | `editorial` | A centred serif opener, like a magazine feature; with `image` it becomes a two-page spread | `image`, `icon`, `avatar`, `tag`, `accent` |
 | `swiss` | Heavy grotesk headline over a ruled colophon, on a strict four-column grid | `image` (one column), `tag`, `accent` |
-| `terminal` | A shell session with a tmux-style status line | `tag`, `accent` |
+| `terminal` | A shell session with a tmux-style status line; `image` splits the screen and is drawn in the second pane, like `imgcat` | `image`, `tag`, `accent` |
 | `gallery` | Your cover printed edge to edge on a gallery wall, with the post as its museum label | `image`, `icon`, `tag`, `accent` (the wall) |
 | `postcard` | The back of a postcard: printed caption, a note in pen, your cover as the stamp | `image`, `icon`, `tag`, `accent` (the ink) |
 | `bauhaus` | Flat geometric tiles generated from the title, so every post gets its own pattern | `image` (a quarter circle across four tiles), `tag`, `accent` (the lead colour) |
 | `blueprint` | A drawing sheet with zone markers and a title block; `image` becomes a cyanotype detail callout | `image`, `icon`, `tag`, `accent` (the sheet) |
 | `oil` | The title lettered on a close-up of Van Gogh's brushwork, picked by the title; `image` is laid under real impasto so it reads as paint on canvas | `image`, `icon`, `tag`, `accent` (the site name) |
 
-`pixel`, `modern` and `gallery` fall back to a bundled starfield when no `image` is given. `postcard` prints a red stamp with the site's initial instead, `oil` uses one of its brushwork details, the others simply lay out without one, and `terminal` never shows images.
+`pixel`, `modern` and `gallery` fall back to a bundled starfield when no `image` is given. `postcard` prints a red stamp with the site's initial instead, `oil` uses one of its brushwork details, and the others simply lay out without one.
 
 ## Parameters
 

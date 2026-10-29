@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { ImageResponse } from '@vercel/og';
 import { clearFontDataCache } from '../../app/api/og/themes/font-data';
 import { themes } from '../../app/api/og/themes';
-import { fileName } from '../../app/api/og/themes/terminal';
+import { coverName, fileName } from '../../app/api/og/themes/terminal';
 import type { ThemeContext, ThemeFont, ThemeProps } from '../../app/api/og/themes/types';
 import { OG_THEMES } from '../../app/lib/og-themes';
 
@@ -79,6 +79,16 @@ describe('terminal file name', () => {
     ['!!!', 'post.md'],
   ])('%s -> %s', (title, expected) => {
     expect(fileName(title)).toBe(expected);
+  });
+});
+
+describe('terminal cover name', () => {
+  test.each([
+    ['data:image/jpeg;base64,AAAA', 'cover.jpeg'],
+    ['data:image/svg+xml;base64,AAAA', 'cover.svg'],
+    ['https://example.com/a.jpg', 'cover.png'],
+  ])('%s -> %s', (src, expected) => {
+    expect(coverName(src)).toBe(expected);
   });
 });
 

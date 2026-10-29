@@ -25,7 +25,7 @@ export const OG_THEMES = [
   {
     key: 'terminal',
     label: 'Terminal',
-    description: 'A shell session with a status line. Monospace, monochrome.',
+    description: 'A shell session with a tmux status line. A cover image opens in a second pane.',
   },
   {
     key: 'gallery',
