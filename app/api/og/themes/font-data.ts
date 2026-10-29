@@ -1,6 +1,6 @@
 const fontDataCache = new Map<string, Promise<ArrayBuffer | null>>();
 
-// Cached across requests per edge isolate; failed fetches are evicted so they retry.
+// Cached across requests per server instance; failed fetches are evicted so they retry.
 export async function fetchFontData(url: string): Promise<ArrayBuffer | null> {
   let pending = fontDataCache.get(url);
   if (!pending) {

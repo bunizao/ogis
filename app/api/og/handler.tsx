@@ -54,15 +54,14 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
     return new Response('Not Found', { status: 404 });
   }
 
-  const requestUrl = new URL(request.url);
-  const { searchParams } = requestUrl;
-  const themeContext = { searchParams, baseUrl: requestUrl.origin };
+  const { searchParams } = new URL(request.url);
+  const themeContext = { searchParams };
 
   const themeName = normalizeOgTheme(searchParams.get('theme'));
   const theme = themes[themeName];
-  const fontsPromise = theme.loadFonts(themeContext);
 
-  const [background, icon, avatar] = await Promise.all([
+  const [fonts, background, icon, avatar] = await Promise.all([
+    theme.loadFonts(themeContext),
     loadRemoteImage(searchParams.has('image') ? reconstructImageUrl(searchParams) : null),
     loadRemoteImage(searchParams.get('icon')),
     loadRemoteImage(searchParams.get('avatar')),
@@ -80,7 +79,6 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
     imageSrc: background.dataUrl,
     iconSrc: icon.dataUrl,
     avatarSrc: avatar.dataUrl,
-    fallbackImageSrc: new URL('/default-bg.jpg', requestUrl.origin).toString(),
   };
 
   console.info(
@@ -99,15 +97,12 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
     })
   );
 
-  const fonts = await fontsPromise;
-
-  return new ImageResponse(theme.render(props, themeContext), {
+  return new ImageResponse(await theme.render(props, themeContext), {
     width: 1200,
     height: 630,
     fonts: fonts.length > 0 ? fonts : undefined,
     headers: {
-      // Lowercase on purpose: @vercel/og sets its own `cache-control` (immutable, one
-      // year) and spreads ours after it, so a different casing would append instead.
+      // Replaces next/og's default, which tells caches to revalidate every time.
       'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
     },
   });

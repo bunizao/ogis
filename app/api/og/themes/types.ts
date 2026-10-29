@@ -13,24 +13,22 @@ export interface ThemeProps {
   imageSrc: string | null;
   iconSrc: string | null;
   avatarSrc: string | null;
-  // Bundled starfield for themes that always want a photo behind the text.
-  fallbackImageSrc: string;
 }
 
 export interface ThemeContext {
-  baseUrl: string;
   searchParams: URLSearchParams;
 }
 
 export interface ThemeFont {
   name: string;
-  data: ArrayBuffer;
+  data: ArrayBuffer | Buffer;
   style: 'normal' | 'italic';
   weight: 300 | 400 | 500 | 600 | 700 | 800 | 900;
 }
 
 export interface ThemeDefinition {
   loadFonts: (context: ThemeContext) => Promise<ThemeFont[]>;
-  render: (props: ThemeProps, context: ThemeContext) => React.ReactElement;
+  // Async when the theme draws on bundled images (see public-files.ts).
+  render: (props: ThemeProps, context: ThemeContext) => React.ReactElement | Promise<React.ReactElement>;
   fontFamily: string;
 }

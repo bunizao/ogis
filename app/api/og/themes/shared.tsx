@@ -20,7 +20,7 @@ export async function loadFontsourceFamily(
       return data ? { name, data, weight, style } : null;
     })
   );
-  return loaded.filter((font): font is ThemeFont => font !== null);
+  return loaded.filter(font => font !== null);
 }
 
 // CJK and other full-width glyphs take roughly two Latin columns, so a

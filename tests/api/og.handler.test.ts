@@ -172,11 +172,10 @@ describe('images', () => {
     expect(rendered?.props.avatarSrc?.startsWith('data:image/png;base64,')).toBeTrue();
   });
 
-  test('drops rejected images and offers the bundled background instead', async () => {
+  test('drops rejected images and still renders', async () => {
     const { response, rendered } = await render('https://example.com/api/og?image=http://192.168.1.5/p.png');
     expect(response.status).toBe(200);
     expect(rendered?.props.imageSrc).toBeNull();
-    expect(rendered?.props.fallbackImageSrc).toBe('https://example.com/default-bg.jpg');
   });
 });
 

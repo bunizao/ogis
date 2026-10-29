@@ -1,21 +1,19 @@
 import { getPixelFontOption } from '@/app/lib/pixel-fonts';
-import { fetchFontData } from './font-data';
+import { publicImage, readPublicFile } from './public-files';
 import { Cover, FILL, fitFontSize, Img, metaItems } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
 async function loadFonts(context: ThemeContext): Promise<ThemeFont[]> {
   const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
-  const fontUrl = new URL(selectedFont.filePath, context.baseUrl).toString();
-  const data = await fetchFontData(fontUrl);
-  if (!data) return [];
+  const data = await readPublicFile(selectedFont.filePath);
   return [{ name: selectedFont.fontName, data, style: 'normal', weight: 400 }];
 }
 
 const MARGIN_X = 72;
 const MARGIN_Y = 64;
 
-function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
-  const { title, site, excerpt, tag, imageSrc, fallbackImageSrc, iconSrc, avatarSrc } = props;
+async function render(props: ThemeProps, context: ThemeContext): Promise<React.ReactElement> {
+  const { title, site, excerpt, tag, imageSrc, iconSrc, avatarSrc } = props;
   const selectedFont = getPixelFontOption(context.searchParams.get('pixelFont'));
   const meta = metaItems(props);
 
@@ -43,7 +41,7 @@ function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
         background: '#05060a',
       }}
     >
-      <Cover src={imageSrc ?? fallbackImageSrc} />
+      <Cover src={imageSrc ?? (await publicImage('default-bg.jpg'))} />
       <div
         style={{
           ...FILL,
