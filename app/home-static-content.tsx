@@ -30,7 +30,7 @@ const PARAM_GROUPS: Array<{ title: string; params: Param[] }> = [
     params: [
       {
         name: 'theme',
-        description: 'pixel, modern, editorial, swiss, terminal, gallery, postcard, bauhaus or blueprint. Anything else falls back to pixel.',
+        description: 'pixel, modern, editorial, swiss, terminal, gallery, postcard, bauhaus, blueprint or oil. Anything else falls back to pixel.',
       },
       {
         name: 'accent',
@@ -45,7 +45,7 @@ const PARAM_GROUPS: Array<{ title: string; params: Param[] }> = [
       {
         name: 'image',
         description:
-          'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, gallery hangs it beside the label, postcard makes it the stamp, bauhaus cuts it into a quarter circle, blueprint prints it as a cyanotype. Terminal leaves it out.',
+          'Cover image. Pixel and modern sit on it, editorial and swiss lay it out beside the text, gallery hangs it beside the label, postcard makes it the stamp, bauhaus cuts it into a quarter circle, blueprint prints it as a cyanotype, oil paints it onto canvas. Terminal leaves it out.',
       },
       { name: 'icon', description: 'Site icon beside the site name.' },
       { name: 'avatar', description: 'Author photo beside the byline.' },
@@ -159,6 +159,15 @@ export default function HomeStaticContent() {
               </a>
             </Fragment>
           ))}
+          . Brushwork in the oil theme: details of paintings by Vincent van Gogh from{' '}
+          <a
+            href="https://www.metmuseum.org/hubs/open-access"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-foreground"
+          >
+            The Met&apos;s open-access collection
+          </a>
           .
         </p>
       </footer>

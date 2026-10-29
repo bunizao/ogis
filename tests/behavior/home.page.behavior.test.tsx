@@ -168,11 +168,11 @@ describe('Home page behavior', () => {
     expect(checkedTheme(ui)).toBe('Blueprint');
 
     fireEvent.keyDown(window, { key: '0' });
-    expect(checkedTheme(ui)).toBe('Blueprint');
+    expect(checkedTheme(ui)).toBe('Oil');
 
     ui.getByLabelText('Site').focus();
     fireEvent.keyDown(window, { key: '1' });
-    expect(checkedTheme(ui)).toBe('Blueprint');
+    expect(checkedTheme(ui)).toBe('Oil');
   });
 
   test('/ focuses the title input', async () => {

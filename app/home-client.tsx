@@ -216,7 +216,8 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
         event.preventDefault();
         setShowShortcuts(open => !open);
       } else {
-        const option = OG_THEMES[Number(event.key) - 1];
+        // The number row: 1–9 pick the first nine themes and 0 the tenth.
+        const option = OG_THEMES[event.key === '0' ? 9 : Number(event.key) - 1];
         if (option) actionsRef.current.selectTheme(option.key);
       }
     };
@@ -233,7 +234,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   const copyKeys = [modKey, 'Shift', 'C'];
   const shortcuts = [
     { label: 'Focus title', keys: ['/'] },
-    { label: 'Switch theme', keys: ['1', '–', `${OG_THEMES.length}`] },
+    { label: 'Switch theme', keys: ['1', '–', '0'] },
     { label: 'Refresh preview', keys: refreshKeys },
     { label: 'Copy image URL', keys: copyKeys },
     { label: 'Toggle shortcuts', keys: ['?'] },
@@ -343,7 +344,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
             </div>
           </div>
 
-          <div className="mt-14 grid grid-cols-2 gap-x-4 gap-y-6 md:mt-20 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8">
+          <div className="mt-14 grid grid-cols-2 gap-x-4 gap-y-6 md:mt-20 md:grid-cols-3 lg:grid-cols-5 lg:gap-x-5 lg:gap-y-7">
             {OG_THEMES.map((option, index) => (
               <button
                 key={option.key}
@@ -375,7 +376,7 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                   <span className={cn('font-medium', theme !== option.key && 'text-muted-foreground group-hover:text-foreground')}>
                     {option.label}
                   </span>
-                  <Kbd className="pointer-coarse:hidden">{index + 1}</Kbd>
+                  <Kbd className="pointer-coarse:hidden">{(index + 1) % 10}</Kbd>
                 </span>
               </button>
             ))}
@@ -488,10 +489,10 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                       onValueChange={value => value && selectTheme(value as OgThemeKey)}
                       aria-label="Theme"
                       spacing={1}
-                      className="grid w-full grid-cols-3"
+                      className="grid w-full grid-cols-5"
                     >
                       {OG_THEMES.map(option => (
-                        <ToggleGroupItem key={option.key} value={option.key} className="w-full px-2">
+                        <ToggleGroupItem key={option.key} value={option.key} className="w-full px-1 text-xs">
                           {option.label}
                         </ToggleGroupItem>
                       ))}
