@@ -1,10 +1,9 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { ImageResponse } from 'next/og';
-import { clearFontDataCache } from '../../app/api/og/themes/font-data';
 import { themes } from '../../app/api/og/themes';
 import { publicImage } from '../../app/api/og/themes/public-files';
 import { coverName, fileName } from '../../app/api/og/themes/terminal';
-import type { ThemeContext, ThemeFont, ThemeProps } from '../../app/api/og/themes/types';
+import type { ThemeContext, ThemeProps } from '../../app/api/og/themes/types';
 import { OG_THEMES } from '../../app/lib/og-themes';
 
 // 4x4 opaque PNG; enough for Satori to decode and lay out every <img>.
@@ -54,8 +53,6 @@ function mockFontFetch(handler: (url: string) => Response) {
   }) as typeof fetch);
   return requested;
 }
-
-beforeEach(() => clearFontDataCache());
 
 afterEach(() => {
   fetchSpy?.mockRestore();
@@ -148,41 +145,17 @@ describe('font loading', () => {
     expect(fonts.map(font => font.name)).toEqual(['Zpix']);
   });
 
-  test('font fetches are cached per isolate', async () => {
+  test.each(Object.keys(themes) as Array<keyof typeof themes>)('%s reads every cut from disk', async key => {
     const requested = mockFontFetch(() => new Response(new ArrayBuffer(8)));
-    await themes.modern.loadFonts(context());
-    await themes.modern.loadFonts(context());
+    const fonts = await themes[key].loadFonts(context());
 
-    expect(requested).toHaveLength(3);
-  });
-
-  test('fontsource cuts are pinned TTFs and missing cuts are skipped', async () => {
-    const requested = mockFontFetch(url =>
-      url.includes('italic') ? new Response('missing', { status: 404 }) : new Response(new ArrayBuffer(8))
-    );
-    const fonts = await themes.editorial.loadFonts(context());
-
-    expect(requested.sort()).toEqual([
-      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-sans@5.3.0/latin-400-normal.ttf',
-      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-sans@5.3.0/latin-500-normal.ttf',
-      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@5.3.0/latin-400-italic.ttf',
-      'https://cdn.jsdelivr.net/fontsource/fonts/instrument-serif@5.3.0/latin-400-normal.ttf',
-    ]);
-    expect(fonts.map(font => `${font.name} ${font.weight} ${font.style}`)).toEqual([
-      'Instrument Serif 400 normal',
-      'Instrument Sans 400 normal',
-      'Instrument Sans 500 normal',
-    ]);
+    expect(requested).toEqual([]);
+    expect(fonts.length).toBeGreaterThan(0);
+    for (const font of fonts) expect(font.data.byteLength).toBeGreaterThan(1000);
   });
 });
 
 describe('rendering', () => {
-  // One local font stands in for every family; Satori falls back to it for
-  // unknown names, which is all a layout smoke test needs.
-  const fontsPromise: Promise<ThemeFont[]> = Bun.file('public/fonts/zpix.ttf')
-    .arrayBuffer()
-    .then(data => [{ name: 'Zpix', data, weight: 400, style: 'normal' }]);
-
   for (const key of Object.keys(themes) as Array<keyof typeof themes>) {
     for (const [label, props] of [
       ['minimal', minimal],
@@ -192,7 +165,7 @@ describe('rendering', () => {
         const response = new ImageResponse(await themes[key].render(props, context()), {
           width: 1200,
           height: 630,
-          fonts: await fontsPromise,
+          fonts: await themes[key].loadFonts(context()),
         });
         const bytes = new Uint8Array(await response.arrayBuffer());
 
