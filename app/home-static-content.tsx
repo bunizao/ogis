@@ -1,50 +1,7 @@
+import { FooterWordmark } from '@/app/footer-wordmark';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const GITHUB_URL = 'https://github.com/bunizao/ogis';
-
-// "OGIS" in Geist Pixel, traced from its Grid cut: one character per dot.
-const WORDMARK = [
-  '.....######............#######.......##.......######....',
-  '...##########........###########.....##.....##########..',
-  '..###......###......###.......###....##.....##......###.',
-  '..##........##......##.........##....##....##........##.',
-  '.##..........##....##...........##...##....##.........##',
-  '.##..........##....##...........##...##....##.........##',
-  '##............##..##.................##....##...........',
-  '##............##..##.................##....###..........',
-  '##............##..##.................##.....######......',
-  '##............##..##.................##.......#######...',
-  '##............##..##......########...##..........######.',
-  '##............##..##......########...##.............###.',
-  '##............##..##............##...##...............##',
-  '.##..........##....##...........##...##....##.........##',
-  '.##..........##....##...........##...##....##.........##',
-  '..##........##......##..........##...##....##.........##',
-  '..###......###......###........###...##.....##.......##.',
-  '...##########........##########.##...##.....###########.',
-  '.....######............#######..##...##.......#######...',
-];
-
-// The wordmark as a dot-matrix display: every cell holds a faint dot and the
-// letters are the lit ones. SVG, so it spans the column at any width.
-function Wordmark() {
-  const width = WORDMARK[0].length;
-  const height = WORDMARK.length;
-  // A zero-length segment with a round cap draws one dot.
-  const lit = WORDMARK.flatMap((row, y) => [...row].flatMap((cell, x) => (cell === '#' ? `M${x + 0.5} ${y + 0.5}h0` : []))).join('');
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} aria-hidden className="mt-12 mb-5 block h-auto w-full sm:mt-16 sm:mb-8">
-      <defs>
-        <pattern id="wordmark-cell" width={1} height={1} patternUnits="userSpaceOnUse">
-          <circle cx={0.5} cy={0.5} r={0.14} fill="currentColor" />
-        </pattern>
-      </defs>
-      <rect width={width} height={height} fill="url(#wordmark-cell)" opacity={0.1} />
-      <path d={lit} stroke="currentColor" strokeWidth={0.6} strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -207,7 +164,7 @@ export default function HomeStaticContent() {
             </nav>
           </div>
 
-          <Wordmark />
+          <FooterWordmark />
         </div>
       </footer>
     </>
