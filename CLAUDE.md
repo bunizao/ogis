@@ -32,7 +32,7 @@ bun test             # Run full Bun test suite
 - `app/lib/og-remote-image.ts` — Server-side image loader with SSRF checks, size/time limits and format sniffing.
 - `app/lib/og-route-keys.ts` — Which `/api/<key>` segments are served. `og` is always public.
 - `app/lib/og-themes.ts` — Theme keys, labels and descriptions shared by the handler and the landing page.
-- `app/lib/cover-photos.ts` — Unsplash sample covers for the playground picker, with credits (also listed in the footer and README).
+- `app/lib/cover-photos.ts` — Unsplash sample covers for the playground picker, with credits (also listed in the README, which the footer links to).
 - `app/lib/pixel-fonts.ts` — Pixel font registry shared by the landing page and the pixel theme.
 - `app/page.tsx` — Interactive landing page with live preview form and API reference.
 - `app/link-previews.tsx` — X, Slack and iMessage stand-ins that the playground shows the card inside.

@@ -1,14 +1,28 @@
-import { Fragment } from 'react';
-import { COVER_PHOTOS } from '@/app/lib/cover-photos';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const GITHUB_URL = 'https://github.com/bunizao/ogis';
 
-// The bundled starfield first, then the playground's sample covers.
-const PHOTOS = [
-  { label: 'Starfield', author: 'Paul Lichtblau', page: 'https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c' },
-  ...COVER_PHOTOS,
+// Tailwind has to see each class whole, so the hover cuts are spelled out. Square
+// stays as the fallback, so a cut that is still loading doesn't flash a serif.
+const WORDMARK = [
+  ['O', "hover:font-['Geist_Pixel_Circle','Geist_Pixel_Square']"],
+  ['G', "hover:font-['Geist_Pixel_Grid','Geist_Pixel_Square']"],
+  ['I', "hover:font-['Geist_Pixel_Line','Geist_Pixel_Square']"],
+  ['S', "hover:font-['Geist_Pixel_Triangle','Geist_Pixel_Square']"],
 ];
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline decoration-foreground/20 underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground/50"
+    >
+      {children}
+    </a>
+  );
+}
 
 type Param = { name: string; description: string; limit?: string };
 
@@ -138,37 +152,40 @@ export default function HomeStaticContent() {
         </div>
       </section>
 
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 pt-10 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p className="flex items-center gap-3">
-            <span className="font-pixel text-base leading-none text-foreground">OGIS</span>
-            <span>MIT licensed. Built on Next.js and @vercel/og.</span>
-          </p>
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
-            GitHub
-          </a>
-        </div>
-        <p className="mx-auto max-w-6xl px-4 pt-4 pb-10 text-xs leading-relaxed text-pretty text-muted-foreground sm:px-6">
-          Photos from Unsplash:{' '}
-          {PHOTOS.map((photo, index) => (
-            <Fragment key={photo.page}>
-              {index ? ', ' : null}
-              <a href={photo.page} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">
-                {photo.label} by {photo.author}
+      <footer className="overflow-hidden border-t">
+        <div className="mx-auto max-w-6xl px-4 pt-12 sm:px-6">
+          <div className="flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-baseline sm:justify-between">
+            <div>
+              <p>MIT licensed. Built on Next.js and @vercel/og.</p>
+              <p className="mt-1.5 text-xs text-pretty">
+                Sample photos from <FooterLink href="https://unsplash.com">Unsplash</FooterLink>, paintings by Van Gogh from{' '}
+                <FooterLink href="https://www.metmuseum.org/hubs/open-access">The Met</FooterLink>.{' '}
+                <FooterLink href={`${GITHUB_URL}#credits`}>Full credits</FooterLink>
+              </p>
+            </div>
+            <nav className="flex gap-5 *:transition-colors *:hover:text-foreground">
+              <a href="#playground">Playground</a>
+              <a href="#api">API</a>
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                GitHub
               </a>
-            </Fragment>
-          ))}
-          . Brushwork in the oil theme: details of paintings by Vincent van Gogh from{' '}
-          <a
-            href="https://www.metmuseum.org/hubs/open-access"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition-colors hover:text-foreground"
-          >
-            The Met&apos;s open-access collection
-          </a>
-          .
-        </p>
+            </nav>
+          </div>
+
+          {/* The wordmark, its ink spanning the column edge to edge: the glyphs are
+              2.128em wide and 0.72em tall once side bearings are trimmed. Each
+              letter turns into another Geist Pixel cut on hover, the same cuts
+              the pixel theme offers. */}
+          <p aria-hidden className="@container mt-12 pb-4 select-none sm:mt-16 sm:pb-6">
+            <span className="-ml-[0.038em] block font-pixel text-[46.9cqw] leading-[0.72] text-foreground">
+              {WORDMARK.map(([letter, cut]) => (
+                <span key={letter} className={cut}>
+                  {letter}
+                </span>
+              ))}
+            </span>
+          </p>
+        </div>
       </footer>
     </>
   );
