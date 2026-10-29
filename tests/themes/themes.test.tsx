@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { ImageResponse } from '@vercel/og';
+import { ImageResponse } from 'next/og';
 import { clearFontDataCache } from '../../app/api/og/themes/font-data';
 import { themes } from '../../app/api/og/themes';
 import { coverName, fileName } from '../../app/api/og/themes/terminal';

@@ -1,4 +1,4 @@
-import { ImageResponse } from '@vercel/og';
+import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { loadRemoteImage, reconstructImageUrl } from '@/app/lib/og-remote-image';
 import { resolveOgRouteKeys } from '@/app/lib/og-route-keys';
