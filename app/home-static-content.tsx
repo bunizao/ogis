@@ -2,14 +2,49 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const GITHUB_URL = 'https://github.com/bunizao/ogis';
 
-// Tailwind has to see each class whole, so the hover cuts are spelled out. Square
-// stays as the fallback, so a cut that is still loading doesn't flash a serif.
+// "OGIS" in Geist Pixel, traced from its Grid cut: one character per dot.
 const WORDMARK = [
-  ['O', "hover:font-['Geist_Pixel_Circle','Geist_Pixel_Square']"],
-  ['G', "hover:font-['Geist_Pixel_Grid','Geist_Pixel_Square']"],
-  ['I', "hover:font-['Geist_Pixel_Line','Geist_Pixel_Square']"],
-  ['S', "hover:font-['Geist_Pixel_Triangle','Geist_Pixel_Square']"],
+  '.....######............#######.......##.......######....',
+  '...##########........###########.....##.....##########..',
+  '..###......###......###.......###....##.....##......###.',
+  '..##........##......##.........##....##....##........##.',
+  '.##..........##....##...........##...##....##.........##',
+  '.##..........##....##...........##...##....##.........##',
+  '##............##..##.................##....##...........',
+  '##............##..##.................##....###..........',
+  '##............##..##.................##.....######......',
+  '##............##..##.................##.......#######...',
+  '##............##..##......########...##..........######.',
+  '##............##..##......########...##.............###.',
+  '##............##..##............##...##...............##',
+  '.##..........##....##...........##...##....##.........##',
+  '.##..........##....##...........##...##....##.........##',
+  '..##........##......##..........##...##....##.........##',
+  '..###......###......###........###...##.....##.......##.',
+  '...##########........##########.##...##.....###########.',
+  '.....######............#######..##...##.......#######...',
 ];
+
+// The wordmark as a dot-matrix display: every cell holds a faint dot and the
+// letters are the lit ones. SVG, so it spans the column at any width.
+function Wordmark() {
+  const width = WORDMARK[0].length;
+  const height = WORDMARK.length;
+  // A zero-length segment with a round cap draws one dot.
+  const lit = WORDMARK.flatMap((row, y) => [...row].flatMap((cell, x) => (cell === '#' ? `M${x + 0.5} ${y + 0.5}h0` : []))).join('');
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} aria-hidden className="mt-12 mb-5 block h-auto w-full sm:mt-16 sm:mb-8">
+      <defs>
+        <pattern id="wordmark-cell" width={1} height={1} patternUnits="userSpaceOnUse">
+          <circle cx={0.5} cy={0.5} r={0.14} fill="currentColor" />
+        </pattern>
+      </defs>
+      <rect width={width} height={height} fill="url(#wordmark-cell)" opacity={0.1} />
+      <path d={lit} stroke="currentColor" strokeWidth={0.6} strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -152,7 +187,7 @@ export default function HomeStaticContent() {
         </div>
       </section>
 
-      <footer className="overflow-hidden border-t">
+      <footer className="border-t">
         <div className="mx-auto max-w-6xl px-4 pt-12 sm:px-6">
           <div className="flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-baseline sm:justify-between">
             <div>
@@ -172,19 +207,7 @@ export default function HomeStaticContent() {
             </nav>
           </div>
 
-          {/* The wordmark, its ink spanning the column edge to edge: the glyphs are
-              2.128em wide and 0.72em tall once side bearings are trimmed. Each
-              letter turns into another Geist Pixel cut on hover, the same cuts
-              the pixel theme offers. */}
-          <p aria-hidden className="@container mt-12 pb-4 select-none sm:mt-16 sm:pb-6">
-            <span className="-ml-[0.038em] block font-pixel text-[46.9cqw] leading-[0.72] text-foreground">
-              {WORDMARK.map(([letter, cut]) => (
-                <span key={letter} className={cut}>
-                  {letter}
-                </span>
-              ))}
-            </span>
-          </p>
+          <Wordmark />
         </div>
       </footer>
     </>
