@@ -1,4 +1,4 @@
-import { fitFontSize, Img, loadFontsourceFamily } from './shared';
+import { fitFontSize, Img, loadFontsourceFamily, seededRandom } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
 function loadFonts(_context: ThemeContext): Promise<ThemeFont[]> {
@@ -22,18 +22,6 @@ const PALETTES = [
 const TILE = 158;
 const COLUMNS = 3;
 const ART_WIDTH = TILE * COLUMNS;
-
-// FNV-1a, then mulberry32: tiny, stable across runtimes, good enough for picking shapes.
-function seededRandom(text: string): () => number {
-  let seed = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) seed = Math.imul(seed ^ text.charCodeAt(i), 0x01000193);
-  return () => {
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 // A cover takes a 2x2 block, cut to a quarter circle on one of these corners.
 const CORNERS = ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'] as const;
