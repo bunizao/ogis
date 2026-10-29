@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Next.js-based Open Graph image generation service, originally for the Attegi Ghost theme. Renders 1200x630 social preview images in ten themes (`pixel`, `modern`, `editorial`, `swiss`, `terminal`, `gallery`, `postcard`, `bauhaus`, `blueprint`, `oil`) on the Vercel Edge Runtime.
+Next.js-based Open Graph image generation service, originally for the Attegi Ghost theme. Renders 1200x630 social preview images in ten themes (`pixel`, `modern`, `editorial`, `swiss`, `terminal`, `gallery`, `postcard`, `bauhaus`, `blueprint`, `oil`). Deploys to Vercel or self-hosts from the `Dockerfile`.
 
 ## Development Commands
 
@@ -20,12 +20,12 @@ bun test             # Run full Bun test suite
 
 ## Architecture
 
-**Runtime**: Next.js 16, App Router, Edge Runtime (`export const runtime = 'edge'`), @vercel/og (Satori), TypeScript strict mode.
+**Runtime**: Next.js 16, App Router, Node.js runtime (Next 16.4 deprecated the Edge Runtime), `next/og` (Satori), TypeScript strict mode.
 
 ### Key Files
 
 - `app/api/og/handler.tsx` — Main OG handler: route-key check, text sanitization and caps, accent parsing, image prefetch, theme dispatch.
-- `app/api/og/themes/` — One file per theme, each exporting `loadFonts` + `render`. `index.ts` is the registry, `shared.tsx` holds `Img`, `Cover`, `FILL`, `fitFontSize`, `brightness`, `seededRandom` and the Fontsource loader, `font-data.ts` the per-isolate font fetch cache.
+- `app/api/og/themes/` — One file per theme, each exporting `loadFonts` + `render`. `index.ts` is the registry, `shared.tsx` holds `Img`, `Cover`, `FILL`, `fitFontSize`, `brightness`, `seededRandom` and the Fontsource loader, `font-data.ts` the per-instance font fetch cache, `public-files.ts` the disk reads for bundled fonts and images.
 - `app/api/og/route.tsx` — `/api/og` wrapper around the shared handler.
 - `app/api/[ogKey]/route.tsx` — `/api/<key>` wrapper for the `OG_API_PATH` alias and the legacy `OG_SECRET` path.
 - `app/api/debug/route.ts` — `OG_ENABLE_DEBUG=true` only: reports why `image`/`icon`/`avatar` were accepted or rejected.
@@ -39,15 +39,16 @@ bun test             # Run full Bun test suite
 - `components/ui/` — shadcn components (new-york, `radix-ui` package). Add more with `bunx shadcn@latest add <name>`, then point their `cn` import at `@/lib/utils`.
 - `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
 - `public/default-bg.jpg` — Starfield used by `pixel`/`modern`/`gallery` when no image is given.
-- `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants) served locally.
+- `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants).
 - `public/oil/` — Van Gogh brushwork details (The Met, CC0) and `impasto.png`, the light and shade of the Irises background, for the `oil` theme.
+- `Dockerfile` — Standalone image; `.github/workflows/docker.yml` builds it on PRs and publishes it to GHCR from `main` and `v*` tags.
 
 ### Image Generation Flow
 
 1. **GET `/api/og` or `/api/<alias>`** with `title`, `site`, `excerpt`, `author`, `date`, `reading`, `tag`, `accent`, `image`, `icon`, `avatar`, `theme`, `pixelFont`
 2. **Route key** — unknown keys return 404. No signatures: they were removed because `/api/og` is public anyway; stale `sig`/`exp` params are ignored
 3. **Images** — `loadRemoteImage()` fetches each URL server-side and inlines it as a data URL, so Satori never fetches user URLs itself. Rejected images become `null` and the theme lays out without them
-4. **Fonts** — Pixel fonts from `public/fonts/`; other themes load pinned Fontsource TTFs from jsdelivr (`https://cdn.jsdelivr.net/fontsource/fonts/<id>@5.3.0/latin-<weight>-<style>.ttf`). Satori needs TTF/OTF, not woff2
+4. **Fonts** — Pixel fonts read from `public/fonts/`; other themes load pinned Fontsource TTFs from jsdelivr (`https://cdn.jsdelivr.net/fontsource/fonts/<id>@5.3.0/latin-<weight>-<style>.ttf`). Satori needs TTF/OTF, not woff2
 5. **Text** — Typographic dashes, smart quotes and Unicode spaces normalized; fields capped by code point
 6. **Render** — Satori → PNG, cached with `s-maxage=86400, stale-while-revalidate=604800`
 
@@ -68,11 +69,15 @@ These cost real debugging time; the theme render tests in `tests/themes/` catch 
 - `textWrap: 'balance'` combined with `lineClamp` ellipsizes too early. Use `textWrap: 'pretty'`.
 - `<img>` needs `width`/`height` props (use `Img`/`Cover`).
 - CJK falls back to dynamically loaded Noto at weight 400, so bold CJK titles render regular in non-pixel themes.
-- `@vercel/og` sets its own lowercase `cache-control`; pass ours lowercase too or the two get comma-joined.
+- `next/og` defaults `cache-control` to revalidate on every request; the handler replaces it.
 
-### Edge Runtime Constraints
+### Self-hosting Constraints
 
-No Node.js APIs (fs, path, etc.), no native modules. Fonts and images are fetched at runtime via `fetch()`.
+- Never fetch our own origin. Behind a proxy or a Docker port mapping the server often can't reach its public URL, so bundled fonts and images go through `readPublicFile`/`publicImage` (`public-files.ts`). Next's tracing follows that `path.join` and ships `public/` with the server build.
+- Themes that draw bundled images load them in an async `render`.
+- `output: 'standalone'` is only set when `NEXT_OUTPUT=standalone` (the Dockerfile does); `next start` warns about it otherwise.
+- TypeScript stays on 6.x: 7.0 drops the JS API that `next build`'s type check calls.
+- No native modules: the Dockerfile builds once on the build platform and copies the output into each target arch.
 
 ### Testing
 
@@ -81,4 +86,4 @@ No Node.js APIs (fs, path, etc.), no native modules. Fonts and images are fetche
 
 ### API-Only Mode
 
-Set `OG_API_ONLY=true` to disable non-API frontend routes. The proxy (`proxy.ts`) returns `404` for frontend pages while keeping API routes and OG-required static assets available.
+Set `OG_API_ONLY=true` to disable non-API frontend routes. The proxy (`proxy.ts`) returns `404` for everything outside `/api/*` and `/_next/*`.

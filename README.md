@@ -2,10 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black)](https://vercel.com)
 
-Open Graph images for blogs, from a single URL. Built with Next.js 16 on the Vercel Edge Runtime.
+Open Graph images for blogs, from a single URL. Built with Next.js 16; runs on Vercel or on your own server.
 
 **Demo**: https://og.tuuhub.com
 
@@ -17,21 +17,61 @@ Open Graph images for blogs, from a single URL. Built with Next.js 16 on the Ver
 - **Your images**: cover image, site icon and author avatar, fetched and checked server-side
 - **Six pixel fonts**: Zpix plus five Geist Pixel cuts, bundled in `public/fonts`
 - **Fitted titles**: font size steps down with title length, and CJK counts as wide
-- **Edge rendering** with CDN caching (one day fresh, one week stale-while-revalidate)
+- **Deploy anywhere**: one click on Vercel, or a Docker image for your own server
+- **CDN caching**: one day fresh, one week stale-while-revalidate
 
-## Deploy to Vercel
+## Deploy
+
+The endpoint is `https://<your-domain>/api/og` wherever it runs.
+
+### Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bunizao/ogis)
 
-No configuration is required. The endpoint is `https://<your-domain>/api/og`.
+No configuration is required.
 
-If you only need the API (no landing page), set:
+### Docker
 
+A multi-arch image (`linux/amd64`, `linux/arm64`) is published from `main`:
+
+```bash
+docker run -d -p 3000:3000 ghcr.io/bunizao/ogis
 ```
-OG_API_ONLY=true
+
+With Compose:
+
+```yaml
+services:
+  ogis:
+    image: ghcr.io/bunizao/ogis
+    ports:
+      - "3000:3000"
+    environment:
+      OG_API_ONLY: "true"
+    restart: unless-stopped
 ```
 
-This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fonts/*`, `/oil/*` and `/_next/*` available.
+Or build it yourself with `docker build -t ogis .`.
+
+### Any Node.js host
+
+OGIS is a plain Next.js app on the Node.js runtime, so it runs wherever Node 20.9+ does:
+
+```bash
+bun install
+bun run build
+PORT=3000 bun run start
+```
+
+### API-only mode
+
+If you only need the API (no landing page), set `OG_API_ONLY=true`. Every path outside `/api/*` and `/_next/*` then returns `404`.
+
+### On your own server
+
+- **Put a cache in front.** Responses carry `s-maxage=86400, stale-while-revalidate=604800`. Vercel's CDN honours that on its own; elsewhere, a CDN (Cloudflare, Bunny) or a caching proxy (nginx `proxy_cache`, Caddy, Varnish) does the same job. Without one, every crawler hit renders the image again.
+- **Outbound access.** Theme fonts come from `cdn.jsdelivr.net`, CJK glyphs from Google Fonts, and image hosts are checked with Google Public DNS (`dns.google`) before they are downloaded. A server that can't reach `dns.google` renders cards without remote images.
+- Bundled fonts and images are read from disk, so the server never requests its own URL. Port mappings and reverse proxies need no extra configuration.
 
 ## Themes
 
