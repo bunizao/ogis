@@ -4,6 +4,7 @@ node_modules/
 *.log
 *.tsbuildinfo
 /.idea
-*.png
+# Screenshots dropped in the repo root; image assets under public/ are tracked.
+/*.png
 .claude/
 .env*.local
