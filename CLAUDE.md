@@ -25,7 +25,7 @@ bun test             # Run full Bun test suite
 ### Key Files
 
 - `app/api/og/handler.tsx` — Main OG handler: route-key check, text sanitization and caps, accent parsing, image prefetch, theme dispatch.
-- `app/api/og/themes/` — One file per theme, each exporting `loadFonts` + `render`. `index.ts` is the registry, `shared.tsx` holds `Img`, `Cover`, `FILL`, `fitFontSize`, `brightness`, `seededRandom` and the Fontsource loader, `font-data.ts` the per-instance font fetch cache, `public-files.ts` the disk reads for bundled fonts and images.
+- `app/api/og/themes/` — One file per theme, each exporting `loadFonts` + `render`. `index.ts` is the registry, `shared.tsx` holds `Img`, `Cover`, `FILL`, `fitFontSize`, `brightness`, `seededRandom` and the Fontsource loader, `cjk-fonts.ts` the CJK fallback, `public-files.ts` the disk reads for bundled fonts and images.
 - `app/api/og/route.tsx` — `/api/og` wrapper around the shared handler.
 - `app/api/[ogKey]/route.tsx` — `/api/<key>` wrapper for the `OG_API_PATH` alias and the legacy `OG_SECRET` path.
 - `app/api/debug/route.ts` — `OG_ENABLE_DEBUG=true` only: reports why `image`/`icon`/`avatar` were accepted or rejected.
@@ -39,7 +39,7 @@ bun test             # Run full Bun test suite
 - `components/ui/` — shadcn components (new-york, `radix-ui` package). Add more with `bunx shadcn@latest add <name>`, then point their `cn` import at `@/lib/utils`.
 - `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
 - `public/default-bg.jpg` — Starfield used by `pixel`/`modern`/`gallery` when no image is given.
-- `public/fonts/` — Pixel font TTFs (Zpix, Geist Pixel variants).
+- `public/fonts/` — Every theme font: the pixel TTFs (Zpix, Geist Pixel variants) and one folder per Fontsource family with its licence. Sources in its README.
 - `public/oil/` — Van Gogh brushwork details (The Met, CC0) and `impasto.png`, the light and shade of the Irises background, for the `oil` theme.
 - `Dockerfile` — Standalone image; `.github/workflows/docker.yml` builds it on PRs and publishes it to GHCR from `main` and `v*` tags.
 
@@ -48,7 +48,7 @@ bun test             # Run full Bun test suite
 1. **GET `/api/og` or `/api/<alias>`** with `title`, `site`, `excerpt`, `author`, `date`, `reading`, `tag`, `accent`, `image`, `icon`, `avatar`, `theme`, `pixelFont`
 2. **Route key** — unknown keys return 404. No signatures: they were removed because `/api/og` is public anyway; stale `sig`/`exp` params are ignored
 3. **Images** — `loadRemoteImage()` fetches each URL server-side and inlines it as a data URL, so Satori never fetches user URLs itself. Rejected images become `null` and the theme lays out without them
-4. **Fonts** — Pixel fonts read from `public/fonts/`; other themes load pinned Fontsource TTFs from jsdelivr (`https://cdn.jsdelivr.net/fontsource/fonts/<id>@5.3.0/latin-<weight>-<style>.ttf`). Satori needs TTF/OTF, not woff2
+4. **Fonts** — All read from disk: pixel fonts, and Fontsource 5.3.0 latin TTFs at `public/fonts/<id>/latin-<weight>-<style>.ttf` (Satori needs TTF/OTF, not woff2). A new cut needs its file there; the theme tests load every cut. CJK text gets Noto Sans SC/JP/KR subsets at 400 and 700 from `fonts.googleapis.cn`, which mainland China can reach; if that fails, next/og's own fallback fetches 400 from `fonts.googleapis.com`. Pixel with Zpix skips it (`coversCjk`)
 5. **Text** — Typographic dashes, smart quotes and Unicode spaces normalized; fields capped by code point
 6. **Render** — Satori → PNG, cached with `s-maxage=86400, stale-while-revalidate=604800`
 
@@ -68,7 +68,7 @@ These cost real debugging time; the theme render tests in `tests/themes/` catch 
 - `lineClamp` needs `display: 'block'` and a single string child.
 - `textWrap: 'balance'` combined with `lineClamp` ellipsizes too early. Use `textWrap: 'pretty'`.
 - `<img>` needs `width`/`height` props (use `Img`/`Cover`).
-- CJK falls back to dynamically loaded Noto at weight 400, so bold CJK titles render regular in non-pixel themes.
+- Satori only reaches for another font when no listed font has the glyph, and next/og's fallback loads weight 400 only. So when `cjk-fonts.ts` fails, bold CJK titles render regular.
 - `next/og` defaults `cache-control` to revalidate on every request; the handler replaces it.
 
 ### Self-hosting Constraints

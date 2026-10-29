@@ -31,4 +31,6 @@ export interface ThemeDefinition {
   // Async when the theme draws on bundled images (see public-files.ts).
   render: (props: ThemeProps, context: ThemeContext) => React.ReactElement | Promise<React.ReactElement>;
   fontFamily: string;
+  // True when the theme's own fonts draw CJK, so no CJK fallback is fetched.
+  coversCjk?: (context: ThemeContext) => boolean;
 }

@@ -70,7 +70,7 @@ If you only need the API (no landing page), set `OG_API_ONLY=true`. Every path o
 ### On your own server
 
 - **Put a cache in front.** Responses carry `s-maxage=86400, stale-while-revalidate=604800`. Vercel's CDN honours that on its own; elsewhere, a CDN (Cloudflare, Bunny) or a caching proxy (nginx `proxy_cache`, Caddy, Varnish) does the same job. Without one, every crawler hit renders the image again.
-- **Outbound access.** Theme fonts come from `cdn.jsdelivr.net`, CJK glyphs from Google Fonts, and image hosts are checked over DNS-over-HTTPS before they are downloaded: `dns.google` first, then Cloudflare, AliDNS and DNSPod, so servers in mainland China resolve them too. A server that reaches none of them renders cards without remote images.
+- **Outbound access.** Theme fonts ship with the app. CJK glyphs come from Google Fonts' China domain (`fonts.googleapis.cn`), falling back to `fonts.googleapis.com`, and emoji from `cdn.jsdelivr.net`. Image hosts are checked over DNS-over-HTTPS before they are downloaded: `dns.google` first, then Cloudflare, AliDNS and DNSPod, so servers in mainland China resolve them too. A server that reaches none of them renders cards without remote images.
 - Bundled fonts and images are read from disk, so the server never requests its own URL. Port mappings and reverse proxies need no extra configuration.
 
 ## Themes
@@ -215,6 +215,7 @@ For other frameworks and platforms, set `og:image` meta tags to the generated UR
 
 - **Default background**: replace `public/default-bg.jpg` with your own 1200×630 image.
 - **Pixel fonts**: edit `app/lib/pixel-fonts.ts` and put the TTF files under `public/fonts`.
+- **Theme fonts**: put the Fontsource TTF at `public/fonts/<id>/latin-<weight>-<style>.ttf` and load it with `loadFontsourceFamily`.
 - **Themes**: each theme is one file in `app/api/og/themes/` that exports `loadFonts` and `render`. Register new ones in `themes/index.ts` and `app/lib/og-themes.ts`.
 
 </details>
@@ -230,4 +231,5 @@ MIT
 - Oil theme brushwork (`public/oil`): details of paintings by Vincent van Gogh in [The Met's open-access collection](https://www.metmuseum.org/hubs/open-access), public domain (CC0): [Irises](https://www.metmuseum.org/art/collection/search/436528) (also the source of `impasto.png`), [Oleanders](https://www.metmuseum.org/art/collection/search/436530), [Olive Trees](https://www.metmuseum.org/art/collection/search/437998), [Women Picking Olives](https://www.metmuseum.org/art/collection/search/436536), [Roses](https://www.metmuseum.org/art/collection/search/436534) and [Wheat Field with Cypresses](https://www.metmuseum.org/art/collection/search/436535)
 - Zpix pixel font by [SolidZORO](https://github.com/SolidZORO/zpix-pixel-font)
 - Geist Pixel by [Vercel](https://vercel.com/font)
-- Geist, Geist Mono, Inter Tight, Instrument Serif, Instrument Sans, Hanken Grotesk, Libre Caslon Text, Nanum Pen Script, Jost and B612 via [Fontsource](https://fontsource.org)
+- Geist, Geist Mono, Inter Tight, Instrument Serif, Instrument Sans, Hanken Grotesk, Libre Caslon Text, Nanum Pen Script, Jost, B612 and Young Serif via [Fontsource](https://fontsource.org), under the SIL Open Font License
+- Noto Sans SC, JP and KR via [Google Fonts](https://fonts.google.com/noto) for CJK text

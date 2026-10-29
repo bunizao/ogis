@@ -6,8 +6,14 @@ import type { ThemeContext, ThemeFont, ThemeProps } from '../../app/api/og/theme
 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 
+const GEIST: ThemeFont = {
+  name: 'Geist',
+  data: await Bun.file('public/fonts/geist/latin-400-normal.ttf').arrayBuffer(),
+  weight: 400,
+  style: 'normal',
+};
+
 const state = {
-  fonts: [] as ThemeFont[],
   renders: [] as Array<{ theme: string; props: ThemeProps; context: ThemeContext }>,
 };
 
@@ -15,7 +21,7 @@ const state = {
 // process-wide in Bun and would leak into the theme render tests.
 function stubThemes() {
   for (const [theme, definition] of Object.entries(themes)) {
-    spyOn(definition, 'loadFonts').mockImplementation(async () => state.fonts);
+    spyOn(definition, 'loadFonts').mockImplementation(async () => [GEIST]);
     spyOn(definition, 'render').mockImplementation((props, context) => {
       state.renders.push({ theme, props, context });
       return createElement('div', { style: { display: 'flex' } }, props.site);
@@ -54,7 +60,6 @@ async function pngSize(response: Response) {
 }
 
 beforeEach(() => {
-  state.fonts = [];
   state.renders = [];
   delete process.env.OG_API_PATH;
   delete process.env.OG_SECRET;
@@ -189,10 +194,15 @@ describe('response', () => {
     expect(await pngSize(response)).toEqual({ width: 1200, height: 630 });
   });
 
-  test('still renders when the theme could not load any fonts', async () => {
-    // Satori rejects an empty font list; the handler must fall back to the bundled font.
-    state.fonts = [];
-    const { response } = await render('https://example.com/api/og?title=Hello');
-    expect(await pngSize(response)).toEqual({ width: 1200, height: 630 });
+  test('fetches CJK glyphs unless the theme draws them itself', async () => {
+    const network = mockNetwork();
+    const fontHosts = () => network.mock.calls.map(([input]) => new URL(String(input)).hostname);
+
+    await render('https://example.com/api/og?theme=modern&title=%E4%BD%A0%E5%A5%BD');
+    expect(fontHosts()).toEqual(['fonts.googleapis.cn']);
+
+    network.mockClear();
+    await render('https://example.com/api/og?theme=pixel&title=%E4%BD%A0%E5%A5%BD');
+    expect(fontHosts()).toEqual([]);
   });
 });

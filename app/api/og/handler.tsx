@@ -4,6 +4,7 @@ import { loadRemoteImage, reconstructImageUrl } from '@/app/lib/og-remote-image'
 import { resolveOgRouteKeys } from '@/app/lib/og-route-keys';
 import { normalizeOgTheme } from '@/app/lib/og-themes';
 import { themes } from './themes';
+import { loadCjkFonts } from './themes/cjk-fonts';
 
 const routeKeys = resolveOgRouteKeys();
 
@@ -60,14 +61,7 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
   const themeName = normalizeOgTheme(searchParams.get('theme'));
   const theme = themes[themeName];
 
-  const [fonts, background, icon, avatar] = await Promise.all([
-    theme.loadFonts(themeContext),
-    loadRemoteImage(searchParams.has('image') ? reconstructImageUrl(searchParams) : null),
-    loadRemoteImage(searchParams.get('icon')),
-    loadRemoteImage(searchParams.get('avatar')),
-  ]);
-
-  const props = {
+  const text = {
     title: readText(searchParams, 'title', 'Untitled'),
     site: readText(searchParams, 'site', 'Blog'),
     excerpt: readText(searchParams, 'excerpt'),
@@ -75,6 +69,18 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
     date: readText(searchParams, 'date'),
     tag: readText(searchParams, 'tag'),
     readingTime: readText(searchParams, 'reading'),
+  };
+
+  const [fonts, cjkFonts, background, icon, avatar] = await Promise.all([
+    theme.loadFonts(themeContext),
+    theme.coversCjk?.(themeContext) ? [] : loadCjkFonts(Object.values(text).join('')),
+    loadRemoteImage(searchParams.has('image') ? reconstructImageUrl(searchParams) : null),
+    loadRemoteImage(searchParams.get('icon')),
+    loadRemoteImage(searchParams.get('avatar')),
+  ]);
+
+  const props = {
+    ...text,
     accent: readAccent(searchParams.get('accent')),
     imageSrc: background.dataUrl,
     iconSrc: icon.dataUrl,
@@ -100,7 +106,7 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
   return new ImageResponse(await theme.render(props, themeContext), {
     width: 1200,
     height: 630,
-    fonts: fonts.length > 0 ? fonts : undefined,
+    fonts: [...fonts, ...cjkFonts],
     headers: {
       // Replaces next/og's default, which tells caches to revalidate every time.
       'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',

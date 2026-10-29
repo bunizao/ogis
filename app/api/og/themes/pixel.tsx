@@ -122,4 +122,5 @@ export const pixelTheme: ThemeDefinition = {
   loadFonts,
   render,
   fontFamily: '"Zpix", sans-serif',
+  coversCjk: context => getPixelFontOption(context.searchParams.get('pixelFont')).key === 'zpix',
 };
