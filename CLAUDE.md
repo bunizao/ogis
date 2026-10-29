@@ -81,6 +81,7 @@ These cost real debugging time; the theme render tests in `tests/themes/` catch 
 
 ### Testing
 
+- `.github/workflows/test.yml` runs `tsc --noEmit` and `bun test` on PRs and `main`. Its fresh checkout is what catches a bundled font or image that exists locally but was never committed: the theme tests read every one from `public/`.
 - Bun's `mock.module` is process-wide and outlives `mock.restore()`, so it leaks into later test files. Prefer `spyOn` on real objects (see `tests/api/og.handler.test.ts`).
 - `resolveOgRouteKeys()` runs at module load; tests that change env re-import the handler with a `?case=` query.
 
