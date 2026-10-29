@@ -47,6 +47,11 @@ export const OG_THEMES = [
     label: 'Blueprint',
     description: 'A sheet from a drawing set, with a title block. A cover image becomes a detail callout.',
   },
+  {
+    key: 'oil',
+    label: 'Oil',
+    description: "The title lettered on a close-up of Van Gogh's brushwork. A cover image is laid under real impasto.",
+  },
 ] as const;
 
 export type OgThemeOption = (typeof OG_THEMES)[number];

@@ -95,6 +95,25 @@ describe('bauhaus pattern', () => {
   });
 });
 
+describe('oil canvas', () => {
+  // The first layer: the brushwork detail, or the cover under the impasto.
+  const canvas = (props: ThemeProps) => {
+    const card = themes.oil.render(props, context()) as React.ReactElement<{ children: React.ReactElement<{ children: React.ReactElement<{ src: string }>[] }>[] }>;
+    return card.props.children[0].props.children.map(layer => layer.props.src);
+  };
+
+  test('picks a brushwork detail by title, served from the deployment origin', () => {
+    const [detail] = canvas({ ...minimal, title: 'Interstellar' });
+
+    expect(detail).toMatch(/^https:\/\/og\.example\.com\/oil\/[a-z-]+\.jpg$/);
+    expect(canvas({ ...minimal, title: 'Interstellar' })[0]).toBe(detail);
+  });
+
+  test('lays a cover under the impasto', () => {
+    expect(canvas({ ...minimal, imageSrc: PNG }).slice(0, 2)).toEqual([PNG, 'https://og.example.com/oil/impasto.png']);
+  });
+});
+
 describe('font loading', () => {
   test('pixel loads the selected bundled font from the deployment origin', async () => {
     const requested = mockFontFetch(() => new Response(new ArrayBuffer(8)));

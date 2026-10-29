@@ -4,6 +4,7 @@ import { blueprintTheme } from './blueprint';
 import { editorialTheme } from './editorial';
 import { galleryTheme } from './gallery';
 import { modernTheme } from './modern';
+import { oilTheme } from './oil';
 import { pixelTheme } from './pixel';
 import { postcardTheme } from './postcard';
 import { swissTheme } from './swiss';
@@ -20,4 +21,5 @@ export const themes: Record<OgThemeKey, ThemeDefinition> = {
   postcard: postcardTheme,
   bauhaus: bauhausTheme,
   blueprint: blueprintTheme,
+  oil: oilTheme,
 };
