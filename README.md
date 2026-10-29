@@ -2,10 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7-blue)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black)](https://vercel.com)
 
-Open Graph images for blogs, from a single URL. Built with Next.js 16 on the Vercel Edge Runtime.
+Open Graph images for blogs, from a single URL. Built with Next.js 16; runs on Vercel or on your own server.
 
 **Demo**: https://og.tuuhub.com
 
@@ -17,21 +17,61 @@ Open Graph images for blogs, from a single URL. Built with Next.js 16 on the Ver
 - **Your images**: cover image, site icon and author avatar, fetched and checked server-side
 - **Six pixel fonts**: Zpix plus five Geist Pixel cuts, bundled in `public/fonts`
 - **Fitted titles**: font size steps down with title length, and CJK counts as wide
-- **Edge rendering** with CDN caching (one day fresh, one week stale-while-revalidate)
+- **Deploy anywhere**: one click on Vercel, or a Docker image for your own server
+- **CDN caching**: one day fresh, one week stale-while-revalidate
 
-## Deploy to Vercel
+## Deploy
+
+The endpoint is `https://<your-domain>/api/og` wherever it runs.
+
+### Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bunizao/ogis)
 
-No configuration is required. The endpoint is `https://<your-domain>/api/og`.
+No configuration is required.
 
-If you only need the API (no landing page), set:
+### Docker
 
+A multi-arch image (`linux/amd64`, `linux/arm64`) is published from `main`:
+
+```bash
+docker run -d -p 3000:3000 ghcr.io/bunizao/ogis
 ```
-OG_API_ONLY=true
+
+With Compose:
+
+```yaml
+services:
+  ogis:
+    image: ghcr.io/bunizao/ogis
+    ports:
+      - "3000:3000"
+    environment:
+      OG_API_ONLY: "true"
+    restart: unless-stopped
 ```
 
-This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fonts/*`, `/oil/*` and `/_next/*` available.
+Or build it yourself with `docker build -t ogis .`.
+
+### Any Node.js host
+
+OGIS is a plain Next.js app on the Node.js runtime, so it runs wherever Node 20.9+ does:
+
+```bash
+bun install
+bun run build
+PORT=3000 bun run start
+```
+
+### API-only mode
+
+If you only need the API (no landing page), set `OG_API_ONLY=true`. Every path outside `/api/*` and `/_next/*` then returns `404`.
+
+### On your own server
+
+- **Put a cache in front.** Responses carry `s-maxage=86400, stale-while-revalidate=604800`. Vercel's CDN honours that on its own; elsewhere, a CDN (Cloudflare, Bunny) or a caching proxy (nginx `proxy_cache`, Caddy, Varnish) does the same job. Without one, every crawler hit renders the image again.
+- **Outbound access.** Theme fonts ship with the app. CJK glyphs come from Google Fonts' China domain (`fonts.googleapis.cn`), falling back to `fonts.googleapis.com`, and emoji from `cdn.jsdelivr.net`. Image hosts are checked over DNS-over-HTTPS before they are downloaded: `dns.google` first, then Cloudflare, AliDNS and DNSPod, so servers in mainland China resolve them too. A server that reaches none of them renders cards without remote images.
+- Bundled fonts and images are read from disk, so the server never requests its own URL. Port mappings and reverse proxies need no extra configuration.
 
 ## Themes
 
@@ -175,6 +215,7 @@ For other frameworks and platforms, set `og:image` meta tags to the generated UR
 
 - **Default background**: replace `public/default-bg.jpg` with your own 1200×630 image.
 - **Pixel fonts**: edit `app/lib/pixel-fonts.ts` and put the TTF files under `public/fonts`.
+- **Theme fonts**: put the Fontsource TTF at `public/fonts/<id>/latin-<weight>-<style>.ttf` and load it with `loadFontsourceFamily`.
 - **Themes**: each theme is one file in `app/api/og/themes/` that exports `loadFonts` and `render`. Register new ones in `themes/index.ts` and `app/lib/og-themes.ts`.
 
 </details>
@@ -190,4 +231,5 @@ MIT
 - Oil theme brushwork (`public/oil`): details of paintings by Vincent van Gogh in [The Met's open-access collection](https://www.metmuseum.org/hubs/open-access), public domain (CC0): [Irises](https://www.metmuseum.org/art/collection/search/436528) (also the source of `impasto.png`), [Oleanders](https://www.metmuseum.org/art/collection/search/436530), [Olive Trees](https://www.metmuseum.org/art/collection/search/437998), [Women Picking Olives](https://www.metmuseum.org/art/collection/search/436536), [Roses](https://www.metmuseum.org/art/collection/search/436534) and [Wheat Field with Cypresses](https://www.metmuseum.org/art/collection/search/436535)
 - Zpix pixel font by [SolidZORO](https://github.com/SolidZORO/zpix-pixel-font)
 - Geist Pixel by [Vercel](https://vercel.com/font)
-- Geist, Geist Mono, Inter Tight, Instrument Serif, Instrument Sans, Hanken Grotesk, Libre Caslon Text, Nanum Pen Script, Jost and B612 via [Fontsource](https://fontsource.org)
+- Geist, Geist Mono, Inter Tight, Instrument Serif, Instrument Sans, Hanken Grotesk, Libre Caslon Text, Nanum Pen Script, Jost, B612 and Young Serif via [Fontsource](https://fontsource.org), under the SIL Open Font License
+- Noto Sans SC, JP and KR via [Google Fonts](https://fonts.google.com/noto) for CJK text

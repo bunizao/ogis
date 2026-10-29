@@ -1,3 +1,4 @@
+import { publicImage } from './public-files';
 import { Cover, FILL, fitFontSize, Img, loadFontsourceFamily, seededRandom } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
@@ -23,10 +24,10 @@ const DETAILS = [
 const UMBER = '#241b14';
 const LINEN = '#f5efe2';
 
-function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
+async function render(props: ThemeProps, _context: ThemeContext): Promise<React.ReactElement> {
   const { title, site, excerpt, author, date, tag, readingTime, imageSrc, iconSrc } = props;
   const detail = DETAILS[Math.floor(seededRandom(`${site}\n${title}`)() * DETAILS.length)];
-  const asset = (path: string) => new URL(`/oil/${path}`, context.baseUrl).toString();
+  const canvas = await publicImage(imageSrc ? 'oil/impasto.png' : `oil/${detail.file}.jpg`);
   // Covers are mostly darker than the paintings, so they get a shadow along
   // the bottom and light lettering.
   const ink = imageSrc ? LINEN : UMBER;
@@ -54,7 +55,7 @@ function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
       {imageSrc ? (
         <>
           <Cover src={imageSrc} style={{ filter: 'saturate(1.2) blur(0.8px)' }} />
-          <Img src={asset('impasto.png')} width={1200} height={630} style={{ position: 'absolute', top: 0, left: 0 }} />
+          <Img src={canvas} width={1200} height={630} style={{ position: 'absolute', top: 0, left: 0 }} />
           <div
             style={{
               ...FILL,
@@ -64,7 +65,7 @@ function render(props: ThemeProps, context: ThemeContext): React.ReactElement {
         </>
       ) : (
         <>
-          <Cover src={asset(`${detail.file}.jpg`)} />
+          <Cover src={canvas} />
           <div
             style={{
               ...FILL,

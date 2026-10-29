@@ -1,3 +1,4 @@
+import { publicImage } from './public-files';
 import { brightness, fitFontSize, Img, loadFontsourceFamily } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
@@ -18,8 +19,8 @@ const PRINT_WIDTH = 640;
 const LABEL_LEFT = PRINT_WIDTH + 64;
 const LABEL_WIDTH = 1200 - LABEL_LEFT - 64;
 
-function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
-  const { title, site, excerpt, author, date, tag, readingTime, imageSrc, fallbackImageSrc, iconSrc } = props;
+async function render(props: ThemeProps, _context: ThemeContext): Promise<React.ReactElement> {
+  const { title, site, excerpt, author, date, tag, readingTime, imageSrc, iconSrc } = props;
   const wall = props.accent ?? WALL;
   const dark = brightness(wall) < 120;
   const ink = dark ? '#f4f3ef' : '#1a1a1a';
@@ -58,7 +59,7 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
         }}
       />
 
-      <Img src={imageSrc ?? fallbackImageSrc} width={PRINT_WIDTH} height={630} />
+      <Img src={imageSrc ?? (await publicImage('default-bg.jpg'))} width={PRINT_WIDTH} height={630} />
 
       <div
         style={{

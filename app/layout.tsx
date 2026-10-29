@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'OGIS - Open Graph Image Service',
   description: 'Open Graph images from a single URL. Ten themes, your own images, rendered at the edge.',
-  keywords: ['og image', 'open graph', 'social media', 'preview', 'image generation', 'edge runtime', 'next.js', 'vercel', 'zpix'],
+  keywords: ['og image', 'open graph', 'social media', 'preview', 'image generation', 'self-hosted', 'next.js', 'vercel', 'zpix'],
   authors: [{ name: 'bunizao', url: 'https://github.com/bunizao' }],
   icons: {
     icon: '/favicon.svg',

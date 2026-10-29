@@ -1,3 +1,4 @@
+import { publicImage } from './public-files';
 import { Cover, FILL, fitFontSize, Img, loadFontsourceFamily } from './shared';
 import type { ThemeProps, ThemeFont, ThemeDefinition, ThemeContext } from './types';
 
@@ -11,8 +12,8 @@ const MARGIN = 64;
 const WHITE = '#ffffff';
 const SOFT = 'rgba(255, 255, 255, 0.72)';
 
-function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
-  const { title, site, excerpt, author, date, readingTime, tag, imageSrc, fallbackImageSrc, iconSrc, avatarSrc } = props;
+async function render(props: ThemeProps, _context: ThemeContext): Promise<React.ReactElement> {
+  const { title, site, excerpt, author, date, readingTime, tag, imageSrc, iconSrc, avatarSrc } = props;
   const details = [date, readingTime].filter(Boolean);
 
   const titleSize = fitFontSize(title, [
@@ -35,7 +36,7 @@ function render(props: ThemeProps, _context: ThemeContext): React.ReactElement {
         background: '#000000',
       }}
     >
-      <Cover src={imageSrc ?? fallbackImageSrc} />
+      <Cover src={imageSrc ?? (await publicImage('default-bg.jpg'))} />
       {/* Darken only where text sits: a deep wash under the headline, a light one under the byline. */}
       <div
         style={{

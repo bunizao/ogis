@@ -1,26 +1,19 @@
-import { fetchFontData } from './font-data';
+import { readPublicFile } from './public-files';
 import type { ThemeFont, ThemeProps } from './types';
-
-// Pinned so a CDN-side "latest" bump can't silently change rendering.
-const FONTSOURCE_VERSION = '5.3.0';
 
 type FontVariant = { weight: ThemeFont['weight']; style?: ThemeFont['style'] };
 
-// Loads latin TTF cuts from Fontsource. Satori needs TTF/OTF, not woff2.
-// Missing cuts are skipped; Satori falls back to its bundled font.
-export async function loadFontsourceFamily(
-  id: string,
-  name: string,
-  variants: FontVariant[]
-): Promise<ThemeFont[]> {
-  const base = `https://cdn.jsdelivr.net/fontsource/fonts/${id}@${FONTSOURCE_VERSION}`;
-  const loaded = await Promise.all(
-    variants.map(async ({ weight, style = 'normal' }) => {
-      const data = await fetchFontData(`${base}/latin-${weight}-${style}.ttf`);
-      return data ? { name, data, weight, style } : null;
-    })
+// Latin TTF cuts from Fontsource, bundled in public/fonts/<id> (see the README
+// there) so a render never waits on a font CDN. Satori needs TTF/OTF, not woff2.
+export function loadFontsourceFamily(id: string, name: string, variants: FontVariant[]): Promise<ThemeFont[]> {
+  return Promise.all(
+    variants.map(async ({ weight, style = 'normal' }) => ({
+      name,
+      data: await readPublicFile(`fonts/${id}/latin-${weight}-${style}.ttf`),
+      weight,
+      style,
+    }))
   );
-  return loaded.filter((font): font is ThemeFont => font !== null);
 }
 
 // CJK and other full-width glyphs take roughly two Latin columns, so a

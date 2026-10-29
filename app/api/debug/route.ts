@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadRemoteImage, reconstructImageUrl } from '@/app/lib/og-remote-image';
 
-export const runtime = 'edge';
-
 // Explains why an image param was accepted or rejected, without rendering.
 export async function GET(request: NextRequest) {
   if (process.env.OG_ENABLE_DEBUG !== 'true') {

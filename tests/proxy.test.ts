@@ -18,21 +18,15 @@ function matchProxyPaths(pathnames: string[]): boolean[] {
 }
 
 describe('proxy matcher', () => {
-  test('skips API and required static asset paths', () => {
-    expect(
-      matchProxyPaths([
-        '/api/og',
-        '/api/custom-key',
-        '/_next/static/app.js',
-        '/fonts/zpix.ttf',
-        '/default-bg.jpg',
-        '/oil/impasto.png',
-      ])
-    ).toEqual([false, false, false, false, false, false]);
+  test('skips API and Next asset paths', () => {
+    expect(matchProxyPaths(['/api/og', '/api/custom-key', '/_next/static/app.js'])).toEqual([false, false, false]);
   });
 
-  test('keeps frontend paths behind API-only mode', () => {
-    expect(matchProxyPaths(['/', '/preview.png', '/docs'])).toEqual([true, true, true]);
+  // The OG routes read fonts and images from disk, so none of public/ has to stay reachable.
+  test('keeps frontend paths and public files behind API-only mode', () => {
+    expect(matchProxyPaths(['/', '/preview.png', '/docs', '/fonts/zpix.ttf', '/oil/impasto.png', '/default-bg.jpg'])).toEqual([
+      true, true, true, true, true, true,
+    ]);
   });
 });
 

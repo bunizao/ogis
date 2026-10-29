@@ -69,7 +69,7 @@ const NOTES = [
   },
   {
     title: 'Self-hosting',
-    body: 'Deploys to Vercel with no configuration. Set OG_API_ONLY=true to hide this page.',
+    body: 'One click on Vercel, or one docker run on your own server. Set OG_API_ONLY=true to hide this page.',
   },
 ];
 

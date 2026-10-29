@@ -5,7 +5,8 @@
 // back to "no image" instead of failing the whole render.
 
 const DNS_TIMEOUT_MS = 2000;
-const DNS_ATTEMPTS = 2;
+// How long a DoH provider has to itself before the next one is asked as well.
+const DNS_HEDGE_MS = 300;
 const DNS_CACHE_TTL_MS = 10 * 60 * 1000;
 const DNS_CACHE_MAX_ENTRIES = 256;
 const FETCH_TIMEOUT_MS = 4000;
@@ -161,46 +162,65 @@ function isBlockedHostname(hostname: string): boolean {
   return !hostname || hostname === 'localhost' || hostname.endsWith('.localhost') || hostname.endsWith('.local');
 }
 
-async function fetchDnsRecords(hostname: string, recordType: 'A' | 'AAAA'): Promise<string[]> {
-  // A cold connection to dns.google can overrun the timeout, so a lookup that
-  // fails gets another try. An answer without records is final.
-  for (let attempt = 1; attempt <= DNS_ATTEMPTS; attempt += 1) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), DNS_TIMEOUT_MS);
+// Public DNS-over-HTTPS resolvers that all speak Google's JSON API. AliDNS and
+// DNSPod answer from mainland China, where dns.google is blocked.
+const DOH_RESOLVERS = [
+  'https://dns.google/resolve',
+  'https://cloudflare-dns.com/dns-query',
+  'https://dns.alidns.com/resolve',
+  'https://doh.pub/dns-query',
+];
 
-    try {
-      const response = await fetch(
-        `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=${recordType}`,
-        {
-          headers: { accept: 'application/dns-json' },
-          cache: 'no-store',
-          signal: controller.signal,
-        }
-      );
-      if (!response.ok) continue;
+// One provider's answer. NXDOMAIN and a name without records of this type are
+// answers too; an unreachable provider or a failed lookup (SERVFAIL) throws.
+async function queryResolver(
+  resolver: string,
+  hostname: string,
+  recordType: 'A' | 'AAAA',
+  signal: AbortSignal
+): Promise<string[]> {
+  const response = await fetch(`${resolver}?name=${encodeURIComponent(hostname)}&type=${recordType}`, {
+    headers: { accept: 'application/dns-json' },
+    cache: 'no-store',
+    signal: AbortSignal.any([signal, AbortSignal.timeout(DNS_TIMEOUT_MS)]),
+  });
+  if (!response.ok) throw new Error(`${resolver} answered ${response.status}`);
 
-      const data = (await response.json()) as {
-        Status?: number;
-        Answer?: { data?: string }[];
-      };
-      if (data.Status !== 0 || !Array.isArray(data.Answer)) return [];
+  const data = (await response.json()) as {
+    Status?: number;
+    Answer?: { data?: string }[];
+  };
+  if (data.Status === 3) return [];
+  if (data.Status !== 0) throw new Error(`${resolver} failed with status ${data.Status}`);
 
-      const entries = data.Answer
-        .map(answer => answer.data)
-        .filter((value): value is string => typeof value === 'string');
-      return recordType === 'A'
-        ? entries.filter(entry => parseIpv4(entry))
-        : entries.filter(entry => parseIpv6(entry));
-    } catch {
-      // Timed out or unreachable; try again.
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-  return [];
+  const entries = (data.Answer ?? [])
+    .map(answer => answer.data)
+    .filter((value): value is string => typeof value === 'string');
+  return recordType === 'A' ? entries.filter(entry => parseIpv4(entry)) : entries.filter(entry => parseIpv6(entry));
 }
 
-export async function resolveHostnameWithGoogleDns(hostname: string): Promise<string[]> {
+// Providers are asked in order. Each gets DNS_HEDGE_MS to itself before the
+// next joins in, a failure hands over at once, and the first answer wins. A
+// blocked provider costs a fraction of a second instead of a timeout.
+async function fetchDnsRecords(hostname: string, recordType: 'A' | 'AAAA'): Promise<string[]> {
+  const done = new AbortController();
+  const attempts: Promise<string[]>[] = [];
+  try {
+    for (const resolver of DOH_RESOLVERS) {
+      attempts.push(queryResolver(resolver, hostname, recordType, done.signal));
+      const headStart = new Promise<null>(resolve => setTimeout(resolve, DNS_HEDGE_MS, null));
+      const answer = await Promise.race([Promise.any(attempts), headStart]).catch(() => null);
+      if (answer) return answer;
+    }
+    return await Promise.any(attempts);
+  } catch {
+    return [];
+  } finally {
+    done.abort();
+  }
+}
+
+export async function resolveHostnameOverHttps(hostname: string): Promise<string[]> {
   const now = Date.now();
   const cached = dnsCache.get(hostname);
   if (cached && cached.expiresAt > now) {
@@ -228,7 +248,7 @@ export async function resolveHostnameWithGoogleDns(hostname: string): Promise<st
 }
 
 const defaultDeps: RemoteImageDeps = {
-  resolveHostname: resolveHostnameWithGoogleDns,
+  resolveHostname: resolveHostnameOverHttps,
   fetch: (url, init) => fetch(url, init),
 };
 
@@ -240,7 +260,7 @@ function reject(rejection: RemoteImageRejection): UrlCheck {
 
 export async function checkPublicImageUrl(
   value: string,
-  resolveHostname: HostnameResolver = resolveHostnameWithGoogleDns
+  resolveHostname: HostnameResolver = resolveHostnameOverHttps
 ): Promise<UrlCheck> {
   if (!value) return reject('missing');
   if (value.endsWith('…') || value.endsWith('...') || value.length < 20) {
