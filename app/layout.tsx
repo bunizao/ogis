@@ -1,28 +1,22 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
+const geistSans = Geist({
   subsets: ['latin'],
-  variable: '--font-body',
+  variable: '--font-geist-sans',
   display: 'swap',
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  variable: '--font-mono',
-  display: 'swap',
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-display',
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: 'OGIS - Open Graph Image Service',
-  description: 'A dynamic Open Graph image generation service built with Next.js and deployed on Vercel Edge Runtime. Creates customized social media preview images with pixel-font and liquid-glass themes.',
+  description: 'Open Graph images from a single URL. Ten themes, your own images, rendered at the edge.',
   keywords: ['og image', 'open graph', 'social media', 'preview', 'image generation', 'edge runtime', 'next.js', 'vercel', 'zpix'],
   authors: [{ name: 'bunizao', url: 'https://github.com/bunizao' }],
   icons: {
@@ -30,7 +24,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'OGIS - Open Graph Image Service',
-    description: 'Dynamic OG image generation with pixel-style typography and frosted glass effects',
+    description: 'Open Graph images from a single URL. Ten themes, rendered at the edge.',
     type: 'website',
     url: 'https://og.tutuis.me',
     images: [
@@ -45,7 +39,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'OGIS - Open Graph Image Service',
-    description: 'Dynamic OG image generation with pixel-style typography and frosted glass effects',
+    description: 'Open Graph images from a single URL. Ten themes, rendered at the edge.',
     images: ['https://og.tutuis.me/preview.png'],
   },
 };
@@ -61,7 +55,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <head>
+        {/* Sets the hero headline, so fetch it with the page rather than on first use. */}
+        <link rel="preload" href="/fonts/geist-pixel/GeistPixel-Square.ttf" as="font" type="font/ttf" crossOrigin="" />
+      </head>
       <body>
         {children}
       </body>

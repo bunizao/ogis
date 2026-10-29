@@ -9,5 +9,5 @@ export function proxy(_request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/((?!api(?:/|$)|_next(?:/|$)|fonts(?:/|$)|default-bg\\.jpg$).*)',
+  matcher: '/((?!api(?:/|$)|_next(?:/|$)|fonts(?:/|$)|oil(?:/|$)|default-bg\\.jpg$).*)',
 };

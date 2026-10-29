@@ -42,6 +42,7 @@ const windowKeys = [
   'MouseEvent',
   'FocusEvent',
   'MutationObserver',
+  'NodeFilter',
   'getComputedStyle',
   'URL',
   'URLSearchParams',
@@ -50,7 +51,10 @@ const windowKeys = [
   'Headers',
 ] as const;
 
-for (const key of windowKeys) {
+// Radix checks `instanceof HTMLFormElement` and friends, so expose every element class.
+const elementKeys = Object.getOwnPropertyNames(window).filter(key => /^(HTML|SVG)\w*Element$/.test(key));
+
+for (const key of [...windowKeys, ...elementKeys]) {
   if (!(key in globalThis)) {
     Object.defineProperty(globalThis, key, {
       value: window[key],
@@ -59,6 +63,14 @@ for (const key of windowKeys) {
     });
   }
 }
+
+// Bun ships its own CustomEvent, but jsdom only dispatches its own. Radix's
+// focus scope builds one from the global, so the jsdom class has to win.
+Object.defineProperty(globalThis, 'CustomEvent', {
+  value: window.CustomEvent,
+  configurable: true,
+  writable: true,
+});
 
 if (!globalThis.requestAnimationFrame) {
   globalThis.requestAnimationFrame = (callback: FrameRequestCallback) => {

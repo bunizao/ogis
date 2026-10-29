@@ -4,7 +4,17 @@ export interface ThemeProps {
   excerpt: string;
   author: string;
   date: string;
-  backgroundImageSrc: string;
+  tag: string;
+  readingTime: string;
+  // Validated `#rrggbb`, or null to use the theme's own accent.
+  accent: string | null;
+  // Caller-supplied images, already fetched and inlined as data URLs; null when
+  // absent or rejected so themes can lay out without them.
+  imageSrc: string | null;
+  iconSrc: string | null;
+  avatarSrc: string | null;
+  // Bundled starfield for themes that always want a photo behind the text.
+  fallbackImageSrc: string;
 }
 
 export interface ThemeContext {
@@ -15,8 +25,8 @@ export interface ThemeContext {
 export interface ThemeFont {
   name: string;
   data: ArrayBuffer;
-  style: 'normal';
-  weight: 400 | 700;
+  style: 'normal' | 'italic';
+  weight: 300 | 400 | 500 | 600 | 700 | 800 | 900;
 }
 
 export interface ThemeDefinition {

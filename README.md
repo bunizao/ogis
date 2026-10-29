@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black)](https://vercel.com)
 
-Dynamic Open Graph (OG) image generation service for blogs and websites, built with Next.js 16 on Vercel Edge Runtime.
+Open Graph images for blogs, from a single URL. Built with Next.js 16 on the Vercel Edge Runtime.
 
 **Demo**: https://og.tuuhub.com
 
@@ -13,57 +13,81 @@ Dynamic Open Graph (OG) image generation service for blogs and websites, built w
 
 ## Features
 
-- **Beautiful Default Background** - Stunning starry sky image when no background is provided
-- **Custom Background Support** - Use your own images (PNG, JPG, JPEG, GIF)
-- **Switchable Pixel Fonts** - Zpix + Geist Pixel variants (all localized in `public/fonts`)
-- **Frosted Glass Effect** - Enhanced readability with backdrop blur overlay
-- **Responsive Typography** - Dynamic font sizing based on title length
-- **Edge Runtime** - Fast generation with global CDN caching
-- **CJK Support** - Full support for Chinese, Japanese, and Korean characters
+- **Ten themes**: `pixel`, `modern`, `editorial`, `swiss`, `terminal`, `gallery`, `postcard`, `bauhaus`, `blueprint` and `oil`, each modelled on something real (a magazine, a museum label, a drawing sheet, a painted canvas) rather than decoration
+- **Your images**: cover image, site icon and author avatar, fetched and checked server-side
+- **Six pixel fonts**: Zpix plus five Geist Pixel cuts, bundled in `public/fonts`
+- **Fitted titles**: font size steps down with title length, and CJK counts as wide
+- **Edge rendering** with CDN caching (one day fresh, one week stale-while-revalidate)
 
 ## Deploy to Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bunizao/ogis)
 
-## Recommended Setup
+No configuration is required. The endpoint is `https://<your-domain>/api/og`.
 
-For most users, use a random custom API path:
-
-```
-OG_API_PATH=og_a9f4k2m8x7p1
-
-# Use a random path (8-16 chars, letters/numbers/_/-).
-```
-
-> Use `https://example.com/api/<OG_API_PATH>` as the API endpoint.
-
-
-If you only need OG image APIs (no landing page), enable API-only mode:
+If you only need the API (no landing page), set:
 
 ```
 OG_API_ONLY=true
 ```
 
-Behavior when enabled:
-- Returns `404` for non-API pages (for example `/`).
-- Keeps all API routes available (`/api/*`).
-- Keeps OG-required static assets available: `/default-bg.jpg`, `/fonts/*`, `/_next/*`.
+This returns `404` for non-API pages and keeps `/api/*`, `/default-bg.jpg`, `/fonts/*`, `/oil/*` and `/_next/*` available.
 
-  
-## Technical Stack
+## Themes
 
-- **Framework**: Next.js 16 with App Router
-- **Runtime**: Vercel Edge Runtime
-- **Image Generation**: @vercel/og (Satori)
-- **Language**: TypeScript
-- **Deployment**: Vercel
+| Theme | Look | Uses |
+|-------|------|------|
+| `pixel` (default) | Bitmap type over your cover image | `image`, `pixelFont`, `icon`, `avatar`, `tag`, `accent` |
+| `modern` | Headline set straight on your cover image, like a magazine cover | `image`, `icon`, `avatar`, `tag`, `accent` |
+| `editorial` | A centred serif opener, like a magazine feature; with `image` it becomes a two-page spread | `image`, `icon`, `avatar`, `tag`, `accent` |
+| `swiss` | Heavy grotesk headline over a ruled colophon, on a strict four-column grid | `image` (one column), `tag`, `accent` |
+| `terminal` | A shell session with a tmux-style status line; `image` splits the screen and is drawn in the second pane, like `imgcat` | `image`, `tag`, `accent` |
+| `gallery` | Your cover printed edge to edge on a gallery wall, with the post as its museum label | `image`, `icon`, `tag`, `accent` (the wall) |
+| `postcard` | The back of a postcard: printed caption, a note in pen, your cover as the stamp | `image`, `icon`, `tag`, `accent` (the ink) |
+| `bauhaus` | Flat geometric tiles generated from the title, so every post gets its own pattern | `image` (a quarter circle across four tiles), `tag`, `accent` (the lead colour) |
+| `blueprint` | A drawing sheet with zone markers and a title block; `image` becomes a cyanotype detail callout | `image`, `icon`, `tag`, `accent` (the sheet) |
+| `oil` | The title lettered on a close-up of Van Gogh's brushwork, picked by the title; `image` is laid under real impasto so it reads as paint on canvas | `image`, `icon`, `tag`, `accent` (the site name) |
 
-## Notes
+`pixel`, `modern` and `gallery` fall back to a bundled starfield when no `image` is given. `postcard` prints a red stamp with the site's initial instead, `oil` uses one of its brushwork details, and the others simply lay out without one.
 
-- **Supported Image Formats**: PNG, JPG, JPEG, GIF
-- **Unsupported Formats**: WebP, AVIF, SVG (@vercel/og limitation)
-- **Config Endpoint**: `/api/og-config` is disabled by default; enable with `OG_ENABLE_CONFIG_ENDPOINT=true` only when needed
-- **Debug Endpoint**: keep `/api/debug` disabled in production
+## Parameters
+
+| Param | Max length | Notes |
+|-------|-----------|-------|
+| `title` | 200 | Defaults to `Untitled` |
+| `site` | 80 | Defaults to `Blog` |
+| `excerpt` | 300 | Clamped to two or three lines, depending on the theme |
+| `author` | 80 | |
+| `date` | 40 | Free text, shown as given |
+| `reading` | 40 | Reading time, e.g. `5 min read` |
+| `tag` | 40 | Category or kicker |
+| `accent` | | Hex colour (`#e4002b` or `e4002b`). Colours the tag, or what the theme is built around (see the table above); invalid values use the theme default |
+| `theme` | | `pixel`, `modern`, `editorial`, `swiss`, `terminal`, `gallery`, `postcard`, `bauhaus`, `blueprint` or `oil`; anything else uses `pixel` |
+| `pixelFont` | | `zpix`, `geist-square`, `geist-circle`, `geist-line`, `geist-triangle`, `geist-grid` |
+| `image` | | Cover image URL |
+| `icon` | | Site icon URL |
+| `avatar` | | Author avatar URL |
+
+Typographic quotes, dashes and odd Unicode spaces are normalized before rendering.
+
+Example:
+
+```
+https://your-domain.com/api/og?title=Hello&site=Blog&theme=editorial&tag=Essay&author=Jane
+```
+
+### Images
+
+`image`, `icon` and `avatar` are downloaded by the server, never by the renderer directly:
+
+- `http`/`https` only, on the default port, with no credentials in the URL
+- The host must resolve to a public IP address. This is checked again on every redirect, with at most 3 redirects
+- 4 second timeout, 6 MB limit
+- PNG, JPEG, GIF or SVG, detected from the bytes rather than the extension. WebP and AVIF are not supported by Satori
+
+An image that fails any check is dropped and the card renders without it. Set `OG_ENABLE_DEBUG=true` and call `/api/debug` with the same query to see why an image was rejected.
+
+Unsplash URLs pasted without encoding (`?image=https://images.unsplash.com/photo-1?w=1600&q=80`) are reassembled automatically.
 
 ---
 <details>
@@ -72,94 +96,26 @@ Behavior when enabled:
 ## Local Development
 
 ```bash
-# Install dependencies
 bun install
-
-# Start development server
-bun run dev
-
-# Build for production
+bun run dev      # http://localhost:3000
 bun run build
-
-# Run all tests
 bun test
 ```
 
-Visit `http://localhost:3000/api/og?title=Hello&site=Blog` to test (default path).
+Try `http://localhost:3000/api/og?title=Hello&site=Blog`.
 
-## API Usage
+## Environment Variables
 
-### 1) Find Your Endpoint
+| Variable | Purpose |
+|----------|---------|
+| `OG_API_ONLY` | `true` disables non-API frontend routes |
+| `OG_API_PATH` | Also serve the endpoint at `/api/<OG_API_PATH>` (one segment: letters, digits, `_`, `-`) |
+| `OG_SECRET` | Legacy only. Older versions derived an `/api/og_xxxxxxxxxxxx` path from it; setting it keeps that path working |
+| `OG_ENABLE_DEBUG` | `true` enables `/api/debug` |
 
-Base pattern:
-
-```
-GET /api/<OG_API_PATH>
-```
-
-- No `OG_SECRET`: endpoint is usually `/api/og`
-- With `OG_SECRET`: a signed endpoint is auto-derived (for example `/api/og_xxxxxxxx`), while `/api/og` remains available for static Ghost/social-crawler integrations
-- Optional: set `OG_API_PATH` to pin a stable path
-
-To inspect current endpoint and signature requirement temporarily:
-
-```bash
-OG_ENABLE_CONFIG_ENDPOINT=true
-GET /api/og-config
-```
-
-### 2) Build Query Parameters
-
-Required:
-- `title`: article title
-- `site`: site name
-
-Optional:
-- `excerpt`, `author`, `date`, `image`
-- `theme` (`pixel` or `modern`)
-- `pixelFont` (used when `theme=pixel`)
-- `sig`: optional; required for signed custom endpoints when `OG_SECRET` or `OG_SIGNATURE_SECRET` is set
-- `exp`: optional Unix timestamp for expiring signatures
-
-Unsigned example:
-
-```
-https://your-domain.com/api/og?title=Hello&site=Blog
-```
-
-Signed example:
-
-```
-https://your-domain.com/api/your-random-key?title=Hello&site=Blog&sig=<signature>
-```
-
-### 3) Generate Signature
-
-```bash
-bun scripts/sign-og-url.mjs \
-  --url "https://your-domain.com/api/your-random-key?title=Hello&site=Blog" \
-  --exp-seconds 604800
-```
-
-Secret priority:
-`--secret` > `OG_SIGNATURE_SECRET` > `OG_SECRET`
-
-### Environment Variables
-
-| Variable | Required | Purpose | Example |
-|----------|----------|---------|---------|
-| `OG_SECRET` | No | Advanced mode: auto-derive API path and enable signature validation | `OG_SECRET=replace-with-long-random-secret` |
-| `OG_API_PATH` | Recommended | Set custom API path (random string recommended) | `OG_API_PATH=og_myblog` |
-| `OG_SIGNATURE_SECRET` | No | Explicit signature secret (defaults to `OG_SECRET`) | `OG_SIGNATURE_SECRET=another-long-secret` |
-| `OG_API_ONLY` | No | Set `true` to disable non-API frontend routes | `OG_API_ONLY=true` |
-| `OG_ENABLE_DEBUG` | No | Set `true` to enable `/api/debug` in production | `OG_ENABLE_DEBUG=false` |
-| `OG_ENABLE_CONFIG_ENDPOINT` | No | Set `true` to expose `/api/og-config` (disabled by default) | `OG_ENABLE_CONFIG_ENDPOINT=true` |
-
-Unsigned `/api/og` URLs work by default so published Ghost pages and social crawlers can render previews without server-side signing.
+`/api/og` is always available. Earlier versions supported HMAC-signed URLs (`sig`, `exp`). They have been removed because the public `/api/og` endpoint made signing pointless. Old signed URLs still render, and the extra parameters are ignored.
 
 ## Integration Guide
-
-Use `/api/og` for static CMS integrations. Use `OG_API_PATH` or the derived signed endpoint only when the caller can generate signatures server-side.
 
 ### Ghost (with Attegi Theme)
 
@@ -173,10 +129,8 @@ For App Router pages (supports dynamic params), use `generateMetadata`:
 import type { Metadata } from 'next';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = 'Hello World';
-  const siteName = 'My Blog';
-  const ogEndpoint = 'https://your-domain.com/api/your-random-key';
-  const ogUrl = `${ogEndpoint}?title=${encodeURIComponent(title)}&site=${encodeURIComponent(siteName)}`;
+  const params = new URLSearchParams({ title: 'Hello World', site: 'My Blog', theme: 'swiss' });
+  const ogUrl = `https://your-domain.com/api/og?${params}`;
 
   return {
     openGraph: {
@@ -192,8 +146,8 @@ Add to your page frontmatter or layout:
 
 ```astro
 ---
-const ogEndpoint = 'https://your-domain.com/api/your-random-key';
-const ogImage = `${ogEndpoint}?title=${encodeURIComponent(title)}&site=${encodeURIComponent(siteName)}`;
+const params = new URLSearchParams({ title, site: siteName });
+const ogImage = `https://your-domain.com/api/og?${params}`;
 ---
 
 <meta property="og:image" content={ogImage} />
@@ -206,10 +160,7 @@ const ogImage = `${ogEndpoint}?title=${encodeURIComponent(title)}&site=${encodeU
 Add to your template:
 
 ```html
-{{ $title := .Title }}
-{{ $site := .Site.Title }}
-{{ $ogPath := "your-random-key" }}
-{{ $ogImage := printf "https://your-domain.com/api/%s?title=%s&site=%s" $ogPath (urlquery $title) (urlquery $site) }}
+{{ $ogImage := printf "https://your-domain.com/api/og?title=%s&site=%s" (urlquery .Title) (urlquery .Site.Title) }}
 
 <meta property="og:image" content="{{ $ogImage }}" />
 <meta property="og:image:width" content="1200" />
@@ -220,20 +171,11 @@ Add to your template:
 
 For other frameworks and platforms, set `og:image` meta tags to the generated URL (see the [Open Graph protocol](https://ogp.me/)).
 
-## Design Details
-
-- **Image Size**: 1200×630px
-- **Font**: Zpix + Geist Pixel (`geist-square`, `geist-circle`, `geist-line`, `geist-triangle`, `geist-grid`)
-
 ## Customization
 
-### Change Default Background
-
-Replace `/public/default-bg.jpg` with your own 1200×630px image.
-
-### Change Font
-
-Edit `app/lib/pixel-fonts.ts` to add/remove local font options, then place corresponding TTF files under `public/fonts`.
+- **Default background**: replace `public/default-bg.jpg` with your own 1200×630 image.
+- **Pixel fonts**: edit `app/lib/pixel-fonts.ts` and put the TTF files under `public/fonts`.
+- **Themes**: each theme is one file in `app/api/og/themes/` that exports `loadFonts` and `render`. Register new ones in `themes/index.ts` and `app/lib/og-themes.ts`.
 
 </details>
 
@@ -244,5 +186,8 @@ MIT
 ## Credits
 
 - Default background: [Cluster of Stars](https://unsplash.com/photos/cluster-of-stars-in-the-sky-qVotvbsuM_c) by [Paul Lichtblau](https://unsplash.com/@paullichtblau) on Unsplash
+- Playground sample covers, all on Unsplash: [Carina Nebula](https://unsplash.com/photos/nebula--hI5dX2ObAs) and [Earth at night](https://unsplash.com/photos/photo-of-outer-space-Q1p7bh3SHj8) by NASA, [Launch at dusk](https://unsplash.com/photos/rocket-launch-light-trail-at-dusk--p-KCm6xB9I) by SpaceX, [Snow mountain under stars](https://unsplash.com/photos/snow-mountain-under-stars-phIFdC6lA4E) by Benjamin Voros, [Desert at night](https://unsplash.com/photos/desert-at-night-dSeQCOh_q7o) by Akhil Lincoln
+- Oil theme brushwork (`public/oil`): details of paintings by Vincent van Gogh in [The Met's open-access collection](https://www.metmuseum.org/hubs/open-access), public domain (CC0): [Irises](https://www.metmuseum.org/art/collection/search/436528) (also the source of `impasto.png`), [Oleanders](https://www.metmuseum.org/art/collection/search/436530), [Olive Trees](https://www.metmuseum.org/art/collection/search/437998), [Women Picking Olives](https://www.metmuseum.org/art/collection/search/436536), [Roses](https://www.metmuseum.org/art/collection/search/436534) and [Wheat Field with Cypresses](https://www.metmuseum.org/art/collection/search/436535)
 - Zpix pixel font by [SolidZORO](https://github.com/SolidZORO/zpix-pixel-font)
 - Geist Pixel by [Vercel](https://vercel.com/font)
+- Geist, Geist Mono, Inter Tight, Instrument Serif, Instrument Sans, Hanken Grotesk, Libre Caslon Text, Nanum Pen Script, Jost and B612 via [Fontsource](https://fontsource.org)

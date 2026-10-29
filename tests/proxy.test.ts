@@ -26,8 +26,9 @@ describe('proxy matcher', () => {
         '/_next/static/app.js',
         '/fonts/zpix.ttf',
         '/default-bg.jpg',
+        '/oil/impasto.png',
       ])
-    ).toEqual([false, false, false, false, false]);
+    ).toEqual([false, false, false, false, false, false]);
   });
 
   test('keeps frontend paths behind API-only mode', () => {

@@ -1,45 +1,34 @@
 'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { ShortcutKeys } from '@/components/shortcut-keys';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+type Shortcut = { label: string; keys: string[] };
 
 export default function ShortcutsDialog({
   shortcuts,
   onOpenChange,
 }: {
-  shortcuts: Array<{ label: string; keys: string[] }>;
+  shortcuts: Shortcut[];
   onOpenChange: (open: boolean) => void;
 }) {
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-[var(--bg-2)] border-[var(--border-1)]">
-        <DialogHeader>
-          <DialogTitle className="font-mono text-sm tracking-wide">
-            Keyboard Shortcuts
-          </DialogTitle>
+      <DialogContent className="gap-0 p-0 sm:max-w-sm">
+        <DialogHeader className="px-5 pt-5 pb-3">
+          <DialogTitle>Keyboard shortcuts</DialogTitle>
+          <DialogDescription className="sr-only">Shortcuts available on this page.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-1 -mx-6 px-0">
-          {shortcuts.map((shortcut) => (
-            <div
-              key={shortcut.label}
-              className="flex items-center justify-between px-6 py-2.5"
-            >
-              <span className="text-sm text-[var(--text-1)]">{shortcut.label}</span>
-              <ShortcutKeys
-                keys={shortcut.keys}
-                kbdClassName="min-w-[28px] px-2 py-1 bg-[var(--bg-1)] border border-[var(--border-2)] rounded-md text-[10px] leading-none text-[var(--text-0)]"
-                separatorClassName="text-[10px] opacity-45"
-                dividerClassName="text-[10px] opacity-30 mx-0.5"
-                iconClassName="size-3.5"
-              />
+        <dl className="px-5 pb-3">
+          {shortcuts.map(shortcut => (
+            <div key={shortcut.label} className="flex items-center justify-between border-t py-2.5">
+              <dt className="text-sm">{shortcut.label}</dt>
+              <dd>
+                <ShortcutKeys keys={shortcut.keys} />
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
       </DialogContent>
     </Dialog>
   );
