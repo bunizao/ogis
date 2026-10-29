@@ -121,7 +121,7 @@ https://your-domain.com/api/og?title=Hello&site=Blog&theme=editorial&tag=Essay&a
 `image`, `icon` and `avatar` are downloaded by the server, never by the renderer directly:
 
 - `http`/`https` only, on the default port, with no credentials in the URL
-- The host must resolve to a public IP address. This is checked again on every redirect, with at most 3 redirects
+- The host must resolve to a public IP address, and the download connects to one of the addresses that were checked, so DNS rebinding can't point it elsewhere. This is checked again on every redirect, with at most 3 redirects
 - 4 second timeout, 6 MB limit
 - PNG, JPEG, GIF or SVG, detected from the bytes rather than the extension. WebP and AVIF are not supported by Satori
 
