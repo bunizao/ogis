@@ -76,7 +76,6 @@ These cost real debugging time; the theme render tests in `tests/themes/` catch 
 - Never fetch our own origin. Behind a proxy or a Docker port mapping the server often can't reach its public URL, so bundled fonts and images go through `readPublicFile`/`publicImage` (`public-files.ts`). Next's tracing follows that `path.join` and ships `public/` with the server build.
 - Themes that draw bundled images load them in an async `render`.
 - `output: 'standalone'` is only set when `NEXT_OUTPUT=standalone` (the Dockerfile does); `next start` warns about it otherwise.
-- TypeScript stays on 6.x: 7.0 drops the JS API that `next build`'s type check calls.
 - No native modules: the Dockerfile builds once on the build platform and copies the output into each target arch.
 
 ### Testing
