@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { createServer } from 'node:http';
+import type { AddressInfo, LookupFunction } from 'node:net';
 import {
   checkPublicImageUrl,
   loadRemoteImage,
+  publicOnlyLookup,
   reconstructImageUrl,
+  requestWithLookup,
   resolveHostnameOverHttps,
   sniffImageType,
   type RemoteImageDeps,
@@ -194,6 +198,67 @@ describe('resolveHostnameOverHttps', () => {
   test('resolves nothing when no provider answers', async () => {
     mockDns({});
     expect(await resolveHostnameOverHttps('offline.example.com')).toEqual([]);
+  });
+});
+
+describe('connection pinning', () => {
+  // Calls the lookup the way net.connect does: with `all` under autoSelectFamily, without otherwise.
+  function lookup(ips: string[], all: boolean) {
+    return new Promise((resolve, reject) =>
+      publicOnlyLookup(async () => ips)('img.example.com', { all }, (error, address, family) =>
+        error ? reject(error) : resolve(all ? address : { address, family })
+      )
+    );
+  }
+
+  test('answers with the public addresses the check saw', async () => {
+    const ips = ['93.184.216.34', '2606:4700::6810:84e5'];
+    expect(await lookup(ips, true)).toEqual([
+      { address: '93.184.216.34', family: 4 },
+      { address: '2606:4700::6810:84e5', family: 6 },
+    ]);
+    expect(await lookup(ips, false)).toEqual({ address: '93.184.216.34', family: 4 });
+  });
+
+  test('refuses a name with any private address', async () => {
+    await expect(lookup(['93.184.216.34', '10.0.0.1'], true)).rejects.toThrow('no public address');
+    await expect(lookup([], false)).rejects.toThrow('no public address');
+  });
+
+  test('stops DNS rebinding between the check and the connection', async () => {
+    // Public when the URL is checked, loopback when the socket connects.
+    const answers = [['93.184.216.34'], ['127.0.0.1']];
+    const rebinding = async () => answers.shift() ?? [];
+    const result = await loadRemoteImage('http://rebind.example.com/cover.png', {
+      resolveHostname: rebinding,
+      fetch: (url, init) => requestWithLookup(url, init, publicOnlyLookup(rebinding)),
+    });
+
+    expect(answers).toEqual([]);
+    expect(result.rejection).toBe('fetch-failed');
+  });
+
+  test('connects to the looked-up address and leaves redirects alone', async () => {
+    const server = createServer((request, response) => {
+      if (request.url === '/moved') response.writeHead(302, { location: '/cover.png' }).end();
+      else response.writeHead(200, { 'content-type': 'image/png' }).end(PNG_BYTES);
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const base = `http://img.example.com:${(server.address() as AddressInfo).port}`;
+    const toServer: LookupFunction = (_hostname, options, callback) =>
+      options.all ? callback(null, [{ address: '127.0.0.1', family: 4 }]) : callback(null, '127.0.0.1', 4);
+
+    try {
+      const image = await requestWithLookup(`${base}/cover.png`, {}, toServer);
+      expect(image.headers.get('content-type')).toBe('image/png');
+      expect(new Uint8Array(await image.arrayBuffer())).toEqual(PNG_BYTES);
+
+      const moved = await requestWithLookup(`${base}/moved`, {}, toServer);
+      expect(moved.status).toBe(302);
+      expect(moved.headers.get('location')).toBe('/cover.png');
+    } finally {
+      server.close();
+    }
   });
 });
 

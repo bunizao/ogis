@@ -1,8 +1,13 @@
 // Fetches caller-supplied images (background, site icon, author avatar) on the
 // server so a bad URL can never reach Satori: every hop is checked against
-// public-IP rules, the download is bounded in time and size, and the bytes are
-// sniffed so only formats Satori can decode get through. Anything else falls
-// back to "no image" instead of failing the whole render.
+// public-IP rules and connects only to an address that passed them, the
+// download is bounded in time and size, and the bytes are sniffed so only
+// formats Satori can decode get through. Anything else falls back to "no
+// image" instead of failing the whole render.
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { isIP, type LookupFunction } from 'node:net';
+import { Readable } from 'node:stream';
 
 const DNS_TIMEOUT_MS = 2000;
 // How long a DoH provider has to itself before the next one is asked as well.
@@ -15,6 +20,8 @@ const MAX_REDIRECTS = 3;
 // Leaving WebP/AVIF out lets content-negotiating CDNs (Unsplash, Ghost, imgix)
 // answer with a format Satori can decode.
 const ACCEPT_HEADER = 'image/png,image/jpeg,image/gif,image/svg+xml;q=0.9,*/*;q=0.1';
+// node:http sends none, and some image hosts refuse requests without one.
+const USER_AGENT = 'ogis (+https://github.com/bunizao/ogis)';
 
 export type RemoteImageRejection =
   | 'missing'
@@ -247,9 +254,53 @@ export async function resolveHostnameOverHttps(hostname: string): Promise<string
   return ips;
 }
 
-const defaultDeps: RemoteImageDeps = {
+// The socket's own DNS lookup, through the same resolver and public-IP rule as
+// the URL check. fetch() would resolve the name again with the system resolver,
+// and a hostile DNS server can answer that second lookup with a private address
+// (DNS rebinding). Within the cache TTL this returns the very addresses checked.
+export function publicOnlyLookup(resolveHostname: HostnameResolver): LookupFunction {
+  return (hostname, options, callback) => {
+    resolveHostname(normalizeHostname(hostname)).then(
+      ips => {
+        if (!ips.length || !ips.every(isPublicIp)) {
+          callback(new Error(`${hostname} has no public address`), '');
+          return;
+        }
+        const addresses = ips.map(address => ({ address, family: isIP(address) }));
+        if (options.all) callback(null, addresses);
+        else callback(null, addresses[0].address, addresses[0].family);
+      },
+      error => callback(error, '')
+    );
+  };
+}
+
+// A GET through node:http(s) with the given lookup, wrapped as a fetch Response.
+// Redirects come back as they are, like fetch's `redirect: 'manual'`.
+export function requestWithLookup(url: string, init: RequestInit, lookup: LookupFunction): Promise<Response> {
+  const request = url.startsWith('https:') ? httpsRequest : httpRequest;
+  return new Promise((resolve, reject) => {
+    request(url, { headers: init.headers as Record<string, string>, signal: init.signal ?? undefined, lookup }, response => {
+      const headers = new Headers();
+      for (const [name, value] of Object.entries(response.headers)) {
+        if (value !== undefined) headers.set(name, Array.isArray(value) ? value.join(', ') : value);
+      }
+      const status = response.statusCode ?? 502;
+      // @types/node types web streams apart from the DOM ones; at runtime they are the same class.
+      const body = status === 204 || status === 304 ? null : (Readable.toWeb(response) as unknown as ReadableStream);
+      resolve(new Response(body, { status, headers }));
+    })
+      .on('error', reject)
+      .end();
+  });
+}
+
+const lookupPublic = publicOnlyLookup(resolveHostnameOverHttps);
+
+// Exported so tests can spy on the transport instead of opening sockets.
+export const remoteImageDeps: RemoteImageDeps = {
   resolveHostname: resolveHostnameOverHttps,
-  fetch: (url, init) => fetch(url, init),
+  fetch: (url, init) => requestWithLookup(url, init, lookupPublic),
 };
 
 type UrlCheck = { url: URL; rejection: null } | { url: null; rejection: RemoteImageRejection };
@@ -352,7 +403,7 @@ async function downloadImage(
       const response = await deps.fetch(current.toString(), {
         redirect: 'manual',
         signal: controller.signal,
-        headers: { accept: ACCEPT_HEADER },
+        headers: { accept: ACCEPT_HEADER, 'user-agent': USER_AGENT },
       });
 
       if (response.status >= 300 && response.status < 400) {
@@ -387,7 +438,7 @@ async function downloadImage(
 
 export async function loadRemoteImage(
   value: string | null,
-  deps: RemoteImageDeps = defaultDeps
+  deps: RemoteImageDeps = remoteImageDeps
 ): Promise<RemoteImage> {
   const url = value ?? '';
   const check = await checkPublicImageUrl(url, deps.resolveHostname);

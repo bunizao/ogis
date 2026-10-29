@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 import { NextRequest } from 'next/server';
 import { createElement } from 'react';
 import { themes } from '../../app/api/og/themes';
+import { remoteImageDeps } from '../../app/lib/og-remote-image';
 import type { ThemeContext, ThemeFont, ThemeProps } from '../../app/api/og/themes/types';
 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
@@ -41,8 +42,9 @@ async function render(url: string, routeKey = 'og', env?: Record<string, string>
   return { response, rendered: state.renders.at(-1) };
 }
 
-// Public DNS for every host, and a PNG for any image path.
+// Public DNS for every host, and a PNG for any image. Returns the global fetch spy.
 function mockNetwork() {
+  spyOn(remoteImageDeps, 'fetch').mockImplementation(async () => new Response(PNG_BYTES));
   return spyOn(globalThis, 'fetch').mockImplementation((async (input: string | URL | Request) => {
     const url = new URL(String(input instanceof Request ? input.url : input));
     if (url.hostname === 'dns.google') {
