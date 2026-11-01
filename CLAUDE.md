@@ -34,7 +34,8 @@ bun test             # Run full Bun test suite
 - `app/lib/og-themes.ts` — Theme keys, labels and descriptions shared by the handler and the landing page.
 - `app/lib/cover-photos.ts` — Unsplash sample covers for the playground picker, with credits (also listed in the README, which the footer links to).
 - `app/lib/pixel-fonts.ts` — Pixel font registry shared by the landing page and the pixel theme.
-- `app/page.tsx` — Interactive landing page with live preview form and API reference.
+- `app/page.tsx` — Interactive landing page with live preview form and API reference. Hover styles go only on things you can click (links, buttons, tiles); table rows and decoration stay still.
+- `components/og-card-skeleton.tsx` — Card-shaped placeholder for `/api/og` images while they render. Gallery tiles keep it under the image; the playground preview shows it until the first render only.
 - `app/link-previews.tsx` — X, Slack and iMessage stand-ins that the playground shows the card inside.
 - `components/ui/` — shadcn components (new-york, `radix-ui` package). Add more with `bunx shadcn@latest add <name>`, then point their `cn` import at `@/lib/utils`.
 - `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
