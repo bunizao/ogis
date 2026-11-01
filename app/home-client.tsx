@@ -290,7 +290,9 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
 
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <a href="#top" className="font-pixel text-xl leading-none">
+          <a href="#top" className="flex items-center gap-2 font-pixel text-xl leading-none">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/favicon.svg" alt="" width={24} height={24} className="size-6" />
             OGIS
           </a>
           <nav className="flex items-center gap-1">

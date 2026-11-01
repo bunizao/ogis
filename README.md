@@ -1,3 +1,5 @@
+<img src="public/favicon.svg" alt="" width="72" height="72">
+
 # OGIS - OG Image Service
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

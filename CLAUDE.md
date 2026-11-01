@@ -39,6 +39,7 @@ bun test             # Run full Bun test suite
 - `app/link-previews.tsx` — X, Slack and iMessage stand-ins that the playground shows the card inside.
 - `components/ui/` — shadcn components (new-york, `radix-ui` package). Add more with `bunx shadcn@latest add <name>`, then point their `cn` import at `@/lib/utils`.
 - `proxy.ts` — API-only mode gate (returns 404 for frontend routes when `OG_API_ONLY=true`).
+- `public/favicon.svg` — The logo, also used in the header and README: the default card in miniature on a 16×16 pixel grid, so it stays crisp at 16px. `apple-touch-icon.png` is a full-bleed 180px render of it (`rsvg-convert`, radius and edge stroke removed); re-render it when the SVG changes.
 - `public/default-bg.jpg` — Starfield used by `pixel`/`modern`/`gallery` when no image is given.
 - `public/fonts/` — Every theme font: the pixel TTFs (Zpix, Geist Pixel variants) and one folder per Fontsource family with its licence. Sources in its README.
 - `public/oil/` — Van Gogh brushwork details (The Met, CC0) and `impasto.png`, the light and shade of the Irises background, for the `oil` theme.
