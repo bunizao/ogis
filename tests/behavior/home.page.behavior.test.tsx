@@ -57,6 +57,21 @@ describe('Home page behavior', () => {
     expect(checkedTheme(ui)).toBe('Pixel');
   });
 
+  test('the preview skeleton covers the first render only', async () => {
+    const ui = await renderHome();
+    const preview = ui.getByRole('img', { name: 'OG Preview' });
+    const skeleton = () => preview.parentElement?.querySelector('[data-slot="og-card-skeleton"]');
+    expect(skeleton()).toBeTruthy();
+
+    fireEvent.load(preview);
+    expect(skeleton()).toBeNull();
+
+    // Later renders dim the last card instead of going back to the skeleton.
+    await userEvent.click(ui.getByRole('radio', { name: 'Editorial' }));
+    expect(previewParams(ui).get('theme')).toBe('editorial');
+    expect(skeleton()).toBeNull();
+  });
+
   test('typing updates the preview after a pause', async () => {
     const ui = await renderHome();
     const title = ui.getByLabelText('Title');
