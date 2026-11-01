@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'bunizao', url: 'https://github.com/bunizao' }],
   icons: {
     icon: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     title: 'OGIS - Open Graph Image Service',

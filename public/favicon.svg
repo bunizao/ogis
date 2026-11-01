@@ -1,6 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" fill="#000"/>
-  <path d="M8 8h16v16H8z" fill="none" stroke="#fff" stroke-width="2"/>
-  <path d="M12 12h8v8h-8z" fill="#fff"/>
-  <path d="M14 14h4v4h-4z" fill="#000"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The default OGIS card in miniature: night sky, one star, "OG" as the pixel title. Pixels sit on a 2-unit grid. -->
+  <defs>
+    <radialGradient id="sky" cx="23" cy="9" r="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#26315c"/>
+      <stop offset=".45" stop-color="#0d1226"/>
+      <stop offset="1" stop-color="#05060c"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="23" cy="9" r="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".4"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#sky)"/>
+  <circle cx="23" cy="9" r="8" fill="url(#glow)"/>
+  <g fill="#fff" shape-rendering="crispEdges">
+    <path opacity=".4" d="M6 6h2v2h-2zM10 12h2v2h-2zM28 14h2v2h-2z"/>
+    <path opacity=".6" d="M22 4h2v2h-2zM18 8h2v2h-2zM26 8h2v2h-2zM22 12h2v2h-2z"/>
+    <path d="M22 6h2v2h-2zM20 8h2v2h-2zM22 8h2v2h-2zM24 8h2v2h-2zM22 10h2v2h-2zM6 18h2v2h-2zM8 18h2v2h-2zM10 18h2v2h-2zM18 18h2v2h-2zM20 18h2v2h-2zM22 18h2v2h-2zM24 18h2v2h-2zM4 20h2v2h-2zM12 20h2v2h-2zM16 20h2v2h-2zM4 22h2v2h-2zM12 22h2v2h-2zM16 22h2v2h-2zM22 22h2v2h-2zM24 22h2v2h-2zM4 24h2v2h-2zM12 24h2v2h-2zM16 24h2v2h-2zM24 24h2v2h-2zM6 26h2v2h-2zM8 26h2v2h-2zM10 26h2v2h-2zM18 26h2v2h-2zM20 26h2v2h-2zM22 26h2v2h-2z"/>
+  </g>
+  <rect x=".5" y=".5" width="31" height="31" rx="6.5" fill="none" stroke="#fff" stroke-opacity=".12"/>
 </svg>
