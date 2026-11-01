@@ -103,7 +103,7 @@ export default function HomeStaticContent() {
             <div className="overflow-hidden rounded-lg border">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow>
                     <TableHead className="w-[112px] pl-4">Parameter</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="pr-4 text-right">Max</TableHead>
@@ -111,7 +111,7 @@ export default function HomeStaticContent() {
                 </TableHeader>
                 {PARAM_GROUPS.map(group => (
                   <TableBody key={group.title} className="border-b last:border-b-0">
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableRow className="bg-muted/40">
                       <TableCell colSpan={3} className="py-1.5 pl-4 text-xs font-medium text-muted-foreground">
                         {group.title}
                       </TableCell>
