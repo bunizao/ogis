@@ -7,6 +7,7 @@ import { COVER_PHOTOS } from '@/app/lib/cover-photos';
 import { DEFAULT_OG_THEME, OG_THEMES, type OgThemeKey } from '@/app/lib/og-themes';
 import { DEFAULT_PIXEL_FONT, PIXEL_FONT_OPTIONS, type PixelFontKey } from '@/app/lib/pixel-fonts';
 import { ChatUnfurl, FeedPost, MessageBubble } from '@/app/link-previews';
+import { OgCardSkeleton } from '@/components/og-card-skeleton';
 import { ShortcutKeys } from '@/components/shortcut-keys';
 import { Button } from '@/components/ui/button';
 import {
@@ -183,9 +184,12 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
     setOrigin(window.location.origin);
     setIsMac(navigator.platform?.toLowerCase().includes('mac') ?? false);
 
-    // The server-rendered preview can finish loading before React attaches onLoad.
+    // The server-rendered preview can load, or fail, before React attaches its handlers.
     const image = previewRef.current;
-    if (image?.complete && image.naturalWidth > 0) setSettledUrl(image.getAttribute('src'));
+    if (image?.complete) {
+      setSettledUrl(image.getAttribute('src'));
+      setPreviewFailed(image.naturalWidth === 0);
+    }
 
     const onKeyDown = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
@@ -246,24 +250,29 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
   const coverPhoto = COVER_PHOTOS.find(photo => photo.src === fields.image.trim());
   const status = previewFailed && !isRendering ? 'Render failed. Try refreshing.' : isRendering ? 'Rendering…' : '1200 × 630 PNG';
 
+  // The skeleton covers only the first render. After that the last card stays
+  // up, dimmed, so editing never flashes back to an empty frame.
   const previewImage = (className?: string) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      ref={previewRef}
-      src={previewUrl}
-      alt="OG Preview"
-      width={1200}
-      height={630}
-      onLoad={() => {
-        setSettledUrl(previewUrl);
-        setPreviewFailed(false);
-      }}
-      onError={() => {
-        setSettledUrl(previewUrl);
-        setPreviewFailed(true);
-      }}
-      className={cn('block aspect-[1200/630] w-full object-cover transition-opacity duration-200', isRendering && 'opacity-50', className)}
-    />
+    <span className="relative block">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        ref={previewRef}
+        src={previewUrl}
+        alt="OG Preview"
+        width={1200}
+        height={630}
+        onLoad={() => {
+          setSettledUrl(previewUrl);
+          setPreviewFailed(false);
+        }}
+        onError={() => {
+          setSettledUrl(previewUrl);
+          setPreviewFailed(true);
+        }}
+        className={cn('block aspect-[1200/630] w-full object-cover transition-opacity duration-200', isRendering && 'opacity-50', className)}
+      />
+      {settledUrl === null ? <OgCardSkeleton /> : null}
+    </span>
   );
 
   const linkPreview = {
@@ -358,18 +367,20 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
               >
                 <span
                   className={cn(
-                    'block overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10 transition-shadow',
+                    'relative block overflow-hidden rounded-lg bg-muted ring-1 ring-foreground/10 transition-shadow',
                     'group-hover:ring-foreground/25 group-focus-visible:ring-2 group-focus-visible:ring-ring',
                     theme === option.key && 'ring-2 ring-foreground group-hover:ring-foreground'
                   )}
                 >
+                  {/* The skeleton sits under the image, which paints over it once it arrives. No state, so it works before hydration. */}
+                  <OgCardSkeleton />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`/api/og?${buildQuery(SAMPLE, option.key, DEFAULT_PIXEL_FONT)}`}
                     alt={`${option.label} theme example`}
                     width={1200}
                     height={630}
-                    className="block aspect-[1200/630] w-full object-cover"
+                    className="relative block aspect-[1200/630] w-full object-cover"
                   />
                 </span>
                 <span className="mt-2.5 flex items-center justify-between gap-2 text-sm">
@@ -566,8 +577,9 @@ export default function HomeClient({ children }: { children: React.ReactNode }) 
                         </CoverTile>
                         {COVER_PHOTOS.map(photo => (
                           <CoverTile key={photo.src} label={photo.label} selected={photo === coverPhoto} onSelect={() => selectCover(photo.src)}>
+                            <span aria-hidden="true" className="absolute inset-0 bg-muted motion-safe:animate-pulse" />
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={photo.thumb} alt="" width={240} height={126} loading="lazy" className="block size-full object-cover" />
+                            <img src={photo.thumb} alt="" width={240} height={126} loading="lazy" className="relative block size-full object-cover" />
                           </CoverTile>
                         ))}
                       </div>
@@ -662,7 +674,7 @@ function CoverTile({
     <button type="button" aria-label={label} aria-pressed={selected} onClick={onSelect} className="group rounded-md outline-none">
       <span
         className={cn(
-          'block aspect-[1200/630] overflow-hidden rounded-md ring-1 ring-foreground/10 transition-shadow',
+          'relative block aspect-[1200/630] overflow-hidden rounded-md ring-1 ring-foreground/10 transition-shadow',
           'group-hover:ring-foreground/25 group-focus-visible:ring-2 group-focus-visible:ring-ring',
           selected && 'ring-2 ring-foreground group-hover:ring-foreground'
         )}
