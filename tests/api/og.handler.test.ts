@@ -196,6 +196,30 @@ describe('response', () => {
     expect(await pngSize(response)).toEqual({ width: 1200, height: 630 });
   });
 
+  test('caches ts-versioned URLs for a year at the CDN only', async () => {
+    const { response } = await render('https://example.com/api/og?title=Hello&ts=1730000000000');
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=0, s-maxage=31536000'
+    );
+  });
+
+  test('keeps the CDN cache short when an image host fails', async () => {
+    mockNetwork();
+    spyOn(remoteImageDeps, 'fetch').mockImplementation(async () => new Response('busy', { status: 503 }));
+    const { response, rendered } = await render(
+      'https://example.com/api/og?ts=1730000000000&image=https://cdn.example.com/hero.png'
+    );
+    expect(rendered?.props.imageSrc).toBeNull();
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=300');
+  });
+
+  test('caches permanently rejected images normally', async () => {
+    const { response } = await render('https://example.com/api/og?image=http://192.168.1.5/p.png');
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
+    );
+  });
+
   test('fetches CJK glyphs unless the theme draws them itself', async () => {
     const network = mockNetwork();
     const fontHosts = () => network.mock.calls.map(([input]) => new URL(String(input)).hostname);
