@@ -104,13 +104,21 @@ function buildUrl(base, params, runId) {
   return url;
 }
 
+// Every complete PNG ends with this IEND chunk. A render that fails after the
+// headers are sent can still deliver a 200 with a truncated body.
+const PNG_TRAILER = [0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82];
+
+function isCompletePng(body) {
+  return body.length > PNG_TRAILER.length && PNG_TRAILER.every((byte, i) => body[body.length - 8 + i] === byte);
+}
+
 async function timeRequest(url) {
   const start = performance.now();
   const response = await fetch(url);
   const body = new Uint8Array(await response.arrayBuffer());
   const ms = performance.now() - start;
   const type = response.headers.get('content-type') ?? '';
-  if (!response.ok || !type.startsWith('image/png') || body.length === 0) {
+  if (!response.ok || !type.startsWith('image/png') || !isCompletePng(body)) {
     throw new Error(`${response.status} ${type} (${body.length} bytes) for ${url}`);
   }
   return { ms, body };
