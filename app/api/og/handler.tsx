@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
+import { ogCacheControl } from '@/app/lib/og-cache-control';
 import { loadRemoteImage, reconstructImageUrl } from '@/app/lib/og-remote-image';
 import { resolveOgRouteKeys } from '@/app/lib/og-route-keys';
 import { normalizeOgTheme } from '@/app/lib/og-themes';
@@ -109,7 +110,7 @@ export async function handleOgGet(request: NextRequest, routeKey: string): Promi
     fonts: [...fonts, ...cjkFonts],
     headers: {
       // Replaces next/og's default, which tells caches to revalidate every time.
-      'cache-control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800',
+      'cache-control': ogCacheControl(searchParams, [background, icon, avatar]),
     },
   });
 }
