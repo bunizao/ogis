@@ -196,10 +196,10 @@ describe('response', () => {
     expect(await pngSize(response)).toEqual({ width: 1200, height: 630 });
   });
 
-  test('caches ts-versioned URLs as immutable', async () => {
+  test('caches ts-versioned URLs for a year at the CDN only', async () => {
     const { response } = await render('https://example.com/api/og?title=Hello&ts=1730000000000');
     expect(response.headers.get('Cache-Control')).toBe(
-      'public, max-age=31536000, s-maxage=31536000, immutable'
+      'public, max-age=0, s-maxage=31536000'
     );
   });
 

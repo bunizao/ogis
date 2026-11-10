@@ -53,7 +53,7 @@ bun scripts/bench-og.mjs --cold 3   # Cold/warm render latency per theme and fon
 3. **Images** — `loadRemoteImage()` fetches each URL server-side and inlines it as a data URL, so Satori never fetches user URLs itself. Rejected images become `null` and the theme lays out without them
 4. **Fonts** — All read from disk: pixel fonts, and Fontsource 5.3.0 latin TTFs at `public/fonts/<id>/latin-<weight>-<style>.ttf` (Satori needs TTF/OTF, not woff2). A new cut needs its file there; the theme tests load every cut. CJK text gets Noto Sans SC/JP/KR subsets at 400 and 700 from `fonts.googleapis.cn`, which mainland China can reach; if that fails, next/og's own fallback fetches 400 from `fonts.googleapis.com`. Pixel with Zpix skips it (`coversCjk`)
 5. **Text** — Typographic dashes, smart quotes and Unicode spaces normalized; fields capped by code point
-6. **Render** — Satori → PNG. `app/lib/og-cache-control.ts` sets `s-maxage=86400, stale-while-revalidate=604800`; one year `immutable` when Attegi's `ts=` cache-buster is present; `s-maxage=300` when an image failed transiently (`fetch-failed`, `unresolvable-host`)
+6. **Render** — Satori → PNG. `app/lib/og-cache-control.ts` sets `s-maxage=86400, stale-while-revalidate=604800`; `s-maxage=31536000` (browsers still revalidate) when Attegi's `ts=` cache-buster is present; `s-maxage=300` when an image failed transiently (`fetch-failed`, `unresolvable-host`)
 
 ### Remote Image Rules (`og-remote-image.ts`)
 

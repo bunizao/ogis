@@ -1,9 +1,11 @@
 import type { RemoteImage, RemoteImageRejection } from './og-remote-image';
 
 const DEFAULT_CACHE = 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800';
-// Attegi appends ts=<post updated_at in ms>, so an edited post gets a new URL
-// and the old one can never change. Vercel scopes its CDN cache per deployment.
-const VERSIONED_CACHE = 'public, max-age=31536000, s-maxage=31536000, immutable';
+// Attegi appends ts=<post updated_at in ms>, so an edited post gets a new URL.
+// A theme deploy or an icon replaced in place can still change the bytes, so only
+// the CDN keeps it for a year: its cache is per deployment and can be purged.
+// Browsers revalidate, or neither would ever reach them.
+const VERSIONED_CACHE = 'public, max-age=0, s-maxage=31536000';
 // Long enough to absorb a burst of crawlers, short enough that a flaky image
 // host doesn't pin an image-less card for a day (or a year).
 const DEGRADED_CACHE = 'public, max-age=0, s-maxage=300';

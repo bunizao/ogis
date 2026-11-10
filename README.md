@@ -71,7 +71,7 @@ If you only need the API (no landing page), set `OG_API_ONLY=true`. Every path o
 
 ### On your own server
 
-- **Put a cache in front.** Responses carry `s-maxage=86400, stale-while-revalidate=604800`, or a year `immutable` when the URL has a numeric `ts=` (Attegi sets it from the post's last update). Vercel's CDN honours that on its own and starts fresh with each deployment; elsewhere, a CDN (Cloudflare, Bunny) or a caching proxy (nginx `proxy_cache`, Caddy, Varnish) does the same job, but keeps `ts=` images across upgrades, so purge it if you want a new look on old posts. Without one, every crawler hit renders the image again.
+- **Put a cache in front.** Responses carry `s-maxage=86400, stale-while-revalidate=604800`, or `s-maxage=31536000` (a year) when the URL has a numeric `ts=` (Attegi sets it from the post's last update). Vercel's CDN honours that on its own and starts fresh with each deployment; elsewhere, a CDN (Cloudflare, Bunny) or a caching proxy (nginx `proxy_cache`, Caddy, Varnish) does the same job, but keeps `ts=` images across upgrades, so purge it if you want a new look on old posts. Without one, every crawler hit renders the image again.
 - **Outbound access.** Theme fonts ship with the app. CJK glyphs come from Google Fonts' China domain (`fonts.googleapis.cn`), falling back to `fonts.googleapis.com`, and emoji from `cdn.jsdelivr.net`. Image hosts are checked over DNS-over-HTTPS before they are downloaded: `dns.google` first, then Cloudflare, AliDNS and DNSPod, so servers in mainland China resolve them too. A server that reaches none of them renders cards without remote images.
 - Bundled fonts and images are read from disk, so the server never requests its own URL. Port mappings and reverse proxies need no extra configuration.
 

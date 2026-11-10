@@ -3,7 +3,7 @@ import { ogCacheControl } from '../../app/lib/og-cache-control';
 import type { RemoteImageRejection } from '../../app/lib/og-remote-image';
 
 const DEFAULT = 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800';
-const VERSIONED = 'public, max-age=31536000, s-maxage=31536000, immutable';
+const VERSIONED = 'public, max-age=0, s-maxage=31536000';
 const DEGRADED = 'public, max-age=0, s-maxage=300';
 
 function cacheFor(query: string, rejections: Array<RemoteImageRejection | null> = []): string {
@@ -18,7 +18,7 @@ describe('ogCacheControl', () => {
     expect(cacheFor('title=Hello')).toBe(DEFAULT);
   });
 
-  test('caches ts-versioned URLs as immutable', () => {
+  test('caches ts-versioned URLs for a year at the CDN only', () => {
     expect(cacheFor('title=Hello&ts=1730000000000')).toBe(VERSIONED);
   });
 
